@@ -107,7 +107,7 @@ class MongoObject(PersistableJSONObject):
     an_instance = self()
     cursor = an_instance.collection.find(*args, **kwargs)
     retval = [doc for doc in cursor]
-    return map(lambda v: self().__from_mongo_object(v), retval)
+    return list(map(lambda v: self().__from_mongo_object(v), retval))
 
   @classmethod
   def delete_by_id(self, id: str):
