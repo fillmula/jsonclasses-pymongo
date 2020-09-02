@@ -5,37 +5,19 @@ from jsonclasses.types import Types
 from jsonclasses.exceptions import ObjectNotFoundException
 from pymongo.collection import Collection
 from pymongo.database import Database
-from pymongo import MongoClient
 from bson.objectid import ObjectId
 from inflection import pluralize
-from os import getenv
+from .utils import default_db
 
 @jsonclass
 class MongoObject(PersistableJSONObject):
-
-  @property
-  def database_url(self) -> str:
-    try:
-      return self.__database_url
-    except AttributeError:
-      self.__database_url = getenv('DATABASE_URL') or 'mongodb://localhost:27017/jsonclasses-pymongo-demo'
-      return self.__database_url
-
-  @property
-  def mongo_client(self) -> MongoClient:
-    try:
-      return self.__mongo_client
-    except AttributeError:
-      self.__mongo_client = MongoClient(self.database_url)
-      return self.__mongo_client
+  '''Abstract and base class for jsonclasses_pymongo objects. You should define
+  subclasses of this class to interact with mongoDB collections.
+  '''
 
   @property
   def db(self) -> Database:
-    try:
-      return self.__db
-    except AttributeError:
-      self.__db = self.mongo_client.get_database()
-      return self.__db
+    return default_db()
 
   @property
   def collection(self) -> Collection:
