@@ -49,7 +49,6 @@ class MongoObject(PersistableJSONObject):
         v = str(v)
       object_field = object_fields[k]
       object_type = object_field.type
-      print(object_type)
       if object_type is date and type(v) is datetime:
         v = date.fromisoformat(v.isoformat()[:10])
       setattr(self, k, v)
