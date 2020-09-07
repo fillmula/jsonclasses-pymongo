@@ -70,7 +70,7 @@ class MongoObject(PersistableJSONObject):
     retval = self()
     mongo_object = retval.collection.find_one({ '_id': ObjectId(id) })
     if mongo_object is None:
-      raise ObjectNotFoundException(f'{retval.__class__.__name__} with id \'{id}\' is not found.')
+      raise ObjectNotFoundException(f'{retval.__class__.__name__} record with id \'{id}\' is not found.')
     else:
       return retval.__from_mongo_object(mongo_object)
 
@@ -79,9 +79,37 @@ class MongoObject(PersistableJSONObject):
     retval = self()
     mongo_object = retval.collection.find_one(*args, **kwargs)
     if mongo_object is None:
-      raise ObjectNotFoundException(f'{retval.__class__.__name__} is not found.')
+      raise ObjectNotFoundException(f'{retval.__class__.__name__} record is not found.')
     else:
       return retval.__from_mongo_object(mongo_object)
+
+  @classmethod
+  def find_one_or_none(self, *args, **kwargs):
+    try:
+      return self.find_one(self, *args, **kwargs)
+    except ObjectNotFoundException:
+      return None
+
+  @classmethod
+  def find_one_or_new(self, *args, **kwargs):
+    try:
+      return self.find_one(self, *args, **kwargs)
+    except ObjectNotFoundException:
+      return self()
+
+  @classmethod
+  def find_one_or(self, callable, *args, **kwargs):
+    try:
+      return self.find_one(self, *args, **kwargs)
+    except ObjectNotFoundException:
+      return callable()
+
+  @classmethod
+  def find_one_or_create(self, input, *args, **kwargs):
+    try:
+      return self.find_one(self, *args, **kwargs)
+    except ObjectNotFoundException:
+      return self(**input)
 
   @classmethod
   def find(self, *args, **kwargs):
