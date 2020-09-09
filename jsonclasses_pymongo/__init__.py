@@ -97,3 +97,9 @@ class MongoObject(PersistableJSONObject):
       raise ObjectNotFoundException(f'{self.__name__} with id \'{id}\' is not found.')
     else:
       return None
+
+  @classmethod
+  def delete(self, *args, **kwargs) -> int:
+    if len(args) == 0:
+      args = [{}]
+    return self.collection().delete_many(*args, **kwargs).deleted_count

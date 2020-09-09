@@ -13,6 +13,12 @@ class TestMongoObjectQuery(unittest.TestCase):
     class TestUser(MongoObject):
       username: str
       password: str
+    TestUser.delete()
     TestUser(username='a', password='b').save()
     TestUser(username='c', password='d').save()
-    result = TestUser.find()
+    find_result = TestUser.find()
+    self.assertEqual(len(find_result), 2)
+    self.assertEqual(find_result[0].username, 'a')
+    self.assertEqual(find_result[0].password, 'b')
+    self.assertEqual(find_result[1].username, 'c')
+    self.assertEqual(find_result[1].password, 'd')
