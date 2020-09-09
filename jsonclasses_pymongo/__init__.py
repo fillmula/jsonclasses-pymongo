@@ -26,7 +26,7 @@ class MongoObject(PersistableJSONObject):
     try:
       return self.__collection
     except AttributeError:
-      self.__collection = self.db().get_collection(pluralize(self.__class__.__name__).lower())
+      self.__collection = self.db().get_collection(pluralize(self.__name__).lower())
       return self.__collection
 
   def save(self, validate_all_fields=False, skip_validation=False):

@@ -3,7 +3,7 @@ from typing import Optional
 from pymongo import MongoClient
 from pymongo.database import Database
 
-__database_url: str = getenv('DATABASE_URL') or 'mongodb://localhost:27017/jsonclasses-pymongo-demo'
+__database_url: str = getenv('DATABASE_URL') or 'mongodb://localhost:27017/jsonclassespymongodemo'
 __mongo_client: Optional[MongoClient] = None
 __database: Optional[Database] = None
 

@@ -3,12 +3,11 @@ from typing import Dict, Any, Type
 from datetime import date, datetime
 from jsonclasses import fields, Config
 from jsonclasses.field_description import FieldType
-from . import MongoObject
 
 class Decoder():
-  def decode_root(self, root: Dict[str, Any], cls: Type[MongoObject]) -> Type[MongoObject]:
+  def decode_root(self, root: Dict[str, Any], cls: Type['MongoObject']) -> Type['MongoObject']:
     retval = cls()
-    for field in fields(root):
+    for field in fields(cls):
       if field.field_name == 'id':
         setattr(retval, 'id', str(root['_id']))
       elif field.field_types.field_description.field_type == FieldType.DATE:

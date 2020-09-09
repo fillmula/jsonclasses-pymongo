@@ -4,10 +4,9 @@ from datetime import date, datetime
 from jsonclasses import fields, Config
 from jsonclasses.field_description import FieldType
 from bson.objectid import ObjectId
-from . import MongoObject
 
 class Encoder():
-  def encode_root(self, root: MongoObject) -> Dict[str, Any]:
+  def encode_root(self, root: 'MongoObject') -> Dict[str, Any]:
     retval = {}
     config: Config = root.__class__.config
     for field in fields(root):
