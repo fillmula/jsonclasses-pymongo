@@ -1,7 +1,8 @@
 from os import getenv
-from typing import Optional
+from typing import Optional, Type
 from pymongo import MongoClient
 from pymongo.database import Database
+from inflection import camelize
 
 __database_url: str = getenv('DATABASE_URL') or 'mongodb://localhost:27017/jsonclassespymongodemo'
 __mongo_client: Optional[MongoClient] = None
@@ -21,3 +22,33 @@ def default_db() -> Database:
   if __database is None:
     __database = default_client().get_database()
   return __database
+
+def ref_key(key: str, cls: Type['MongoObject']) -> (str, str):
+  field_name = key + '_id'
+  if cls.config.camelize_db_keys:
+    db_field_name = camelize(field_name, False)
+  else:
+    db_field_name = field_name
+  return (field_name, db_field_name)
+
+def ref_field_key(key: str) -> str:
+  return key + '_id'
+
+def ref_db_field_key(key: str, cls: Type['MongoObject']) -> str:
+  field_name = ref_field_key(key)
+  if cls.config.camelize_db_keys:
+    db_field_name = camelize(field_name, False)
+  else:
+    db_field_name = field_name
+  return db_field_name
+
+def ref_field_keys(key: str) -> str:
+  return key + '_ids'
+
+def ref_db_field_keys(key: str, cls: Type['MongoObject']) -> str:
+  field_name = ref_field_keys(key)
+  if cls.config.camelize_db_keys:
+    db_field_name = camelize(field_name, False)
+  else:
+    db_field_name = field_name
+  return db_field_name
