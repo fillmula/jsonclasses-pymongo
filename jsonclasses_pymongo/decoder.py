@@ -41,6 +41,8 @@ class Decoder():
   def decode_dict(self, value: Dict[str, Any], cls: Type['MongoObject'], types: Types) -> Dict[str, Any]:
     if value is None:
       return None
+    if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
+      return None
     if types.field_description.field_storage == FieldStorage.LOCAL_KEY:
       return { k: str(v) for k, v in value.items() }
     else:
