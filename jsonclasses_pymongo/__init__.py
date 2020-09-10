@@ -1,8 +1,4 @@
-from datetime import date, datetime
-from dataclasses import dataclass, fields
-from jsonclasses import jsonclass, types, PersistableJSONObject
-from jsonclasses.types import Types
-from jsonclasses.exceptions import ObjectNotFoundException
+from jsonclasses import jsonclass, types, PersistableJSONObject, Types, ObjectNotFoundException
 from pymongo.collection import Collection
 from pymongo.database import Database
 from bson.objectid import ObjectId
@@ -16,6 +12,11 @@ class MongoObject(PersistableJSONObject):
   '''Abstract and base class for jsonclasses_pymongo objects. You should define
   subclasses of this class to interact with mongoDB collections.
   '''
+
+  def __init__(self, **kwargs):
+    super().__init__(**kwargs)
+    if self.id is None:
+      self.id = str(ObjectId())
 
   @classmethod
   def db(self) -> Database:
@@ -32,12 +33,7 @@ class MongoObject(PersistableJSONObject):
   def save(self, validate_all_fields=False, skip_validation=False):
     if not skip_validation:
       self.validate(all_fields=validate_all_fields)
-      encoded = Encoder().encode_root(self)
-    if getattr(self, 'id') is None:
-      insertion_result = self.__class__.collection().insert_one(encoded)
-      setattr(self, 'id', str(insertion_result.inserted_id))
-    else:
-      self.__class__.collection().update_one({ '_id': encoded['_id'] }, { '$set': encoded })
+    Encoder().encode_root(self)
     return self
 
   @classmethod

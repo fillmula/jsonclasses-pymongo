@@ -1,8 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Any, Type
 from datetime import date, datetime
-from jsonclasses import fields, Config
-from jsonclasses.field_description import FieldType
+from jsonclasses import fields, Config, FieldType
 
 class Decoder():
   def decode_root(self, root: Dict[str, Any], cls: Type['MongoObject']) -> Type['MongoObject']:
