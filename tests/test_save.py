@@ -35,3 +35,6 @@ class TestMongoObjectQuery(unittest.TestCase):
     }
     author = TestAuthor(**input)
     author.save()
+    returned_author = TestAuthor.find_by_id(author.id).include('posts')
+    print(returned_author)
+    # returned_post_0 = TestPost.find_by_id(author.posts[0].id)

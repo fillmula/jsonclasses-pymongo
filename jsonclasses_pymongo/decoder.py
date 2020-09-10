@@ -64,7 +64,7 @@ class Decoder():
     else:
       return self.decode_root(
         root=value,
-        cls=collection_argument_type_to_types(types, graph_sibling=cls)
+        cls=collection_argument_type_to_types(types.field_description.instance_types, graph_sibling=cls)
       )
 
   def decode_item(self, value: Any, cls: Type['MongoObject'], types: Types) -> Any:

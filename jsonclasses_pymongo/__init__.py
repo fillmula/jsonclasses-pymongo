@@ -1,9 +1,11 @@
-from jsonclasses import jsonclass, types, PersistableJSONObject, Types, ObjectNotFoundException
+from jsonclasses import jsonclass, types, PersistableJSONObject, Types
+from jsonclasses import ObjectNotFoundException, fields, FieldType, FieldStorage
+from jsonclasses import collection_argument_type_to_types
 from pymongo.collection import Collection
 from pymongo.database import Database
 from bson.objectid import ObjectId
 from inflection import pluralize
-from .utils import default_db
+from .utils import default_db, ref_field_key, ref_field_keys, ref_db_field_key
 from .encoder import Encoder
 from .decoder import Decoder
 
@@ -29,6 +31,37 @@ class MongoObject(PersistableJSONObject):
     except AttributeError:
       self.__collection = self.db().get_collection(pluralize(self.__name__).lower())
       return self.__collection
+
+  def _include(self, key_path: str):
+    field = next(field for field in fields(self) if field.field_name == key_path)
+    fd = field.field_types.field_description
+    if fd.field_type == FieldType.INSTANCE and fd.field_storage == FieldStorage.LOCAL_KEY:
+      ref_id = getattr(self, ref_field_key(field.field_name))
+      if ref_id is not None:
+        Cls = collection_argument_type_to_types(fd.instance_types, graph_sibling=self.__class__)
+        setattr(self, field.field_name, Cls.find_by_id(ref_id))
+    elif fd.field_type == FieldType.INSTANCE and fd.field_storage == FieldStorage.FOREIGN_KEY:
+      foreign_key_name = ref_db_field_key(fd.foreign_key, self.__class__)
+      Cls = collection_argument_type_to_types(fd.instance_types, graph_sibling=self.__class__).field_description.instance_types
+      setattr(self, field.field_name, Cls.find_one({ foreign_key_name: ObjectId(self.id) }))
+    elif fd.field_type == FieldType.LIST and fd.field_storage == FieldStorage.LOCAL_KEY:
+      ref_ids = getattr(self, ref_field_keys(field.field_name))
+      if ref_ids is not None:
+        item_types = collection_argument_type_to_types(fd.list_item_types, self.__class__)
+        Cls = collection_argument_type_to_types(item_types.field_description.instance_types, self.__class__)
+        setattr(self, field.field_name, Cls.find({ '_id': { '$in': [ObjectId(id) for id in ref_ids] }}))
+    elif fd.field_type == FieldType.LIST and fd.field_storage == FieldStorage.FOREIGN_KEY:
+      foreign_key_name = ref_db_field_key(fd.foreign_key, self.__class__)
+      item_types = collection_argument_type_to_types(fd.list_item_types, self.__class__)
+      Cls = collection_argument_type_to_types(item_types.field_description.instance_types, self.__class__).field_description.instance_types
+      setattr(self, field.field_name, Cls.find({ foreign_key_name: ObjectId(self.id) }))
+    else:
+      pass
+
+  def include(self, *args: str):
+    for arg in args:
+      self._include(arg)
+    return self
 
   def save(self, validate_all_fields=False, skip_validation=False):
     if not skip_validation:
