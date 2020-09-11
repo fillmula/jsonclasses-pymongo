@@ -21,11 +21,6 @@ class MongoObject(PersistableJSONObject):
 
   id: str = types.str.readonly.default(lambda: str(ObjectId())).required
 
-  def __init__(self, **kwargs: Any) -> None:
-    super().__init__(**kwargs)
-    if self.id is None:
-      self.id = str(ObjectId())
-
   @classmethod
   def db(self) -> Database:
     return default_db()
