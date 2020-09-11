@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Sequence, TypeVar, Dict, Any
+from typing import Optional, Sequence, TypeVar, Dict, Any, Type
 from jsonclasses import jsonclass, types, PersistableJSONObject, Types
 from jsonclasses import ObjectNotFoundException, fields, FieldType, FieldStorage
 from jsonclasses import collection_argument_type_to_types
@@ -18,6 +18,8 @@ class MongoObject(PersistableJSONObject):
   '''Abstract and base class for jsonclasses_pymongo objects. You should define
   subclasses of this class to interact with mongoDB collections.
   '''
+
+  id: str = types.str.readonly.default(lambda: str(ObjectId())).required
 
   def __init__(self, **kwargs: Any) -> None:
     super().__init__(**kwargs)
@@ -78,7 +80,7 @@ class MongoObject(PersistableJSONObject):
     return self
 
   @classmethod
-  def find_by_id(self: T, id: str) -> T:
+  def find_by_id(self: Type[T], id: str) -> T:
     mongo_object = self.collection().find_one({ '_id': ObjectId(id) })
     if mongo_object is None:
       raise ObjectNotFoundException(f'{self.__name__} record with id \'{id}\' is not found.')
@@ -86,7 +88,7 @@ class MongoObject(PersistableJSONObject):
       return Decoder().decode_root(mongo_object, self)
 
   @classmethod
-  def find_one(self: T, *args, **kwargs) -> T:
+  def find_one(self: Type[T], *args, **kwargs) -> T:
     mongo_object = self.collection().find_one(*args, **kwargs)
     if mongo_object is None:
       raise ObjectNotFoundException(f'{self.__name__} record is not found.')
@@ -94,35 +96,35 @@ class MongoObject(PersistableJSONObject):
       return Decoder().decode_root(mongo_object, self)
 
   @classmethod
-  def find_one_or_none(self: T, *args, **kwargs) -> Optional[T]:
+  def find_one_or_none(self: Type[T], *args, **kwargs) -> Optional[T]:
     try:
       return self.find_one(self, *args, **kwargs)
     except ObjectNotFoundException:
       return None
 
   @classmethod
-  def find_one_or_new(self: T, *args, **kwargs) -> T:
+  def find_one_or_new(self: Type[T], *args, **kwargs) -> T:
     try:
       return self.find_one(self, *args, **kwargs)
     except ObjectNotFoundException:
       return self()
 
   @classmethod
-  def find_one_or(self: T, callable, *args, **kwargs) -> Optional[T]:
+  def find_one_or(self: Type[T], callable, *args, **kwargs) -> Optional[T]:
     try:
       return self.find_one(self, *args, **kwargs)
     except ObjectNotFoundException:
       return callable()
 
   @classmethod
-  def find_one_or_create(self: T, input: Dict[str, Any], *args, **kwargs) -> T:
+  def find_one_or_create(self: Type[T], input: Dict[str, Any], *args, **kwargs) -> T:
     try:
       return self.find_one(self, *args, **kwargs)
     except ObjectNotFoundException:
       return self(**input)
 
   @classmethod
-  def find(self: T, *args, **kwargs) -> Sequence[T]:
+  def find(self: Type[T], *args, **kwargs) -> Sequence[T]:
     cursor = self.collection().find(*args, **kwargs)
     retval = [doc for doc in cursor]
     return list(map(lambda mongo_object: Decoder().decode_root(mongo_object, self), retval))

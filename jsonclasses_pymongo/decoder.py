@@ -1,8 +1,12 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Type, Optional
+from typing import List, Dict, Any, Type, Optional, TypeVar, TYPE_CHECKING
 from datetime import date, datetime
 from jsonclasses import fields, Types, Config, Field, FieldType, FieldStorage, collection_argument_type_to_types
 from .utils import ref_field_key, ref_field_keys, ref_db_field_key, ref_db_field_keys
+if TYPE_CHECKING:
+  from . import MongoObject
+
+T = TypeVar('T', bound='MongoObject')
 
 class Decoder():
 
@@ -27,7 +31,7 @@ class Decoder():
   def is_local_keys_reference_field(self, field: Field) -> bool:
     return self.is_list_field(field) and self.is_local_key_storage(field)
 
-  def decode_list(self, value: List[Any], cls: Type['MongoObject'], types: Types) -> List[Any]:
+  def decode_list(self, value: List[Any], cls: Type[T], types: Types) -> List[Any]:
     if value is None:
       return None
     if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
@@ -38,7 +42,7 @@ class Decoder():
       item_types = types.field_description.list_item_types
       return [self.decode_item(value=item, cls=cls, types=item_types) for item in value]
 
-  def decode_dict(self, value: Dict[str, Any], cls: Type['MongoObject'], types: Types) -> Dict[str, Any]:
+  def decode_dict(self, value: Dict[str, Any], cls: Type[T], types: Types) -> Dict[str, Any]:
     if value is None:
       return None
     if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
@@ -49,14 +53,14 @@ class Decoder():
       item_types = types.field_description.dict_item_types
       return { k: self.decode_item(value=v, cls=cls, types=item_types) for k, v in value.items() }
 
-  def decode_shape(self, value: Dict[str, Any], cls: Type['MongoObject'], types: Types) -> Dict[str, Any]:
+  def decode_shape(self, value: Dict[str, Any], cls: Type[T], types: Types) -> Dict[str, Any]:
     shape_types = types.field_description.shape_types
     retval = {}
     for k, item_types in shape_types.items():
       retval[k] = self.decode_item(value=value[k], cls=cls, types=item_types)
     return retval
 
-  def decode_instance(self, value: Dict[str, Any], cls: Type['MongoObject'], types: Types) -> Any:
+  def decode_instance(self, value: Dict[str, Any], cls: Type[T], types: Types) -> Any:
     if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
       return None
     elif types.field_description.field_storage == FieldStorage.LOCAL_KEY:
@@ -67,7 +71,7 @@ class Decoder():
         cls=collection_argument_type_to_types(types.field_description.instance_types, graph_sibling=cls)
       )
 
-  def decode_item(self, value: Any, cls: Type['MongoObject'], types: Types) -> Any:
+  def decode_item(self, value: Any, cls: Type[T], types: Types) -> Any:
     if value is None:
       return value
     if types.field_description.field_type == FieldType.DATE:
@@ -83,7 +87,7 @@ class Decoder():
     else:
       return value
 
-  def decode_root(self, root: Optional[Dict[str, Any]], cls: Type['MongoObject']) -> Optional[Type['MongoObject']]:
+  def decode_root(self, root: Optional[Dict[str, Any]], cls: Type[T]) -> Optional[T]:
     if root is None:
       return None
     dest = cls()
