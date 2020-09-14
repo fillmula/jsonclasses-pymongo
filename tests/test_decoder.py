@@ -113,3 +113,77 @@ class TestDecoder(unittest.TestCase):
     self.assertEqual(instance.id, str(data['_id']))
     self.assertEqual(instance.val1, datetime(2012, 9, 5, 6, 25, 0))
     self.assertEqual(instance.val2, datetime(2020, 9, 5, 8, 25, 0))
+
+  def test_decode_embedded_list(self):
+    @jsonclass
+    class SimpleDecodeList(MongoObject):
+      vals: List[int]
+    data = {
+      '_id': ObjectId(),
+      'createdAt': datetime.now(),
+      'updatedAt': datetime.now(),
+      'vals': [1, 2, 3, 4, 5]
+    }
+    instance = Decoder().decode_root(data, SimpleDecodeList)
+    self.assertEqual(instance.id, str(data['_id']))
+    self.assertEqual(instance.vals, [1, 2, 3, 4, 5])
+
+  def test_decode_local_keys_list(self):
+    pass
+
+  def test_decode_embedded_dict(self):
+    @jsonclass
+    class SimpleDecodeDict(MongoObject):
+      vals: Dict[str, int]
+    data = {
+      '_id': ObjectId(),
+      'createdAt': datetime.now(),
+      'updatedAt': datetime.now(),
+      'vals': { 'one': 1, 'two': 2 }
+    }
+    instance = Decoder().decode_root(data, SimpleDecodeDict)
+    self.assertEqual(instance.id, str(data['_id']))
+    self.assertEqual(instance.vals, { 'one': 1, 'two': 2 })
+
+  def test_decode_embedded_shape(self):
+    @jsonclass
+    class SimpleDecodeShape(MongoObject):
+      vals: Dict[str, int] = types.shape({
+        'one': types.int,
+        'two': types.int
+      })
+    data = {
+      '_id': ObjectId(),
+      'createdAt': datetime.now(),
+      'updatedAt': datetime.now(),
+      'vals': { 'one': 1, 'two': 2 }
+    }
+    instance = Decoder().decode_root(data, SimpleDecodeShape)
+    self.assertEqual(instance.id, str(data['_id']))
+    self.assertEqual(instance.vals, { 'one': 1, 'two': 2 })
+
+  def test_decode_embedded_instance(self):
+    @jsonclass
+    class SimpleDecodeInstanceAddress(MongoObject):
+      city: str
+    @jsonclass
+    class SimpleDecodeInstance(MongoObject):
+      address: SimpleDecodeInstanceAddress
+    data = {
+      '_id': ObjectId(),
+      'createdAt': datetime.now(),
+      'updatedAt': datetime.now(),
+      'address': {
+        '_id': ObjectId(),
+        'createdAt': datetime.now(),
+        'updatedAt': datetime.now(),
+        'city': 'Shanghai'
+      }
+    }
+    instance = Decoder().decode_root(data, SimpleDecodeInstance)
+    self.assertEqual(instance.id, str(data['_id']))
+    self.assertEqual(instance.address.id, str(data['address']['_id']))
+    self.assertEqual(instance.address.city, "Shanghai")
+
+  def test_decode_local_key_instance(self):
+    pass

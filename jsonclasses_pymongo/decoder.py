@@ -47,7 +47,9 @@ class Decoder(Coder):
     else:
       return self.decode_root(
         root=value,
-        cls=collection_argument_type_to_types(types.field_description.instance_types, graph_sibling=cls)
+        cls=collection_argument_type_to_types(
+          types.field_description.instance_types, graph_sibling=cls
+        ).field_description.instance_types
       )
 
   def decode_item(self, value: Any, cls: Type[T], types: Types) -> Any:
