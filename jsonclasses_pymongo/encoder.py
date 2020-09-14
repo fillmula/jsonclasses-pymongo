@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Dict, Any, Optional, TypeVar, Tuple, Type, TYPE_CHECKING
 from datetime import date, datetime
-from jsonclasses import fields, Types, Config, FieldType, FieldStorage, collection_argument_type_to_types
+from jsonclasses import fields, Types, Config, FieldType, FieldStorage, collection_argument_type_to_types, FieldDescription
 from inflection import camelize
 from bson.objectid import ObjectId
 from .coder import Coder
@@ -23,6 +23,12 @@ class Encoder(Coder):
     if value is None:
       return None
     item_types = collection_argument_type_to_types(types.field_description.list_item_types)
+    if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
+      item_types = item_types.linkedby(types.field_description.foreign_key)
+    elif types.field_description.field_storage == FieldStorage.LOCAL_KEY:
+      item_types = item_types.linkto
+    else:
+      pass
     dest = []
     write_commands = []
     for item in value:
@@ -83,11 +89,16 @@ class Encoder(Coder):
   def encode_instance(
     self,
     value: Optional[T],
+    types: Optional[Any],
     parent: Optional[T] = None,
     parent_linkedby: Optional[str] = None
   ) -> Tuple[Dict[str, Any], List[Tuple(Dict[str, Any], Type[T])]]:
     if value is None:
       return None, []
+    do_not_write_self = False
+    if types is not None:
+      if types.field_description.field_storage == FieldStorage.EMBEDDED:
+        do_not_write_self = True
     dest = {}
     write_commands = []
     for field in fields(value):
@@ -99,6 +110,7 @@ class Encoder(Coder):
         if value_at_field is not None:
           _encoded, commands = self.encode_instance(
             value=value_at_field,
+            types=field.field_types,
             parent=value,
             parent_linkedby=field.field_types.field_description.foreign_key
           )
@@ -121,6 +133,7 @@ class Encoder(Coder):
           setattr(value, ref_field_key(field.field_name), value_at_field.id)
           encoded, commands = self.encode_instance(
             value=value_at_field,
+            types=field.field_types,
             parent=value,
             parent_linkedby=field.field_types.field_description.foreign_key
           )
@@ -151,7 +164,8 @@ class Encoder(Coder):
         )
         dest[field.db_field_name] = item_value
         write_commands.extend(new_write_commands)
-    write_commands.append((dest, value.__class__))
+    if not do_not_write_self:
+      write_commands.append((dest, value.__class__))
     return dest, write_commands
 
   def encode_item(
@@ -172,10 +186,10 @@ class Encoder(Coder):
     elif types.field_description.field_type == FieldType.SHAPE:
       return self.encode_shape(value=value, types=types, parent=parent, parent_linkedby=parent_linkedby)
     elif types.field_description.field_type == FieldType.INSTANCE:
-      return self.encode_instance(value=value, parent=parent, parent_linkedby=parent_linkedby)
+      return self.encode_instance(value=value, parent=parent, types=types, parent_linkedby=parent_linkedby)
     else:
       return value, []
 
   # return save commands
   def encode_root(self, root: T) -> List[Tuple(Dict[str, Any], Type[T])]:
-    return self.encode_instance(value=root, parent=None, parent_linkedby=None)[1]
+    return self.encode_instance(value=root, types=None, parent=None, parent_linkedby=None)[1]

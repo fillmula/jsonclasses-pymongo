@@ -118,3 +118,50 @@ class TestEncoder(unittest.TestCase):
     self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'vals']))
     self.assertIsInstance(serialized['_id'], ObjectId)
     self.assertEqual(serialized['vals'], { '0': 'zero', '1': 1 })
+
+  def test_encode_embedded_instance(self):
+    @jsonclass
+    class SimpleEncodeEmbeddedInstanceAddress(MongoObject):
+      line1: str
+    @jsonclass
+    class SimpleEncodeEmbeddedInstance(MongoObject):
+      address: SimpleEncodeEmbeddedInstanceAddress
+    simple_object = SimpleEncodeEmbeddedInstance(address={ 'line1': 'Flam Road' })
+    commands = Encoder().encode_root(simple_object)
+    self.assertEqual(len(commands), 1)
+    command = commands[0]
+    self.assertIs(command[1], SimpleEncodeEmbeddedInstance)
+    data = command[0]
+    address = data['address']
+    self.assertIsInstance(address['_id'], ObjectId)
+    self.assertEqual(address['line1'], 'Flam Road')
+
+  def test_encode_foreign_key_instance(self):
+    @jsonclass
+    class SimpleEncodeForeignKeyInstanceAddress(MongoObject):
+      line1: str
+      owner: SimpleEncodeForeignKeyInstance = types.linkto.instanceof('SimpleEncodeForeignKeyInstance')
+    @jsonclass
+    class SimpleEncodeForeignKeyInstance(MongoObject):
+      address: SimpleEncodeForeignKeyInstanceAddress = types.instanceof(SimpleEncodeForeignKeyInstanceAddress).linkedby('owner')
+    simple_object = SimpleEncodeForeignKeyInstance(address={ 'line1': 'Flam Road' })
+    commands = Encoder().encode_root(simple_object)
+    self.assertEqual(len(commands), 2)
+    address_data = commands[0][0]
+    owner_data = commands[1][0]
+    self.assertEqual(address_data['ownerId'], owner_data['_id'])
+
+  def test_encode_local_key_instance(self):
+    @jsonclass
+    class SimpleEncodeLocalKeyInstanceAddress(MongoObject):
+      line1: str
+      owner: SimpleEncodeLocalKeyInstance = types.instanceof('SimpleEncodeLocalKeyInstance').linkedby('address')
+    @jsonclass
+    class SimpleEncodeLocalKeyInstance(MongoObject):
+      address: SimpleEncodeLocalKeyInstanceAddress = types.linkto.instanceof(SimpleEncodeLocalKeyInstanceAddress)
+    simple_object = SimpleEncodeLocalKeyInstance(address={ 'line1': 'Flam Road' })
+    commands = Encoder().encode_root(simple_object)
+    self.assertEqual(len(commands), 2)
+    address_data = commands[0][0]
+    owner_data = commands[1][0]
+    self.assertEqual(owner_data['addressId'], address_data['_id'])
