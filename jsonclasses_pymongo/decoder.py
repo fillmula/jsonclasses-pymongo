@@ -16,7 +16,7 @@ class Decoder(Coder):
     if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
       return None
     elif types.field_description.field_storage == FieldStorage.LOCAL_KEY:
-      return [str(value) for item in value]
+      return [str(item) for item in value]
     else:
       item_types = types.field_description.list_item_types
       return [self.decode_item(value=item, cls=cls, types=item_types) for item in value]

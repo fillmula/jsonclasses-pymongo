@@ -129,7 +129,23 @@ class TestDecoder(unittest.TestCase):
     self.assertEqual(instance.vals, [1, 2, 3, 4, 5])
 
   def test_decode_local_keys_list(self):
-    pass
+    @jsonclass
+    class SimpleDecodeLocalKeyListAddress(MongoObject):
+      city: str
+      owner: SimpleDecodeLocalKeyList = types.instanceof('SimpleDecodeLocalKeyList').linkedby('address')
+    @jsonclass
+    class SimpleDecodeLocalKeyList(MongoObject):
+      addresses: List[SimpleDecodeLocalKeyListAddress] = types.linkto.listof(SimpleDecodeLocalKeyListAddress)
+    data = {
+      '_id': ObjectId(),
+      'createdAt': datetime.now(),
+      'updatedAt': datetime.now(),
+      'addressesIds': [ObjectId(), ObjectId()]
+    }
+    instance = Decoder().decode_root(data, SimpleDecodeLocalKeyList)
+    self.assertEqual(instance.id, str(data['_id']))
+    self.assertEqual(getattr(instance, 'addresses_ids')[0], str(data['addressesIds'][0]))
+    self.assertEqual(getattr(instance, 'addresses_ids')[1], str(data['addressesIds'][1]))
 
   def test_decode_embedded_dict(self):
     @jsonclass
@@ -186,4 +202,19 @@ class TestDecoder(unittest.TestCase):
     self.assertEqual(instance.address.city, "Shanghai")
 
   def test_decode_local_key_instance(self):
-    pass
+    @jsonclass
+    class SimpleDecodeLocalKeyInstanceAddress(MongoObject):
+      city: str
+      owner: SimpleDecodeLocalKeyInstance = types.instanceof('SimpleDecodeLocalKeyInstance').linkedby('address')
+    @jsonclass
+    class SimpleDecodeLocalKeyInstance(MongoObject):
+      address: SimpleDecodeLocalKeyInstanceAddress = types.linkto.instanceof(SimpleDecodeLocalKeyInstanceAddress)
+    data = {
+      '_id': ObjectId(),
+      'createdAt': datetime.now(),
+      'updatedAt': datetime.now(),
+      'addressId': ObjectId()
+    }
+    instance = Decoder().decode_root(data, SimpleDecodeLocalKeyInstance)
+    self.assertEqual(instance.id, str(data['_id']))
+    self.assertEqual(getattr(instance, 'address_id'), str(data['addressId']))
