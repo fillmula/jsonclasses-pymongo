@@ -165,3 +165,54 @@ class TestEncoder(unittest.TestCase):
     address_data = commands[0][0]
     owner_data = commands[1][0]
     self.assertEqual(owner_data['addressId'], address_data['_id'])
+
+  def test_encode_embedded_instance_list(self):
+    @jsonclass
+    class MediumEncodeEmbeddedInstanceAddress(MongoObject):
+      line1: str
+    @jsonclass
+    class MediumEncodeEmbeddedInstance(MongoObject):
+      addresses: List[MediumEncodeEmbeddedInstanceAddress]
+    medium_object = MediumEncodeEmbeddedInstance(addresses=[{ 'line1': 'Flam Road' }, { 'line1': 'Plam Road' }])
+    commands = Encoder().encode_root(medium_object)
+    self.assertEqual(len(commands), 1)
+    command = commands[0]
+    self.assertIs(command[1], MediumEncodeEmbeddedInstance)
+    data = command[0]
+    addresses = data['addresses']
+    self.assertEqual(len(addresses), 2)
+    self.assertEqual(addresses[0]['line1'], 'Flam Road')
+    self.assertEqual(addresses[1]['line1'], 'Plam Road')
+
+  def test_encode_foreign_keys_instance_list(self):
+    @jsonclass
+    class MediumEncodeForeignKeyInstanceAddress(MongoObject):
+      line1: str
+      owner: MediumEncodeForeignKeyInstance = types.linkto.instanceof('SimpleEncodeForeignKeyInstance')
+    @jsonclass
+    class MediumEncodeForeignKeyInstance(MongoObject):
+      addresses: List[MediumEncodeForeignKeyInstanceAddress] = types.listof(MediumEncodeForeignKeyInstanceAddress).linkedby('owner')
+    simple_object = MediumEncodeForeignKeyInstance(addresses=[{ 'line1': 'Flam Road' }, { 'line1': 'Klam Road' }])
+    commands = Encoder().encode_root(simple_object)
+    self.assertEqual(len(commands), 3)
+    address_0_data = commands[0][0]
+    address_1_data = commands[1][0]
+    owner_data = commands[2][0]
+    self.assertEqual(address_0_data['ownerId'], owner_data['_id'])
+    self.assertEqual(address_1_data['ownerId'], owner_data['_id'])
+
+  def test_encode_local_keys_instance_list(self):
+    @jsonclass
+    class MediumEncodeLocalKeyInstanceAddress(MongoObject):
+      line1: str
+      owner: MediumEncodeLocalKeyInstance = types.linkedby('address').instanceof('SimpleEncodeLocalKeyInstance')
+    @jsonclass
+    class MediumEncodeLocalKeyInstance(MongoObject):
+      addresses: List[MediumEncodeLocalKeyInstanceAddress] = types.listof(MediumEncodeLocalKeyInstanceAddress).linkto
+    simple_object = MediumEncodeLocalKeyInstance(addresses=[{ 'line1': 'Flam Road' }, { 'line1': 'Klam Road' }])
+    commands = Encoder().encode_root(simple_object)
+    self.assertEqual(len(commands), 3)
+    address_0_data = commands[0][0]
+    address_1_data = commands[1][0]
+    owner_data = commands[2][0]
+    self.assertEqual(owner_data['addressesIds'], [address_0_data['_id'], address_1_data['_id']])
