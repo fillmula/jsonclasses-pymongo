@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from jsonclasses import jsonclass, types
 from jsonclasses_pymongo import MongoObject
 
-class TestMongoObjectQuery(unittest.TestCase):
+class TestMongoObjectSave(unittest.TestCase):
 
   def setUp(self):
     load_dotenv()
@@ -35,8 +35,11 @@ class TestMongoObjectQuery(unittest.TestCase):
     }
     author = TestAuthor(**input)
     author.save()
-    returned_author = TestAuthor.find_by_id(author.id).include('posts')
-    print(returned_author.include('posts'))
-    returned_author
+    returned_author = TestAuthor.find_by_id(author.id)
+    self.assertEqual(returned_author.name, author.name)
+    returned_author_with_posts = TestAuthor.find_by_id(author.id).include('posts')
+    self.assertEqual(len(returned_author_with_posts.posts), 2)
     returned_post_0 = TestPost.find_by_id(author.posts[0].id)
-    print(returned_post_0.include('author'))
+    self.assertEqual(returned_post_0.title, author.posts[0].title)
+    returned_post_0_with_author = TestPost.find_by_id(author.posts[0].id).include('author')
+    self.assertEqual(returned_post_0_with_author.author.name, author.name)
