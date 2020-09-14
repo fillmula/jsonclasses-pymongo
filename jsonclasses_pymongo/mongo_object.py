@@ -10,6 +10,7 @@ from inflection import pluralize
 from .utils import default_db, ref_field_key, ref_field_keys, ref_db_field_key
 from .encoder import Encoder
 from .decoder import Decoder
+from.write_to_db import write_to_db
 
 T = TypeVar('T', bound='MongoObject')
 
@@ -39,7 +40,7 @@ class MongoObject(PersistableJSONObject):
     if fd.field_type == FieldType.INSTANCE and fd.field_storage == FieldStorage.LOCAL_KEY:
       ref_id = getattr(self, ref_field_key(field.field_name))
       if ref_id is not None:
-        Cls = collection_argument_type_to_types(fd.instance_types, graph_sibling=self.__class__)
+        Cls = collection_argument_type_to_types(fd.instance_types, graph_sibling=self.__class__).field_description.instance_types
         setattr(self, field.field_name, Cls.find_by_id(ref_id))
     elif fd.field_type == FieldType.INSTANCE and fd.field_storage == FieldStorage.FOREIGN_KEY:
       foreign_key_name = ref_db_field_key(fd.foreign_key, self.__class__)
@@ -71,8 +72,8 @@ class MongoObject(PersistableJSONObject):
   ) -> T:
     if not skip_validation:
       self.validate(all_fields=validate_all_fields)
-    result = Encoder().encode_root(self)
-    print(result)
+    commands = Encoder().encode_root(self)
+    write_to_db(commands)
     return self
 
   @classmethod

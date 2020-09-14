@@ -128,7 +128,7 @@ class Encoder(Coder):
           write_commands.extend(commands)
         elif parent_linkedby == field.field_name:
           setattr(value, ref_field_key(field.field_name), parent.id)
-          dest[ref_field_key(field.field_name)] = ObjectId(parent.id)
+          dest[ref_db_field_key(field.field_name, value.__class__)] = ObjectId(parent.id)
       elif self.is_local_keys_reference_field(field):
         # assign a list of local keys, and get write commands
         value_at_field = getattr(value, field.field_name)
@@ -166,8 +166,6 @@ class Encoder(Coder):
     if types.field_description.field_type == FieldType.DATE:
       return datetime.fromisoformat(value.isoformat()), []
     elif types.field_description.field_type == FieldType.LIST:
-      print("LIST TO ENCODE IS ==!!!!!")
-      print(value)
       return self.encode_list(value=value, types=types, parent=parent, parent_linkedby=parent_linkedby)
     elif types.field_description.field_type == FieldType.DICT:
       return self.encode_dict(value=value, types=types, parent=parent, parent_linkedby=parent_linkedby)
