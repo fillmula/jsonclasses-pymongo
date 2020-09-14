@@ -71,7 +71,8 @@ class MongoObject(PersistableJSONObject):
   ) -> T:
     if not skip_validation:
       self.validate(all_fields=validate_all_fields)
-    Encoder().encode_root(self)
+    result = Encoder().encode_root(self)
+    print(result)
     return self
 
   @classmethod

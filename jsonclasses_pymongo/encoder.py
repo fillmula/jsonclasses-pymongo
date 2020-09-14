@@ -22,14 +22,19 @@ class Encoder(Coder):
   ) -> Tuple[List[Any], List[Tuple(Dict[str, Any], Type[T])]]:
     if value is None:
       return None
-    types = collection_argument_type_to_types(types)
+    item_types = collection_argument_type_to_types(types.field_description.list_item_types)
     dest = []
     write_commands = []
     for item in value:
       new_value, commands = self.encode_item(
-        value=item, types=types, parent=parent, parent_linkedby=parent_linkedby
+        value=item, types=item_types, parent=parent, parent_linkedby=parent_linkedby
       )
-      dest.append(new_value)
+      if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
+        pass
+      elif types.field_description.field_storage == FieldStorage.LOCAL_KEY:
+        dest.append(new_value['_id'])
+      else:
+        dest.append(new_value)
       write_commands.extend(commands)
     return dest, write_commands
 
@@ -42,12 +47,12 @@ class Encoder(Coder):
   ) -> Tuple[Dict[str, Any], List[Tuple(Dict[str, Any], Type[T])]]:
     if value is None:
       return None, []
-    types = collection_argument_type_to_types(types)
+    item_types = collection_argument_type_to_types(types.field_description.dict_item_types)
     dest = {}
     write_commands = []
     for (key, item) in value.items():
       new_value, commands = self.encode_item(
-        value=item, types=types, parent=parent, parent_linkedby=parent_linkedby
+        value=item, types=item_types, parent=parent, parent_linkedby=parent_linkedby
       )
       dest[key] = new_value
       write_commands.extend(commands)
@@ -87,7 +92,7 @@ class Encoder(Coder):
     write_commands = []
     for field in fields(value):
       if self.is_id_field(field):
-        dest['_id'] = ObjectId(value.get('id'))
+        dest['_id'] = ObjectId(getattr(value, 'id'))
       elif self.is_foreign_key_reference_field(field):
         # not assign, but get write commands
         value_at_field = getattr(value, field.field_name)
@@ -135,16 +140,16 @@ class Encoder(Coder):
             parent=value,
             parent_linkedby=field.field_name
           )
-          dest[ref_db_field_keys(field.field_name, value.__class__)] = [v['_id'] for v in encoded]
+          dest[ref_db_field_keys(field.field_name, value.__class__)] = encoded
           write_commands.extend(commands)
       else:
-        value, new_write_commands = self.encode_item(
+        item_value, new_write_commands = self.encode_item(
           value=getattr(value, field.field_name),
           types=field.field_types,
           parent=parent,
           parent_linkedby=parent_linkedby
         )
-        dest[field.db_field_name] = value
+        dest[field.db_field_name] = item_value
         write_commands.extend(new_write_commands)
     write_commands.append((dest, value.__class__))
     return dest, write_commands
@@ -161,6 +166,8 @@ class Encoder(Coder):
     if types.field_description.field_type == FieldType.DATE:
       return datetime.fromisoformat(value.isoformat()), []
     elif types.field_description.field_type == FieldType.LIST:
+      print("LIST TO ENCODE IS ==!!!!!")
+      print(value)
       return self.encode_list(value=value, types=types, parent=parent, parent_linkedby=parent_linkedby)
     elif types.field_description.field_type == FieldType.DICT:
       return self.encode_dict(value=value, types=types, parent=parent, parent_linkedby=parent_linkedby)
@@ -172,25 +179,5 @@ class Encoder(Coder):
       return value, []
 
   # return save commands
-  def encode_root(self, root: T) -> Tuple[Dict[str, Any], List[Tuple(Dict[str, Any], Type[T])]]:
-    return self.encode_instance(value=root, parent=None, parent_linkedby=None)
-
-      # elif field.field_types.field_description.field_type == FieldType.LIST:
-      #   if field.field_types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
-      #     if field_value is not None:
-      #       for item in field_value:
-      #         self.encode_root(item, parent=root, parent_linkedby=field.field_types.field_description.foreign_key)
-      #   elif field.field_types.field_description.field_storage == FieldStorage.LOCAL_KEY:
-      #     local_key_field_name = field_name + '_ids'
-      #     local_key_db_field_name = camelize(local_key_field_name, False) if config.camelize_db_keys else local_key_field_name
-      #     if field_value is None:
-      #       retval[local_key_db_field_name] = []
-      #     else:
-      #       ids = []
-      #       for item in field_value:
-      #         ids.append(ObjectId(self.encode_root(item)['_id']))
-      #       retval[local_key_db_field_name] = ids
-      #   else:
-      #     retval[db_field_name] = self.encode_list(field_value, field.field_types.field_description.list_item_types)
-
-      #root.__class__.collection().update_one({ '_id': retval['_id'] }, { '$set': retval }, upsert=True)
+  def encode_root(self, root: T) -> List[Tuple(Dict[str, Any], Type[T])]:
+    return self.encode_instance(value=root, parent=None, parent_linkedby=None)[1]
