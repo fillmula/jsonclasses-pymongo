@@ -3,33 +3,12 @@ from typing import List, Dict, Any, Type, Optional, TypeVar, TYPE_CHECKING
 from datetime import date, datetime
 from jsonclasses import fields, Types, Config, Field, FieldType, FieldStorage, collection_argument_type_to_types
 from .utils import ref_field_key, ref_field_keys, ref_db_field_key, ref_db_field_keys
+from .coder import Coder
 if TYPE_CHECKING:
-  from . import MongoObject
+  from .mongo_object import MongoObject
+  T = TypeVar('T', bound=MongoObject)
 
-T = TypeVar('T', bound='MongoObject')
-
-class Decoder():
-
-  def is_id_field(self, field: Field) -> bool:
-    return field.field_name == 'id'
-
-  def is_instance_field(self, field: Field) -> bool:
-    return field.field_types.field_description.field_type == FieldType.INSTANCE
-
-  def is_list_field(self, field: Field) -> bool:
-    return field.field_types.field_description.field_type == FieldType.LIST
-
-  def is_local_key_storage(self, field: Field) -> bool:
-    return field.field_types.field_description.field_storage == FieldStorage.LOCAL_KEY
-
-  def is_foreign_key_storage(self, field: Field) -> bool:
-    return field.field_types.field_description.field_storage == FieldStorage.FOREIGN_KEY
-
-  def is_local_key_reference_field(self, field: Field) -> bool:
-    return self.is_instance_field(field) and self.is_local_key_storage(field)
-
-  def is_local_keys_reference_field(self, field: Field) -> bool:
-    return self.is_list_field(field) and self.is_local_key_storage(field)
+class Decoder(Coder):
 
   def decode_list(self, value: List[Any], cls: Type[T], types: Types) -> List[Any]:
     if value is None:
