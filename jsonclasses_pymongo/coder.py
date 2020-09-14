@@ -11,11 +11,17 @@ class Coder():
   def is_list_field(self, field: Field) -> bool:
     return field.field_types.field_description.field_type == FieldType.LIST
 
+  def is_foreign_key_storage(self, field: Field) -> bool:
+    return field.field_types.field_description.field_storage == FieldStorage.FOREIGN_KEY
+
   def is_local_key_storage(self, field: Field) -> bool:
     return field.field_types.field_description.field_storage == FieldStorage.LOCAL_KEY
 
-  def is_foreign_key_storage(self, field: Field) -> bool:
-    return field.field_types.field_description.field_storage == FieldStorage.FOREIGN_KEY
+  def is_foreign_key_reference_field(self, field: Field) -> bool:
+    return self.is_instance_field(field) and self.is_foreign_key_storage(field)
+
+  def is_foreign_keys_reference_field(self, field: Field) -> bool:
+    return self.is_list_field(field) and self.is_foreign_key_storage(field)
 
   def is_local_key_reference_field(self, field: Field) -> bool:
     return self.is_instance_field(field) and self.is_local_key_storage(field)
