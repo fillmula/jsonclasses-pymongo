@@ -61,7 +61,7 @@ class Encoder(Coder):
   def encode_shape(
     self,
     value: Optional[Dict[str, Any]],
-    types: Dict[str, Any],
+    types: Any,
     parent: Optional[T] = None,
     parent_linkedby: Optional[str] = None
   ) -> Tuple[Dict[str, Any], List[Tuple(Dict[str, Any], Type[T])]]:
@@ -72,7 +72,7 @@ class Encoder(Coder):
     for (key, item) in value.items():
       new_value, commands = self.encode_item(
         value=item,
-        types=collection_argument_type_to_types(types[key]),
+        types=collection_argument_type_to_types(types.field_description.shape_types[key]),
         parent=parent,
         parent_linkedby=parent_linkedby
       )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import unittest
-from typing import List
+from typing import List, Dict
 from dotenv import load_dotenv
 from datetime import date, datetime
 from bson import ObjectId
@@ -81,3 +81,40 @@ class TestEncoder(unittest.TestCase):
     self.assertIsInstance(serialized['_id'], ObjectId)
     self.assertEqual(serialized['d1'], datetime(2012, 9, 15, 0, 0, 0))
     self.assertEqual(serialized['d2'], datetime(2020, 9, 14, 0, 0, 0))
+
+  def test_encode_embedded_list(self):
+    @jsonclass
+    class SimpleEncodeScalarTypesList(MongoObject):
+      str_values: List[str]
+      int_values: List[int]
+      bool_values: List[bool]
+    simple_object = SimpleEncodeScalarTypesList(str_values=['0', '1'], int_values=[0, 1], bool_values=[False, True])
+    serialized = Encoder().encode_root(simple_object)[0][0]
+    self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'strValues', 'intValues', 'boolValues']))
+    self.assertIsInstance(serialized['_id'], ObjectId)
+    self.assertEqual(serialized['strValues'], ['0', '1'])
+    self.assertEqual(serialized['intValues'], [0, 1])
+    self.assertEqual(serialized['boolValues'], [False, True])
+
+  def test_encode_embedded_dict(self):
+    @jsonclass
+    class SimpleEncodeScalarTypesDict(MongoObject):
+      str_values: Dict[str, str]
+    simple_object = SimpleEncodeScalarTypesDict(str_values={ '0': 'zero', '1': 'one' })
+    serialized = Encoder().encode_root(simple_object)[0][0]
+    self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'strValues']))
+    self.assertIsInstance(serialized['_id'], ObjectId)
+    self.assertEqual(serialized['strValues'], { '0': 'zero', '1': 'one' })
+
+  def test_encode_embedded_shape(self):
+    @jsonclass
+    class SimpleEncodeScalarTypesShape(MongoObject):
+      vals: Dict[str, str] = types.shape({
+        '0': str,
+        '1': int
+      })
+    simple_object = SimpleEncodeScalarTypesShape(vals={ '0': 'zero', '1': 1 })
+    serialized = Encoder().encode_root(simple_object)[0][0]
+    self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'vals']))
+    self.assertIsInstance(serialized['_id'], ObjectId)
+    self.assertEqual(serialized['vals'], { '0': 'zero', '1': 1 })
