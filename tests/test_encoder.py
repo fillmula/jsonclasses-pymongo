@@ -216,3 +216,45 @@ class TestEncoder(unittest.TestCase):
     address_1_data = commands[1][0]
     owner_data = commands[2][0]
     self.assertEqual(owner_data['addressesIds'], [address_0_data['_id'], address_1_data['_id']])
+
+  def test_encode_dict_camelize_keys(self):
+    @jsonclass
+    class MediumEncodeCamelizeDictKeys(MongoObject):
+      val: Dict[str, str] = types.dictof(types.str)
+    simple_object = MediumEncodeCamelizeDictKeys(val={ 'key_one': 'val_one', 'key_two': 'val_two' })
+    commands = Encoder().encode_root(simple_object)
+    encoded_val = commands[0][0]['val']
+    self.assertEqual(encoded_val, { 'keyOne': 'val_one', 'keyTwo': 'val_two' })
+
+  def test_encode_dict_do_not_camelize_keys(self):
+    @jsonclass(camelize_db_keys=False)
+    class MediumEncodeDoNotCamelizeDictKeys(MongoObject):
+      val: Dict[str, str] = types.dictof(types.str)
+    simple_object = MediumEncodeDoNotCamelizeDictKeys(val={ 'key_one': 'val_one', 'key_two': 'val_two' })
+    commands = Encoder().encode_root(simple_object)
+    encoded_val = commands[0][0]['val']
+    self.assertEqual(encoded_val, { 'key_one': 'val_one', 'key_two': 'val_two' })
+
+  def test_encode_shape_camelize_keys(self):
+    @jsonclass
+    class MediumEncodeCamelizeShapeKeys(MongoObject):
+      val: Dict[str, str] = types.shape({
+        'key_one': types.str,
+        'key_two': types.str
+      })
+    simple_object = MediumEncodeCamelizeShapeKeys(val={ 'key_one': 'val_one', 'key_two': 'val_two' })
+    commands = Encoder().encode_root(simple_object)
+    encoded_val = commands[0][0]['val']
+    self.assertEqual(encoded_val, { 'keyOne': 'val_one', 'keyTwo': 'val_two' })
+
+  def test_encode_shape_do_not_camelize_keys(self):
+    @jsonclass(camelize_db_keys=False)
+    class MediumEncodeDoNotCamelizeShapeKeys(MongoObject):
+      val: Dict[str, str] = types.shape({
+        'key_one': types.str,
+        'key_two': types.str
+      })
+    simple_object = MediumEncodeDoNotCamelizeShapeKeys(val={ 'key_one': 'val_one', 'key_two': 'val_two' })
+    commands = Encoder().encode_root(simple_object)
+    encoded_val = commands[0][0]['val']
+    self.assertEqual(encoded_val, { 'key_one': 'val_one', 'key_two': 'val_two' })

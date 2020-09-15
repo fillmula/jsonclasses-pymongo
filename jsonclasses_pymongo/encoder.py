@@ -16,6 +16,7 @@ class Encoder(Coder):
   def encode_list(
     self,
     value: Optional[List[Any]],
+    owner: T,
     types: Any,
     parent: Optional[T] = None,
     parent_linkedby: Optional[str] = None
@@ -33,7 +34,11 @@ class Encoder(Coder):
     write_commands = []
     for item in value:
       new_value, commands = self.encode_item(
-        value=item, types=item_types, parent=parent, parent_linkedby=parent_linkedby
+        value=item,
+        owner=owner,
+        types=item_types,
+        parent=parent,
+        parent_linkedby=parent_linkedby
       )
       if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
         pass
@@ -47,48 +52,58 @@ class Encoder(Coder):
   def encode_dict(
     self,
     value: Optional[Dict[str, Any]],
+    owner: T,
     types: Any,
     parent: Optional[T] = None,
     parent_linkedby: Optional[str] = None
   ) -> Tuple[Dict[str, Any], List[Tuple(Dict[str, Any], Type[T])]]:
     if value is None:
       return None, []
+    config: Config = owner.__class__.config
     item_types = collection_argument_type_to_types(types.field_description.dict_item_types)
     dest = {}
     write_commands = []
     for (key, item) in value.items():
       new_value, commands = self.encode_item(
-        value=item, types=item_types, parent=parent, parent_linkedby=parent_linkedby
+        value=item,
+        owner=owner,
+        types=item_types,
+        parent=parent,
+        parent_linkedby=parent_linkedby
       )
-      dest[key] = new_value
+      dest[camelize(key, False) if config.camelize_db_keys else key] = new_value
       write_commands.extend(commands)
     return dest, write_commands
 
   def encode_shape(
     self,
     value: Optional[Dict[str, Any]],
+    owner: T,
     types: Any,
     parent: Optional[T] = None,
     parent_linkedby: Optional[str] = None
   ) -> Tuple[Dict[str, Any], List[Tuple(Dict[str, Any], Type[T])]]:
     if value is None:
       return None, []
+    config: Config = owner.__class__.config
     dest = {}
     write_commands = []
     for (key, item) in value.items():
       new_value, commands = self.encode_item(
         value=item,
+        owner=owner,
         types=collection_argument_type_to_types(types.field_description.shape_types[key]),
         parent=parent,
         parent_linkedby=parent_linkedby
       )
-      dest[key] = new_value
+      dest[camelize(key, False) if config.camelize_db_keys else key] = new_value
       write_commands.extend(commands)
     return dest, write_commands
 
   def encode_instance(
     self,
     value: Optional[T],
+    owner: T,
     types: Optional[Any],
     parent: Optional[T] = None,
     parent_linkedby: Optional[str] = None
@@ -110,6 +125,7 @@ class Encoder(Coder):
         if value_at_field is not None:
           _encoded, commands = self.encode_instance(
             value=value_at_field,
+            owner=owner,
             types=field.field_types,
             parent=value,
             parent_linkedby=field.field_types.field_description.foreign_key
@@ -121,6 +137,7 @@ class Encoder(Coder):
         if value_at_field is not None:
           _encoded, commands = self.encode_list(
             value=value_at_field,
+            owner=owner,
             types=field.field_types,
             parent=value,
             parent_linkedby=field.field_types.field_description.foreign_key
@@ -133,6 +150,7 @@ class Encoder(Coder):
           setattr(value, ref_field_key(field.field_name), value_at_field.id)
           encoded, commands = self.encode_instance(
             value=value_at_field,
+            owner=owner,
             types=field.field_types,
             parent=value,
             parent_linkedby=field.field_types.field_description.foreign_key
@@ -149,6 +167,7 @@ class Encoder(Coder):
           setattr(value, ref_field_keys(field.field_name), [v.id for v in value_at_field])
           encoded, commands = self.encode_list(
             value=value_at_field,
+            owner=owner,
             types=field.field_types,
             parent=value,
             parent_linkedby=field.field_name
@@ -158,6 +177,7 @@ class Encoder(Coder):
       else:
         item_value, new_write_commands = self.encode_item(
           value=getattr(value, field.field_name),
+          owner=owner,
           types=field.field_types,
           parent=parent,
           parent_linkedby=parent_linkedby
@@ -171,6 +191,7 @@ class Encoder(Coder):
   def encode_item(
     self,
     value: Any,
+    owner: T,
     types: Types,
     parent: Optional[T] = None,
     parent_linkedby: Optional[str] = None
@@ -180,16 +201,16 @@ class Encoder(Coder):
     if types.field_description.field_type == FieldType.DATE:
       return datetime.fromisoformat(value.isoformat()), []
     elif types.field_description.field_type == FieldType.LIST:
-      return self.encode_list(value=value, types=types, parent=parent, parent_linkedby=parent_linkedby)
+      return self.encode_list(value=value, owner=owner, types=types, parent=parent, parent_linkedby=parent_linkedby)
     elif types.field_description.field_type == FieldType.DICT:
-      return self.encode_dict(value=value, types=types, parent=parent, parent_linkedby=parent_linkedby)
+      return self.encode_dict(value=value, owner=owner, types=types, parent=parent, parent_linkedby=parent_linkedby)
     elif types.field_description.field_type == FieldType.SHAPE:
-      return self.encode_shape(value=value, types=types, parent=parent, parent_linkedby=parent_linkedby)
+      return self.encode_shape(value=value, owner=owner, types=types, parent=parent, parent_linkedby=parent_linkedby)
     elif types.field_description.field_type == FieldType.INSTANCE:
-      return self.encode_instance(value=value, parent=parent, types=types, parent_linkedby=parent_linkedby)
+      return self.encode_instance(value=value, owner=owner, parent=parent, types=types, parent_linkedby=parent_linkedby)
     else:
       return value, []
 
   # return save commands
   def encode_root(self, root: T) -> List[Tuple(Dict[str, Any], Type[T])]:
-    return self.encode_instance(value=root, types=None, parent=None, parent_linkedby=None)[1]
+    return self.encode_instance(value=root, owner=root, types=None, parent=None, parent_linkedby=None)[1]
