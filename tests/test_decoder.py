@@ -218,3 +218,62 @@ class TestDecoder(unittest.TestCase):
     instance = Decoder().decode_root(data, SimpleDecodeLocalKeyInstance)
     self.assertEqual(instance.id, str(data['_id']))
     self.assertEqual(getattr(instance, 'address_id'), str(data['addressId']))
+
+  def test_decode_camelized_dict_keys(self):
+    @jsonclass
+    class MediumDecodeCamelizeDictKeys(MongoObject):
+      val: Dict[str, str] = types.dictof(types.str)
+    data = {
+      'val': {
+        'keyOne': 'val_one',
+        'keyTwo': 'val_two'
+      }
+    }
+    instance = Decoder().decode_root(data, MediumDecodeCamelizeDictKeys)
+    self.assertEqual(instance.val, { 'key_one': 'val_one', 'key_two': 'val_two' })
+
+  def test_decode_uncamelized_dict_keys(self):
+    @jsonclass(camelize_db_keys=False)
+    class MediumDecodeUncamelizeDictKeys(MongoObject):
+      val: Dict[str, str] = types.dictof(types.str)
+    data = {
+      'val': {
+        'keyOne': 'val_one',
+        'keyTwo': 'val_two'
+      }
+    }
+    instance = Decoder().decode_root(data, MediumDecodeUncamelizeDictKeys)
+    self.assertEqual(instance.val, { 'keyOne': 'val_one', 'keyTwo': 'val_two' })
+
+
+  def test_decode_camelized_shape_keys(self):
+    @jsonclass
+    class MediumDecodeCamelizeShapeKeys(MongoObject):
+      val: Dict[str, str] = types.shape({
+        'key_one': types.str,
+        'key_two': types.str
+      })
+    data = {
+      'val': {
+        'keyOne': 'val_one',
+        'keyTwo': 'val_two'
+      }
+    }
+    instance = Decoder().decode_root(data, MediumDecodeCamelizeShapeKeys)
+    self.assertEqual(instance.val, { 'key_one': 'val_one', 'key_two': 'val_two' })
+
+  def test_decode_uncamelized_shape_keys(self):
+    @jsonclass(camelize_db_keys=False)
+    class MediumDecodeUncamelizeShapeKeys(MongoObject):
+      val: Dict[str, str] = types.shape({
+        'key_one': types.str,
+        'key_two': types.str
+      })
+    data = {
+      'val': {
+        'key_one': 'val_one',
+        'key_two': 'val_two'
+      }
+    }
+    instance = Decoder().decode_root(data, MediumDecodeUncamelizeShapeKeys)
+    self.assertEqual(instance.val, { 'key_one': 'val_one', 'key_two': 'val_two' })

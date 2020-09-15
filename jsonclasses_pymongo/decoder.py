@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Type, Optional, TypeVar, TYPE_CHECKING
 from datetime import date, datetime
 from jsonclasses import fields, Types, Config, Field, FieldType, FieldStorage, collection_argument_type_to_types
+from inflection import underscore, camelize
 from .utils import ref_field_key, ref_field_keys, ref_db_field_key, ref_db_field_keys
 from .coder import Coder
 if TYPE_CHECKING:
@@ -24,19 +25,21 @@ class Decoder(Coder):
   def decode_dict(self, value: Dict[str, Any], cls: Type[T], types: Types) -> Dict[str, Any]:
     if value is None:
       return None
+    config: Config = cls.config
     if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
       return None
     if types.field_description.field_storage == FieldStorage.LOCAL_KEY:
-      return { k: str(v) for k, v in value.items() }
+      return { underscore(k) if config.camelize_db_keys else k: str(v) for k, v in value.items() }
     else:
       item_types = types.field_description.dict_item_types
-      return { k: self.decode_item(value=v, cls=cls, types=item_types) for k, v in value.items() }
+      return { underscore(k) if config.camelize_db_keys else k: self.decode_item(value=v, cls=cls, types=item_types) for k, v in value.items() }
 
   def decode_shape(self, value: Dict[str, Any], cls: Type[T], types: Types) -> Dict[str, Any]:
+    config: Config = cls.config
     shape_types = types.field_description.shape_types
     retval = {}
     for k, item_types in shape_types.items():
-      retval[k] = self.decode_item(value=value[k], cls=cls, types=item_types)
+      retval[k] = self.decode_item(value=value[camelize(k, False) if config.camelize_db_keys else k], cls=cls, types=item_types)
     return retval
 
   def decode_instance(self, value: Dict[str, Any], cls: Type[T], types: Types) -> Any:
