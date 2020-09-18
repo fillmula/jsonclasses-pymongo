@@ -7,6 +7,7 @@ from bson.objectid import ObjectId
 from pymongo.collection import Collection
 from .coder import Coder
 from .utils import ref_field_key, ref_field_keys, ref_db_field_key, ref_db_field_keys
+from .write_command import WriteCommand
 
 if TYPE_CHECKING:
   from .mongo_object import MongoObject
@@ -21,7 +22,7 @@ class Encoder(Coder):
     types: Any,
     parent: Optional[T] = None,
     parent_linkedby: Optional[str] = None
-  ) -> Tuple[List[Any], List[Tuple(Dict[str, Any], Collection)]]:
+  ) -> Tuple[List[Any], List[WriteCommand]]:
     if value is None:
       return None
     item_types = collection_argument_type_to_types(types.field_description.list_item_types)
@@ -57,7 +58,7 @@ class Encoder(Coder):
     types: Any,
     parent: Optional[T] = None,
     parent_linkedby: Optional[str] = None
-  ) -> Tuple[Dict[str, Any], List[Tuple(Dict[str, Any], Collection)]]:
+  ) -> Tuple[Dict[str, Any], List[WriteCommand]]:
     if value is None:
       return None, []
     config: Config = owner.__class__.config
@@ -83,7 +84,7 @@ class Encoder(Coder):
     types: Any,
     parent: Optional[T] = None,
     parent_linkedby: Optional[str] = None
-  ) -> Tuple[Dict[str, Any], List[Tuple(Dict[str, Any], Collection)]]:
+  ) -> Tuple[Dict[str, Any], List[WriteCommand]]:
     if value is None:
       return None, []
     config: Config = owner.__class__.config
@@ -108,7 +109,7 @@ class Encoder(Coder):
     types: Optional[Any],
     parent: Optional[T] = None,
     parent_linkedby: Optional[str] = None
-  ) -> Tuple[Dict[str, Any], List[Tuple(Dict[str, Any], Collection)]]:
+  ) -> Tuple[Dict[str, Any], List[WriteCommand]]:
     if value is None:
       return None, []
     do_not_write_self = False
@@ -155,11 +156,14 @@ class Encoder(Coder):
             join_table_collection = this_field_class.db().get_collection(join_table_name)
             this_field_id = ObjectId(value.id)
             for item in encoded:
-              write_commands.append(({
+              write_commands.append(WriteCommand({
                 '_id': ObjectId(),
                 this_field_name: this_field_id,
                 other_field_name: ObjectId(item['_id'])
-              }, join_table_collection))
+              }, join_table_collection, {
+                this_field_name: this_field_id,
+                other_field_name: ObjectId(item['_id'])
+              }))
           write_commands.extend(commands)
         elif parent_linkedby == field.field_name:
           pass
@@ -205,7 +209,7 @@ class Encoder(Coder):
         dest[field.db_field_name] = item_value
         write_commands.extend(new_write_commands)
     if not do_not_write_self:
-      write_commands.append((dest, value.__class__.collection()))
+      write_commands.append(WriteCommand(dest, value.__class__.collection()))
     return dest, write_commands
 
   def encode_item(
@@ -215,7 +219,7 @@ class Encoder(Coder):
     types: Types,
     parent: Optional[T] = None,
     parent_linkedby: Optional[str] = None
-  ) -> Tuple[Any, List[Tuple(Dict[str, Any], Collection)]]:
+  ) -> Tuple[Any, List[WriteCommand]]:
     if value is None:
       return (value, [])
     if types.field_description.field_type == FieldType.DATE:
@@ -232,5 +236,5 @@ class Encoder(Coder):
       return value, []
 
   # return save commands
-  def encode_root(self, root: T) -> List[Tuple(Dict[str, Any], Collection)]:
+  def encode_root(self, root: T) -> List[WriteCommand]:
     return self.encode_instance(value=root, owner=root, types=None, parent=None, parent_linkedby=None)[1]

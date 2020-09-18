@@ -16,7 +16,7 @@ class TestEncoder(unittest.TestCase):
       val1: str
       val2: str
     simple_object = SimpleEncodeStr(val1='q', val2='e')
-    serialized = Encoder().encode_root(simple_object)[0][0]
+    serialized = Encoder().encode_root(simple_object)[0].object
     self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'val1', 'val2']))
     self.assertIsInstance(serialized['_id'], ObjectId)
     self.assertEqual(serialized['val1'], 'q')
@@ -28,7 +28,7 @@ class TestEncoder(unittest.TestCase):
       age: int
       length: int
     simple_object = SimpleEncodeInt(age=4, length=8)
-    serialized = Encoder().encode_root(simple_object)[0][0]
+    serialized = Encoder().encode_root(simple_object)[0].object
     self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'age', 'length']))
     self.assertIsInstance(serialized['_id'], ObjectId)
     self.assertEqual(serialized['age'], 4)
@@ -40,7 +40,7 @@ class TestEncoder(unittest.TestCase):
       width: float
       length: float
     simple_object = SimpleEncodeFloat(width=4.5, length=8.5)
-    serialized = Encoder().encode_root(simple_object)[0][0]
+    serialized = Encoder().encode_root(simple_object)[0].object
     self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'width', 'length']))
     self.assertIsInstance(serialized['_id'], ObjectId)
     self.assertEqual(serialized['width'], 4.5)
@@ -52,7 +52,7 @@ class TestEncoder(unittest.TestCase):
       b1: bool
       b2: bool
     simple_object = SimpleEncodeBool(b1=True, b2=False)
-    serialized = Encoder().encode_root(simple_object)[0][0]
+    serialized = Encoder().encode_root(simple_object)[0].object
     self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'b1', 'b2']))
     self.assertIsInstance(serialized['_id'], ObjectId)
     self.assertEqual(serialized['b1'], True)
@@ -64,7 +64,7 @@ class TestEncoder(unittest.TestCase):
       d1: date = date(2012, 9, 15)
       d2: date = date(2020, 9, 14)
     simple_object = SimpleEncodeDate()
-    serialized = Encoder().encode_root(simple_object)[0][0]
+    serialized = Encoder().encode_root(simple_object)[0].object
     self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'd1', 'd2']))
     self.assertIsInstance(serialized['_id'], ObjectId)
     self.assertEqual(serialized['d1'], datetime(2012, 9, 15, 0, 0, 0))
@@ -76,7 +76,7 @@ class TestEncoder(unittest.TestCase):
       d1: date = datetime(2012, 9, 15, 0, 0, 0)
       d2: date = datetime(2020, 9, 14, 0, 0, 0)
     simple_object = SimpleEncodeDatetime()
-    serialized = Encoder().encode_root(simple_object)[0][0]
+    serialized = Encoder().encode_root(simple_object)[0].object
     self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'd1', 'd2']))
     self.assertIsInstance(serialized['_id'], ObjectId)
     self.assertEqual(serialized['d1'], datetime(2012, 9, 15, 0, 0, 0))
@@ -89,7 +89,7 @@ class TestEncoder(unittest.TestCase):
       int_values: List[int]
       bool_values: List[bool]
     simple_object = SimpleEncodeScalarTypesList(str_values=['0', '1'], int_values=[0, 1], bool_values=[False, True])
-    serialized = Encoder().encode_root(simple_object)[0][0]
+    serialized = Encoder().encode_root(simple_object)[0].object
     self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'strValues', 'intValues', 'boolValues']))
     self.assertIsInstance(serialized['_id'], ObjectId)
     self.assertEqual(serialized['strValues'], ['0', '1'])
@@ -101,7 +101,7 @@ class TestEncoder(unittest.TestCase):
     class SimpleEncodeScalarTypesDict(MongoObject):
       str_values: Dict[str, str]
     simple_object = SimpleEncodeScalarTypesDict(str_values={ '0': 'zero', '1': 'one' })
-    serialized = Encoder().encode_root(simple_object)[0][0]
+    serialized = Encoder().encode_root(simple_object)[0].object
     self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'strValues']))
     self.assertIsInstance(serialized['_id'], ObjectId)
     self.assertEqual(serialized['strValues'], { '0': 'zero', '1': 'one' })
@@ -114,7 +114,7 @@ class TestEncoder(unittest.TestCase):
         '1': int
       })
     simple_object = SimpleEncodeScalarTypesShape(vals={ '0': 'zero', '1': 1 })
-    serialized = Encoder().encode_root(simple_object)[0][0]
+    serialized = Encoder().encode_root(simple_object)[0].object
     self.assertEqual(set(serialized.keys()), set(['_id', 'createdAt', 'updatedAt', 'vals']))
     self.assertIsInstance(serialized['_id'], ObjectId)
     self.assertEqual(serialized['vals'], { '0': 'zero', '1': 1 })
@@ -130,8 +130,8 @@ class TestEncoder(unittest.TestCase):
     commands = Encoder().encode_root(simple_object)
     self.assertEqual(len(commands), 1)
     command = commands[0]
-    self.assertIs(command[1], SimpleEncodeEmbeddedInstance.collection())
-    data = command[0]
+    self.assertIs(command.collection, SimpleEncodeEmbeddedInstance.collection())
+    data = command.object
     address = data['address']
     self.assertIsInstance(address['_id'], ObjectId)
     self.assertEqual(address['line1'], 'Flam Road')
@@ -147,8 +147,8 @@ class TestEncoder(unittest.TestCase):
     simple_object = SimpleEncodeForeignKeyInstance(address={ 'line1': 'Flam Road' })
     commands = Encoder().encode_root(simple_object)
     self.assertEqual(len(commands), 2)
-    address_data = commands[0][0]
-    owner_data = commands[1][0]
+    address_data = commands[0].object
+    owner_data = commands[1].object
     self.assertEqual(address_data['ownerId'], owner_data['_id'])
 
   def test_encode_local_key_instance(self):
@@ -162,8 +162,8 @@ class TestEncoder(unittest.TestCase):
     simple_object = SimpleEncodeLocalKeyInstance(address={ 'line1': 'Flam Road' })
     commands = Encoder().encode_root(simple_object)
     self.assertEqual(len(commands), 2)
-    address_data = commands[0][0]
-    owner_data = commands[1][0]
+    address_data = commands[0].object
+    owner_data = commands[1].object
     self.assertEqual(owner_data['addressId'], address_data['_id'])
 
   def test_encode_embedded_instance_list(self):
@@ -177,8 +177,8 @@ class TestEncoder(unittest.TestCase):
     commands = Encoder().encode_root(medium_object)
     self.assertEqual(len(commands), 1)
     command = commands[0]
-    self.assertIs(command[1], MediumEncodeEmbeddedInstance.collection())
-    data = command[0]
+    self.assertIs(command.collection, MediumEncodeEmbeddedInstance.collection())
+    data = command.object
     addresses = data['addresses']
     self.assertEqual(len(addresses), 2)
     self.assertEqual(addresses[0]['line1'], 'Flam Road')
@@ -195,9 +195,9 @@ class TestEncoder(unittest.TestCase):
     simple_object = MediumEncodeForeignKeyInstance(addresses=[{ 'line1': 'Flam Road' }, { 'line1': 'Klam Road' }])
     commands = Encoder().encode_root(simple_object)
     self.assertEqual(len(commands), 3)
-    address_0_data = commands[0][0]
-    address_1_data = commands[1][0]
-    owner_data = commands[2][0]
+    address_0_data = commands[0].object
+    address_1_data = commands[1].object
+    owner_data = commands[2].object
     self.assertEqual(address_0_data['ownerId'], owner_data['_id'])
     self.assertEqual(address_1_data['ownerId'], owner_data['_id'])
 
@@ -212,9 +212,9 @@ class TestEncoder(unittest.TestCase):
     simple_object = MediumEncodeLocalKeyInstance(addresses=[{ 'line1': 'Flam Road' }, { 'line1': 'Klam Road' }])
     commands = Encoder().encode_root(simple_object)
     self.assertEqual(len(commands), 3)
-    address_0_data = commands[0][0]
-    address_1_data = commands[1][0]
-    owner_data = commands[2][0]
+    address_0_data = commands[0].object
+    address_1_data = commands[1].object
+    owner_data = commands[2].object
     self.assertEqual(owner_data['addressesIds'], [address_0_data['_id'], address_1_data['_id']])
 
   def test_encode_dict_camelize_keys(self):
@@ -223,7 +223,7 @@ class TestEncoder(unittest.TestCase):
       val: Dict[str, str] = types.dictof(types.str)
     simple_object = MediumEncodeCamelizeDictKeys(val={ 'key_one': 'val_one', 'key_two': 'val_two' })
     commands = Encoder().encode_root(simple_object)
-    encoded_val = commands[0][0]['val']
+    encoded_val = commands[0].object['val']
     self.assertEqual(encoded_val, { 'keyOne': 'val_one', 'keyTwo': 'val_two' })
 
   def test_encode_dict_do_not_camelize_keys(self):
@@ -232,7 +232,7 @@ class TestEncoder(unittest.TestCase):
       val: Dict[str, str] = types.dictof(types.str)
     simple_object = MediumEncodeDoNotCamelizeDictKeys(val={ 'key_one': 'val_one', 'key_two': 'val_two' })
     commands = Encoder().encode_root(simple_object)
-    encoded_val = commands[0][0]['val']
+    encoded_val = commands[0].object['val']
     self.assertEqual(encoded_val, { 'key_one': 'val_one', 'key_two': 'val_two' })
 
   def test_encode_shape_camelize_keys(self):
@@ -244,7 +244,7 @@ class TestEncoder(unittest.TestCase):
       })
     simple_object = MediumEncodeCamelizeShapeKeys(val={ 'key_one': 'val_one', 'key_two': 'val_two' })
     commands = Encoder().encode_root(simple_object)
-    encoded_val = commands[0][0]['val']
+    encoded_val = commands[0].object['val']
     self.assertEqual(encoded_val, { 'keyOne': 'val_one', 'keyTwo': 'val_two' })
 
   def test_encode_shape_do_not_camelize_keys(self):
@@ -256,7 +256,7 @@ class TestEncoder(unittest.TestCase):
       })
     simple_object = MediumEncodeDoNotCamelizeShapeKeys(val={ 'key_one': 'val_one', 'key_two': 'val_two' })
     commands = Encoder().encode_root(simple_object)
-    encoded_val = commands[0][0]['val']
+    encoded_val = commands[0].object['val']
     self.assertEqual(encoded_val, { 'key_one': 'val_one', 'key_two': 'val_two' })
 
   def test_encoder_handle_many_to_many_with_linkedthru(self):

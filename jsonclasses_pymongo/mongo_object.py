@@ -10,7 +10,7 @@ from inflection import pluralize
 from .utils import default_db, ref_field_key, ref_field_keys, ref_db_field_key
 from .encoder import Encoder
 from .decoder import Decoder
-from.write_to_db import write_to_db
+from .write_command import WriteCommand
 
 T = TypeVar('T', bound='MongoObject')
 
@@ -73,7 +73,7 @@ class MongoObject(PersistableJSONObject):
     if not skip_validation:
       self.validate(all_fields=validate_all_fields)
     commands = Encoder().encode_root(self)
-    write_to_db(commands)
+    WriteCommand.write_commands_to_db(commands)
     return self
 
   @classmethod
