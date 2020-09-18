@@ -130,7 +130,7 @@ class TestEncoder(unittest.TestCase):
     commands = Encoder().encode_root(simple_object)
     self.assertEqual(len(commands), 1)
     command = commands[0]
-    self.assertIs(command[1], SimpleEncodeEmbeddedInstance)
+    self.assertIs(command[1], SimpleEncodeEmbeddedInstance.collection())
     data = command[0]
     address = data['address']
     self.assertIsInstance(address['_id'], ObjectId)
@@ -177,7 +177,7 @@ class TestEncoder(unittest.TestCase):
     commands = Encoder().encode_root(medium_object)
     self.assertEqual(len(commands), 1)
     command = commands[0]
-    self.assertIs(command[1], MediumEncodeEmbeddedInstance)
+    self.assertIs(command[1], MediumEncodeEmbeddedInstance.collection())
     data = command[0]
     addresses = data['addresses']
     self.assertEqual(len(addresses), 2)

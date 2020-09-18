@@ -7,5 +7,5 @@ if TYPE_CHECKING:
 
 def write_to_db(commands: List[Tuple(Dict[str, Any], Type[T])]):
   for command in commands:
-    data, Kls = command
-    Kls.collection().update_one({ '_id': data['_id'] }, { '$set': data }, upsert=True)
+    data, collection = command
+    collection.update_one({ '_id': data['_id'] }, { '$set': data }, upsert=True)
