@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, TypeVar, Tuple, Type, TYPE_CHECKING
 from datetime import date, datetime
 from jsonclasses import fields, Types, Config, FieldType, FieldStorage, collection_argument_type_to_types, FieldDescription
-from inflection import camelize
+from inflection import camelize, underscore
 from bson.objectid import ObjectId
 from pymongo.collection import Collection
 from .coder import Coder
@@ -42,7 +42,7 @@ class Encoder(Coder):
         parent_linkedby=parent_linkedby
       )
       if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
-        pass
+        dest.append(new_value)
       elif types.field_description.field_storage == FieldStorage.LOCAL_KEY:
         dest.append(new_value['_id'])
       else:
@@ -136,14 +136,33 @@ class Encoder(Coder):
         # not assign, but get a list of write commands
         value_at_field = getattr(value, field.field_name)
         if value_at_field is not None:
-          _encoded, commands = self.encode_list(
+          encoded, commands = self.encode_list(
             value=value_at_field,
             owner=owner,
             types=field.field_types,
             parent=value,
             parent_linkedby=field.field_types.field_description.foreign_key
           )
+          if self.is_join_table_field(field):
+            this_field_class = value.__class__
+            this_field_name = ref_db_field_key(this_field_class.__name__, this_field_class)
+            other_field_class = self.other_field_class_for_list_instance_type(field, this_field_class)
+            other_field_name = ref_db_field_key(
+              other_field_class.__name__,
+              other_field_class
+            )
+            join_table_name = self.join_table_name(this_field_class, other_field_class)
+            join_table_collection = this_field_class.db().get_collection(join_table_name)
+            this_field_id = ObjectId(value.id)
+            for item in encoded:
+              write_commands.append(({
+                '_id': ObjectId(),
+                this_field_name: this_field_id,
+                other_field_name: ObjectId(item['_id'])
+              }, join_table_collection))
           write_commands.extend(commands)
+        elif parent_linkedby == field.field_name:
+          pass
       elif self.is_local_key_reference_field(field):
         # assign a local key, and get write commands
         value_at_field = getattr(value, field.field_name)

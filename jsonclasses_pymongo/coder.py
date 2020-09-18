@@ -1,4 +1,9 @@
-from jsonclasses import Field, FieldType, FieldStorage
+from __future__ import annotations
+from typing import TypeVar, Type, TYPE_CHECKING
+from jsonclasses import Field, FieldType, FieldStorage, collection_argument_type_to_types
+if TYPE_CHECKING:
+  from .mongo_object import MongoObject
+  T = TypeVar('T', bound=MongoObject)
 
 class Coder():
 
@@ -28,3 +33,15 @@ class Coder():
 
   def is_local_keys_reference_field(self, field: Field) -> bool:
     return self.is_list_field(field) and self.is_local_key_storage(field)
+
+  def is_join_table_field(self, field: Field) -> bool:
+    return field.field_types.field_description.use_join_table is True
+
+  def other_field_class_for_list_instance_type(self, field: Field, sibling: Type[T]) -> Type[T]:
+    item_types = collection_argument_type_to_types(field.field_types.field_description.list_item_types, sibling)
+    return item_types.field_description.instance_types
+
+  def join_table_name(self, cls_a: Type[T], cls_b: Type[T]) -> str:
+    ca = cls_a.collection().name
+    cb = cls_b.collection().name
+    return ca + cb if ca < cb else cb + ca

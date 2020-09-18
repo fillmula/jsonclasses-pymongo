@@ -258,3 +258,16 @@ class TestEncoder(unittest.TestCase):
     commands = Encoder().encode_root(simple_object)
     encoded_val = commands[0][0]['val']
     self.assertEqual(encoded_val, { 'key_one': 'val_one', 'key_two': 'val_two' })
+
+  def test_encoder_handle_many_to_many_with_linkedthru(self):
+    @jsonclass
+    class DifficultEncodeLinkedThruA(MongoObject):
+      aval: str
+      blinks: List[DifficultEncodeLinkedThruB] = types.listof('DifficultEncodeLinkedThruB').linkedthru('alinks')
+    @jsonclass
+    class DifficultEncodeLinkedThruB(MongoObject):
+      bval: str
+      alinks: List[DifficultEncodeLinkedThruA] = types.listof('DifficultEncodeLinkedThruA').linkedthru('blinks')
+    instance_a = DifficultEncodeLinkedThruA(aval='A', blinks=[{ 'bval': 'B1' }, { 'bval': 'B2' }])
+    commands = Encoder().encode_root(instance_a)
+    print(commands)
