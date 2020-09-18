@@ -152,7 +152,12 @@ class Encoder(Coder):
               other_field_class.__name__,
               other_field_class
             )
-            join_table_name = self.join_table_name(this_field_class, other_field_class)
+            join_table_name = self.join_table_name(
+              this_field_class,
+              field.field_name,
+              other_field_class,
+              field.field_types.field_description.foreign_key
+            )
             join_table_collection = this_field_class.db().get_collection(join_table_name)
             this_field_id = ObjectId(value.id)
             for item in encoded:
