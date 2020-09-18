@@ -53,10 +53,49 @@ class MongoObject(PersistableJSONObject):
         Cls = collection_argument_type_to_types(item_types.field_description.instance_types, self.__class__)
         setattr(self, field.field_name, Cls.find({ '_id': { '$in': [ObjectId(id) for id in ref_ids] }}))
     elif fd.field_type == FieldType.LIST and fd.field_storage == FieldStorage.FOREIGN_KEY:
-      foreign_key_name = ref_db_field_key(fd.foreign_key, self.__class__)
-      item_types = collection_argument_type_to_types(fd.list_item_types, self.__class__)
-      Cls = collection_argument_type_to_types(item_types.field_description.instance_types, self.__class__).field_description.instance_types
-      setattr(self, field.field_name, Cls.find({ foreign_key_name: ObjectId(self.id) }))
+      if fd.use_join_table:
+        decoder = Decoder()
+        self_class = self.__class__
+        other_class = decoder.other_field_class_for_list_instance_type(field, self.__class__)
+        join_table_name = decoder.join_table_name(
+          self_class,
+          field.field_name,
+          other_class,
+          fd.foreign_key
+        )
+        jt_collection = self_class.db().get_collection(join_table_name)
+        cursor = jt_collection.aggregate([
+          {
+            '$match': {
+              ref_db_field_key(self_class.__name__, self_class): ObjectId(self.id)
+            }
+          },
+          {
+            '$lookup': {
+              'from': other_class.collection().name,
+              'localField': ref_db_field_key(other_class.__name__, other_class),
+              'foreignField': '_id',
+              'as': 'result'
+            }
+          },
+          {
+            '$project': {
+              'result': { '$arrayElemAt': ['$result', 0] }
+            }
+          },
+          {
+            '$replaceRoot': {
+              'newRoot': '$result'
+            }
+          }
+        ])
+        results = [decoder.decode_root(doc, other_class) for doc in cursor]
+        setattr(self, field.field_name, results)
+      else:
+        foreign_key_name = ref_db_field_key(fd.foreign_key, self.__class__)
+        item_types = collection_argument_type_to_types(fd.list_item_types, self.__class__)
+        Cls = collection_argument_type_to_types(item_types.field_description.instance_types, self.__class__).field_description.instance_types
+        setattr(self, field.field_name, Cls.find({ foreign_key_name: ObjectId(self.id) }))
     else:
       pass
 

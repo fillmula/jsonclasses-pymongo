@@ -12,8 +12,7 @@ class WriteCommand:
   def __init__(self, object: Dict[str, Any], collection: Collection, matcher: Optional[Dict[str, Any]] = None):
     self.object = object
     self.collection = collection
-    if matcher is None:
-      self.matcher = { '_id': object['_id'] }
+    self.matcher = matcher if matcher is not None else { '_id': object['_id'] }
 
   def write_to_db(self):
     self.collection.update_one(self.matcher, { '$set': self.object }, upsert=True)
