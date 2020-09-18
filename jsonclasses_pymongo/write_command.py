@@ -17,3 +17,12 @@ class WriteCommand:
 
   def write_to_db(self):
     self.collection.update_one(self.matcher, { '$set': self.object }, upsert=True)
+
+  def __repr__(self) -> str:
+    return f'<WriteCommand(\'{self.collection.name}\') {self.object}>'
+
+  def __eq__(self, other) -> bool:
+    if type(other) is not WriteCommand:
+      return False
+    other_command: WriteCommand = other
+    return self.object == other_command.object and self.collection == other_command.collection and self.matcher == other_command.matcher
