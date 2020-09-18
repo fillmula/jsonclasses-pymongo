@@ -5,6 +5,15 @@ from dotenv import load_dotenv
 from jsonclasses import jsonclass, types
 from jsonclasses_pymongo import MongoObject
 
+@jsonclass
+class Product(MongoObject):
+  name: str
+  customers: List[Customer] = types.listof('Customer').linkedthru('products')
+@jsonclass
+class Customer(MongoObject):
+  name: str
+  products: List[Product] = types.listof('Product').linkedthru('customers')
+
 class TestMongoObjectSave(unittest.TestCase):
 
   def setUp(self):
@@ -43,3 +52,22 @@ class TestMongoObjectSave(unittest.TestCase):
     self.assertEqual(returned_post_0.title, author.posts[0].title)
     returned_post_0_with_author = TestPost.find_by_id(author.posts[0].id).include('author')
     self.assertEqual(returned_post_0_with_author.author.name, author.name)
+
+  def test_add_relationship_to_db(self):
+    customer = Customer(name='M. Wong').save()
+    product = Product(name='Food').save()
+    customer.add_to('products', product)
+    customer.include('products')
+    self.assertEqual(len(customer.products), 1)
+    self.assertEqual(customer.products[0].name, 'Food')
+
+  def test_remove_relationship_from_db(self):
+    customer = Customer(name='M. Wong').save()
+    product = Product(name='Food').save()
+    customer.add_to('products', product)
+    customer.include('products')
+    self.assertEqual(len(customer.products), 1)
+    self.assertEqual(customer.products[0].name, 'Food')
+    customer.remove_from('products', product)
+    customer.include('products')
+    self.assertEqual(len(customer.products), 0)

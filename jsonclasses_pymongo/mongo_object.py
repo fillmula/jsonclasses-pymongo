@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Sequence, TypeVar, Dict, Any, Type
+from typing import Optional, Sequence, TypeVar, Dict, Any, Union, Type
 from jsonclasses import jsonclass, types, PersistableJSONObject, Types
 from jsonclasses import ObjectNotFoundException, fields, FieldType, FieldStorage
 from jsonclasses import collection_argument_type_to_types
@@ -113,6 +113,66 @@ class MongoObject(PersistableJSONObject):
       self.validate(all_fields=validate_all_fields)
     commands = Encoder().encode_root(self)
     WriteCommand.write_commands_to_db(commands)
+    return self
+
+  def add_to(self: T, list_field_name: str, *args: Union[MongoObject, ObjectId, str]) -> T:
+    field = next(field for field in fields(self) if field.field_name == list_field_name)
+    decoder = Decoder()
+    if not decoder.is_join_table_field(field):
+      return self
+    write_commands = []
+    for arg in args:
+      object_id = arg.id if isinstance(arg, MongoObject) else arg
+      if type(object_id) is str:
+        object_id = ObjectId(object_id)
+      other_class = decoder.other_field_class_for_list_instance_type(field, self.__class__)
+      join_table_name = decoder.join_table_name(
+        self.__class__,
+        field.field_name,
+        other_class,
+        field.field_types.field_description.foreign_key
+      )
+      join_table_collection = self.__class__.db().get_collection(join_table_name)
+      this_field_name = ref_db_field_key(self.__class__.__name__, self.__class__)
+      other_field_name = ref_db_field_key(other_class.__name__, other_class)
+      write_commands.append(WriteCommand({
+        this_field_name: ObjectId(self.id),
+        other_field_name: object_id
+      }, join_table_collection, {
+        this_field_name: ObjectId(self.id),
+        other_field_name: object_id
+      }))
+    WriteCommand.write_commands_to_db(write_commands)
+    return self
+
+  def remove_from(self: T, list_field_name: str, *args: Union[MongoObject, ObjectId]) -> T:
+    field = next(field for field in fields(self) if field.field_name == list_field_name)
+    decoder = Decoder()
+    if not decoder.is_join_table_field(field):
+      return self
+    write_commands = []
+    for arg in args:
+      object_id = arg.id if isinstance(arg, MongoObject) else arg
+      if type(object_id) is str:
+        object_id = ObjectId(object_id)
+      other_class = decoder.other_field_class_for_list_instance_type(field, self.__class__)
+      join_table_name = decoder.join_table_name(
+        self.__class__,
+        field.field_name,
+        other_class,
+        field.field_types.field_description.foreign_key
+      )
+      join_table_collection = self.__class__.db().get_collection(join_table_name)
+      this_field_name = ref_db_field_key(self.__class__.__name__, self.__class__)
+      other_field_name = ref_db_field_key(other_class.__name__, other_class)
+      write_commands.append(WriteCommand({
+        this_field_name: ObjectId(self.id),
+        other_field_name: object_id
+      }, join_table_collection, {
+        this_field_name: ObjectId(self.id),
+        other_field_name: object_id
+      }))
+    WriteCommand.remove_commands_from_db(write_commands)
     return self
 
   @classmethod

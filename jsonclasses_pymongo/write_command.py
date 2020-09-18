@@ -9,6 +9,11 @@ class WriteCommand:
     for command in commands:
       command.write_to_db()
 
+  @classmethod
+  def remove_commands_from_db(cls, commands: List[WriteCommand]):
+    for command in commands:
+      command.delete_from_db()
+
   def __init__(self, object: Dict[str, Any], collection: Collection, matcher: Optional[Dict[str, Any]] = None):
     self.object = object
     self.collection = collection
@@ -16,6 +21,9 @@ class WriteCommand:
 
   def write_to_db(self):
     self.collection.update_one(self.matcher, { '$set': self.object }, upsert=True)
+
+  def delete_from_db(self):
+    self.collection.delete_one(self.matcher)
 
   def __repr__(self) -> str:
     return f'<WriteCommand(\'{self.collection.name}\') {self.object}>'
