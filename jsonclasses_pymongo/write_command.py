@@ -15,7 +15,10 @@ class WriteCommand:
         for command in commands:
             command.delete_from_db()
 
-    def __init__(self, object: Dict[str, Any], collection: Collection, matcher: Optional[Dict[str, Any]] = None):
+    def __init__(self,
+                 object: Dict[str, Any],
+                 collection: Collection,
+                 matcher: Optional[Dict[str, Any]] = None):
         self.object = object
         self.collection = collection
         self.matcher = matcher if matcher is not None else {

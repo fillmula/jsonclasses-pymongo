@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Optional, Sequence, TypeVar, Dict, Any, Union, Type
-from jsonclasses import jsonclass, types, PersistableJSONObject, Types
-from jsonclasses import ObjectNotFoundException, fields, FieldType, FieldStorage
+from jsonclasses import jsonclass, types, PersistableJSONObject
+from jsonclasses import (ObjectNotFoundException, fields, FieldType,
+                         FieldStorage)
 from jsonclasses import collection_argument_type_to_types
 from pymongo.collection import Collection
 from pymongo.database import Database
@@ -17,9 +18,9 @@ T = TypeVar('T', bound='MongoObject')
 
 @jsonclass
 class MongoObject(PersistableJSONObject):
-    '''Abstract and base class for jsonclasses_pymongo objects. You should define
-    subclasses of this class to interact with mongoDB collections.
-    '''
+    """Abstract and base class for jsonclasses_pymongo objects. You should
+    define subclasses of this class to interact with mongoDB collections.
+    """
 
     id: str = types.str.readonly.default(lambda: str(ObjectId())).required
 
@@ -32,35 +33,44 @@ class MongoObject(PersistableJSONObject):
         try:
             return self.__collection
         except AttributeError:
-            self.__collection = self.db().get_collection(pluralize(self.__name__).lower())
+            self.__collection = self.db().get_collection(
+                                          pluralize(self.__name__).lower())
             return self.__collection
 
     def _include(self, key_path: str):
         field = next(field for field in fields(self)
                      if field.field_name == key_path)
         fd = field.field_types.field_description
-        if fd.field_type == FieldType.INSTANCE and fd.field_storage == FieldStorage.LOCAL_KEY:
+        if (fd.field_type == FieldType.INSTANCE and
+                fd.field_storage == FieldStorage.LOCAL_KEY):
             ref_id = getattr(self, ref_field_key(field.field_name))
             if ref_id is not None:
                 Cls = collection_argument_type_to_types(
-                    fd.instance_types, graph_sibling=self.__class__).field_description.instance_types
+                    fd.instance_types,
+                    graph_sibling=self.__class__
+                    ).field_description.instance_types
                 setattr(self, field.field_name, Cls.find_by_id(ref_id))
-        elif fd.field_type == FieldType.INSTANCE and fd.field_storage == FieldStorage.FOREIGN_KEY:
+        elif (fd.field_type == FieldType.INSTANCE and
+                fd.field_storage == FieldStorage.FOREIGN_KEY):
             foreign_key_name = ref_db_field_key(fd.foreign_key, self.__class__)
             Cls = collection_argument_type_to_types(
-                fd.instance_types, graph_sibling=self.__class__).field_description.instance_types
+                fd.instance_types,
+                graph_sibling=self.__class__).field_description.instance_types
             setattr(self, field.field_name, Cls.find_one(
                 {foreign_key_name: ObjectId(self.id)}))
-        elif fd.field_type == FieldType.LIST and fd.field_storage == FieldStorage.LOCAL_KEY:
+        elif (fd.field_type == FieldType.LIST and
+                fd.field_storage == FieldStorage.LOCAL_KEY):
             ref_ids = getattr(self, ref_field_keys(field.field_name))
             if ref_ids is not None:
                 item_types = collection_argument_type_to_types(
                     fd.list_item_types, self.__class__)
                 Cls = collection_argument_type_to_types(
-                    item_types.field_description.instance_types, self.__class__)
+                    item_types.field_description.instance_types,
+                    self.__class__)
                 setattr(self, field.field_name, Cls.find(
                     {'_id': {'$in': [ObjectId(id) for id in ref_ids]}}))
-        elif fd.field_type == FieldType.LIST and fd.field_storage == FieldStorage.FOREIGN_KEY:
+        elif (fd.field_type == FieldType.LIST and
+                fd.field_storage == FieldStorage.FOREIGN_KEY):
             if fd.use_join_table:
                 decoder = Decoder()
                 self_class = self.__class__
@@ -76,13 +86,16 @@ class MongoObject(PersistableJSONObject):
                 cursor = jt_collection.aggregate([
                     {
                         '$match': {
-                            ref_db_field_key(self_class.__name__, self_class): ObjectId(self.id)
+                            ref_db_field_key(self_class.__name__, self_class):
+                                ObjectId(self.id)
                         }
                     },
                     {
                         '$lookup': {
                             'from': other_class.collection().name,
-                            'localField': ref_db_field_key(other_class.__name__, other_class),
+                            'localField': ref_db_field_key(
+                                    other_class.__name__,
+                                    other_class),
                             'foreignField': '_id',
                             'as': 'result'
                         }
@@ -107,7 +120,8 @@ class MongoObject(PersistableJSONObject):
                 item_types = collection_argument_type_to_types(
                     fd.list_item_types, self.__class__)
                 Cls = collection_argument_type_to_types(
-                    item_types.field_description.instance_types, self.__class__).field_description.instance_types
+                    item_types.field_description.instance_types,
+                    self.__class__).field_description.instance_types
                 setattr(self, field.field_name, Cls.find(
                     {foreign_key_name: ObjectId(self.id)}))
         else:
@@ -129,7 +143,9 @@ class MongoObject(PersistableJSONObject):
         WriteCommand.write_commands_to_db(commands)
         return self
 
-    def add_to(self: T, list_field_name: str, *args: Union[MongoObject, ObjectId, str]) -> T:
+    def add_to(self: T,
+               list_field_name: str,
+               *args: Union[MongoObject, ObjectId, str]) -> T:
         field = next(field for field in fields(self)
                      if field.field_name == list_field_name)
         decoder = Decoder()
@@ -148,7 +164,8 @@ class MongoObject(PersistableJSONObject):
                 other_class,
                 field.field_types.field_description.foreign_key
             )
-            join_table_collection = self.__class__.db().get_collection(join_table_name)
+            join_table_collection = self.__class__.db().get_collection(
+                                        join_table_name)
             this_field_name = ref_db_field_key(
                 self.__class__.__name__, self.__class__)
             other_field_name = ref_db_field_key(
@@ -163,7 +180,9 @@ class MongoObject(PersistableJSONObject):
         WriteCommand.write_commands_to_db(write_commands)
         return self
 
-    def remove_from(self: T, list_field_name: str, *args: Union[MongoObject, ObjectId]) -> T:
+    def remove_from(self: T,
+                    list_field_name: str,
+                    *args: Union[MongoObject, ObjectId]) -> T:
         field = next(field for field in fields(self)
                      if field.field_name == list_field_name)
         decoder = Decoder()
@@ -182,7 +201,8 @@ class MongoObject(PersistableJSONObject):
                 other_class,
                 field.field_types.field_description.foreign_key
             )
-            join_table_collection = self.__class__.db().get_collection(join_table_name)
+            join_table_collection = self.__class__.db().get_collection(
+                                            join_table_name)
             this_field_name = ref_db_field_key(
                 self.__class__.__name__, self.__class__)
             other_field_name = ref_db_field_key(
@@ -237,7 +257,10 @@ class MongoObject(PersistableJSONObject):
             return callable()
 
     @classmethod
-    def find_one_or_create(self: Type[T], input: Dict[str, Any], *args, **kwargs) -> T:
+    def find_one_or_create(self: Type[T],
+                           input: Dict[str, Any],
+                           *args,
+                           **kwargs) -> T:
         try:
             return self.find_one(self, *args, **kwargs)
         except ObjectNotFoundException:
@@ -247,7 +270,9 @@ class MongoObject(PersistableJSONObject):
     def find(self: Type[T], *args, **kwargs) -> Sequence[T]:
         cursor = self.collection().find(*args, **kwargs)
         retval = [doc for doc in cursor]
-        return list(map(lambda mongo_object: Decoder().decode_root(mongo_object, self), retval))
+        return list(
+            map(lambda mongo_object: Decoder().decode_root(mongo_object, self),
+                retval))
 
     @classmethod
     def delete_by_id(self, id: str) -> None:
@@ -261,5 +286,5 @@ class MongoObject(PersistableJSONObject):
     @classmethod
     def delete(self, *args, **kwargs) -> int:
         if len(args) == 0:
-            args = [{}]
+            args = ({},)
         return self.collection().delete_many(*args, **kwargs).deleted_count

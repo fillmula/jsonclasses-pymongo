@@ -140,7 +140,8 @@ class Encoder(Coder):
                         owner=owner,
                         types=field.field_types,
                         parent=value,
-                        parent_linkedby=field.field_types.field_description.foreign_key  # noqa: E501
+                        parent_linkedby=(field.field_types
+                                         .field_description.foreign_key)
                     )
                     write_commands.extend(commands)
             elif self.is_foreign_keys_reference_field(field):
@@ -152,7 +153,8 @@ class Encoder(Coder):
                         owner=owner,
                         types=field.field_types,
                         parent=value,
-                        parent_linkedby=field.field_types.field_description.foreign_key  # noqa: E501
+                        parent_linkedby=(field.field_types
+                                         .field_description.foreign_key)
                     )
                     if self.is_join_table_field(field):
                         this_field_class = value.__class__
@@ -170,7 +172,8 @@ class Encoder(Coder):
                             other_field_class,
                             field.field_types.field_description.foreign_key
                         )
-                        join_table_collection = this_field_class.db().get_collection(join_table_name)  # noqa: E501
+                        join_table_collection = (this_field_class.db()
+                                                 .get_collection(join_table_name))  # noqa: E501
                         this_field_id = ObjectId(value.id)
                         assert encoded is not None
                         for item in encoded:
@@ -191,17 +194,19 @@ class Encoder(Coder):
                 if value_at_field is not None:
                     setattr(value, ref_field_key(
                         field.field_name), value_at_field.id)
-                    encoded, commands = self.encode_instance(
+                    encoded_i, commands = self.encode_instance(
                         value=value_at_field,
                         owner=owner,
                         types=field.field_types,
                         parent=value,
                         parent_linkedby=field.field_types.field_description.foreign_key  # noqa: E501
                     )
+                    assert encoded_i is not None
                     dest[ref_db_field_key(
-                        field.field_name, value.__class__)] = encoded['_id']
+                        field.field_name, value.__class__)] = encoded_i['_id']
                     write_commands.extend(commands)
                 elif parent_linkedby == field.field_name:
+                    assert parent is not None
                     setattr(value, ref_field_key(field.field_name), parent.id)
                     dest[ref_db_field_key(field.field_name, value.__class__)] = ObjectId(  # noqa: E501
                         parent.id)
