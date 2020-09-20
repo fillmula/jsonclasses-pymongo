@@ -8,7 +8,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 setup(name='jsonclasses-pymongo',
-      version='0.7.0',
+      version='0.7.1',
       description='jsonclasses integration with pymongo',
       long_description=README,
       long_description_content_type="text/markdown",
@@ -16,6 +16,7 @@ setup(name='jsonclasses-pymongo',
       author_email='wiosoftvictor@163.com',
       license='MIT',
       packages=find_packages(exclude=("tests")),
+      package_data={'jsonclasses_pymongo': ['py.typed']},
       zip_safe=False,
       url='https://github.com/Wiosoft-Crafts/jsonclasses-pymongo',
       include_package_data=True,
