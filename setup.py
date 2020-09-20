@@ -8,16 +8,15 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 setup(name='jsonclasses-pymongo',
-  version='0.6.8',
-  description='jsonclasses integration with pymongo',
-  long_description=README,
-  long_description_content_type="text/markdown",
-  author='Wiosoft Crafts',
-  author_email='wiosoftvictor@163.com',
-  license='MIT',
-  packages=find_packages(exclude=("tests")),
-  zip_safe=False,
-  url='https://github.com/Wiosoft-Crafts/jsonclasses-pymongo',
-  include_package_data=True,
-  python_requires='>=3.8'
-)
+      version='0.7.0',
+      description='jsonclasses integration with pymongo',
+      long_description=README,
+      long_description_content_type="text/markdown",
+      author='Wiosoft Crafts',
+      author_email='wiosoftvictor@163.com',
+      license='MIT',
+      packages=find_packages(exclude=("tests")),
+      zip_safe=False,
+      url='https://github.com/Wiosoft-Crafts/jsonclasses-pymongo',
+      include_package_data=True,
+      python_requires='>=3.8')
