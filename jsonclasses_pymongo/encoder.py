@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Optional, TypeVar, Tuple, TYPE_CHECKING
-from datetime import datetime
+from typing import (List, Dict, Any, Optional, TypeVar, Tuple, cast,
+                    TYPE_CHECKING)
 from jsonclasses import (fields, Types, Config, FieldType, FieldStorage,
-                         collection_argument_type_to_types)
+                         resolve_types)
+from datetime import datetime
 from inflection import camelize
 from bson.objectid import ObjectId
 from .coder import Coder
@@ -27,7 +28,7 @@ class Encoder(Coder):
     ) -> Tuple[Optional[List[Any]], List[WriteCommand]]:
         if value is None:
             return None, []
-        item_types = collection_argument_type_to_types(
+        item_types = resolve_types(
             types.field_description.list_item_types)
         if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
             item_types = item_types.linkedby(
@@ -68,7 +69,7 @@ class Encoder(Coder):
         if value is None:
             return None, []
         config: Config = owner.__class__.config
-        item_types = collection_argument_type_to_types(
+        item_types = resolve_types(
             types.field_description.dict_item_types)
         dest = {}
         write_commands = []
@@ -102,7 +103,7 @@ class Encoder(Coder):
             new_value, commands = self.encode_item(
                 value=item,
                 owner=owner,
-                types=collection_argument_type_to_types(
+                types=resolve_types(
                     types.field_description.shape_types[key]),
                 parent=parent,
                 parent_linkedby=parent_linkedby
@@ -170,7 +171,9 @@ class Encoder(Coder):
                             this_field_class,
                             field.field_name,
                             other_field_class,
-                            field.field_types.field_description.foreign_key
+                            cast(str,
+                                 field.field_types.
+                                 field_description.foreign_key)
                         )
                         join_table_collection = (this_field_class.db()
                                                  .get_collection(join_table_name))  # noqa: E501

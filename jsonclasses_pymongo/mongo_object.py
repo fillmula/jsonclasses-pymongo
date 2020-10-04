@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import Optional, Sequence, TypeVar, Dict, Any, Union, Type
-from jsonclasses import jsonclass, types, PersistableJSONObject
-from jsonclasses import (ObjectNotFoundException, fields, FieldType,
-                         FieldStorage)
-from jsonclasses import collection_argument_type_to_types
+from typing import (ClassVar, Optional, Sequence, TypeVar, Dict, Any, Union,
+                    Type, cast)
+from jsonclasses import (jsonclass, types, JSONObject,
+                         fields, FieldType, FieldStorage,
+                         resolve_types, ObjectNotFoundException)
+from datetime import datetime
 from pymongo.collection import Collection
 from pymongo.database import Database
 from bson.objectid import ObjectId
@@ -17,25 +18,44 @@ T = TypeVar('T', bound='MongoObject')
 
 
 @jsonclass
-class MongoObject(PersistableJSONObject):
-    """Abstract and base class for jsonclasses_pymongo objects. You should
+class MongoObject(JSONObject):
+    """Abstract and base class for JSON Classes Pymongo objects. You should
     define subclasses of this class to interact with mongoDB collections.
     """
 
     id: str = types.str.readonly.default(lambda: str(ObjectId())).required
+    """The id string of the object. This field is readonly. A user must not set
+    an object's id through web request bodies.
+    """
+
+    created_at: datetime = (types.datetime.readonly.default(datetime.now)
+                            .required)
+    """This field records when this object is created. The value of this field
+    is managed internally thus cannot be updated externally with web request
+    bodies.
+    """
+
+    updated_at: datetime = (types.datetime.readonly.default(datetime.now)
+                            .required)
+    """This field records when this object is last updated. The value of this
+    field is managed internally thus cannot be updated externally with web
+    request bodies.
+    """
+
+    _collection: ClassVar[Collection]
 
     @classmethod
-    def db(self) -> Database:
+    def db(cls) -> Database:
         return default_db()
 
     @classmethod
-    def collection(self) -> Collection:
+    def collection(cls) -> Collection:
         try:
-            return self.__collection
+            return cls._collection
         except AttributeError:
-            self.__collection = self.db().get_collection(
-                                          pluralize(self.__name__).lower())
-            return self.__collection
+            cls._collection = cls.db().get_collection(
+                                    pluralize(cls.__name__).lower())
+            return cls._collection
 
     def _include(self, key_path: str):
         field = next(field for field in fields(self)
@@ -45,28 +65,29 @@ class MongoObject(PersistableJSONObject):
                 fd.field_storage == FieldStorage.LOCAL_KEY):
             ref_id = getattr(self, ref_field_key(field.field_name))
             if ref_id is not None:
-                Cls = collection_argument_type_to_types(
-                    fd.instance_types,
-                    graph_sibling=self.__class__
-                    ).field_description.instance_types
+                Cls = cast(Type[MongoObject], resolve_types(
+                        fd.instance_types,
+                        graph_sibling=self.__class__
+                    ).field_description.instance_types)
                 setattr(self, field.field_name, Cls.find_by_id(ref_id))
         elif (fd.field_type == FieldType.INSTANCE and
                 fd.field_storage == FieldStorage.FOREIGN_KEY):
-            foreign_key_name = ref_db_field_key(fd.foreign_key, self.__class__)
-            Cls = collection_argument_type_to_types(
+            foreign_key_name = ref_db_field_key(cast(str, fd.foreign_key),
+                                                self.__class__)
+            Cls = cast(Type[MongoObject], resolve_types(
                 fd.instance_types,
-                graph_sibling=self.__class__).field_description.instance_types
+                graph_sibling=self.__class__).field_description.instance_types)
             setattr(self, field.field_name, Cls.find_one(
                 {foreign_key_name: ObjectId(self.id)}))
         elif (fd.field_type == FieldType.LIST and
                 fd.field_storage == FieldStorage.LOCAL_KEY):
             ref_ids = getattr(self, ref_field_keys(field.field_name))
             if ref_ids is not None:
-                item_types = collection_argument_type_to_types(
+                item_types = resolve_types(
                     fd.list_item_types, self.__class__)
-                Cls = collection_argument_type_to_types(
+                Cls = cast(Type[MongoObject], resolve_types(
                     item_types.field_description.instance_types,
-                    self.__class__)
+                    self.__class__))
                 setattr(self, field.field_name, Cls.find(
                     {'_id': {'$in': [ObjectId(id) for id in ref_ids]}}))
         elif (fd.field_type == FieldType.LIST and
@@ -80,7 +101,7 @@ class MongoObject(PersistableJSONObject):
                     self_class,
                     field.field_name,
                     other_class,
-                    fd.foreign_key
+                    cast(str, fd.foreign_key)
                 )
                 jt_collection = self_class.db().get_collection(join_table_name)
                 cursor = jt_collection.aggregate([
@@ -116,12 +137,12 @@ class MongoObject(PersistableJSONObject):
                 setattr(self, field.field_name, results)
             else:
                 foreign_key_name = ref_db_field_key(
-                    fd.foreign_key, self.__class__)
-                item_types = collection_argument_type_to_types(
+                    cast(str, fd.foreign_key), self.__class__)
+                item_types = resolve_types(
                     fd.list_item_types, self.__class__)
-                Cls = collection_argument_type_to_types(
+                Cls = cast(Type[MongoObject], resolve_types(
                     item_types.field_description.instance_types,
-                    self.__class__).field_description.instance_types
+                    self.__class__).field_description.instance_types)
                 setattr(self, field.field_name, Cls.find(
                     {foreign_key_name: ObjectId(self.id)}))
         else:
@@ -162,7 +183,7 @@ class MongoObject(PersistableJSONObject):
                 self.__class__,
                 field.field_name,
                 other_class,
-                field.field_types.field_description.foreign_key
+                cast(str, field.field_types.field_description.foreign_key)
             )
             join_table_collection = self.__class__.db().get_collection(
                                         join_table_name)
@@ -199,7 +220,7 @@ class MongoObject(PersistableJSONObject):
                 self.__class__,
                 field.field_name,
                 other_class,
-                field.field_types.field_description.foreign_key
+                cast(str, field.field_types.field_description.foreign_key)
             )
             join_table_collection = self.__class__.db().get_collection(
                                             join_table_name)
