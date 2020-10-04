@@ -67,6 +67,7 @@ class Decoder(Coder):
                         value: Dict[str, Any],
                         cls: Type[T],
                         types: Types) -> Any:
+        from .mongo_object import MongoObject
         if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
             return None
         elif types.field_description.field_storage == FieldStorage.LOCAL_KEY:
@@ -101,7 +102,7 @@ class Decoder(Coder):
                     cls: Type[T]) -> T:
         dest = cls()
         for field in fields(cls):
-            if self.is_id_field(field):
+            if self.is_id_field(field, cls):
                 setattr(dest, 'id', str(root.get('_id')))
             elif self.is_foreign_key_storage(field):
                 pass

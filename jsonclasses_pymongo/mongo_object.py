@@ -95,7 +95,7 @@ class MongoObject(JSONObject):
             if fd.use_join_table:
                 decoder = Decoder()
                 self_class = self.__class__
-                other_class = decoder.other_field_class_for_list_instance_type(
+                other_class = decoder.list_instance_type(
                     field, self.__class__)
                 join_table_name = decoder.join_table_name(
                     self_class,
@@ -177,7 +177,7 @@ class MongoObject(JSONObject):
             object_id = arg.id if isinstance(arg, MongoObject) else arg
             if type(object_id) is str:
                 object_id = ObjectId(object_id)
-            other_class = decoder.other_field_class_for_list_instance_type(
+            other_class = decoder.list_instance_type(
                 field, self.__class__)
             join_table_name = decoder.join_table_name(
                 self.__class__,
@@ -214,7 +214,7 @@ class MongoObject(JSONObject):
             object_id = arg.id if isinstance(arg, MongoObject) else arg
             if type(object_id) is str:
                 object_id = ObjectId(object_id)
-            other_class = decoder.other_field_class_for_list_instance_type(
+            other_class = decoder.list_instance_type(
                 field, self.__class__)
             join_table_name = decoder.join_table_name(
                 self.__class__,

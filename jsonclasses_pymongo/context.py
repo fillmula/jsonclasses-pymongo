@@ -1,4 +1,5 @@
 """This module defines encoding and decoding context objects."""
+from __future__ import annotations
 from typing import NamedTuple, Any, List, Dict, Union, TYPE_CHECKING
 from jsonclasses import Types, LookupMap
 if TYPE_CHECKING:

@@ -1,16 +1,16 @@
 from __future__ import annotations
-from typing import TypeVar, Type, cast, TYPE_CHECKING
+from typing import Type, cast, TYPE_CHECKING
 from jsonclasses import (Field, FieldType, FieldStorage, resolve_types)
 from inflection import camelize
 if TYPE_CHECKING:
     from .mongo_object import MongoObject
-    T = TypeVar('T', bound=MongoObject)
 
 
 class Coder():
 
-    def is_id_field(self, field: Field) -> bool:
-        return field.field_name == 'id'
+    def is_id_field(self, field: Field, cls: Type[MongoObject]) -> bool:
+        pk = cast(str, cls.config.primary_key)
+        return field.field_name == pk
 
     def is_instance_field(self, field: Field) -> bool:
         return field.field_description.field_type == FieldType.INSTANCE
@@ -44,16 +44,20 @@ class Coder():
     def is_join_table_field(self, field: Field) -> bool:
         return field.field_types.field_description.use_join_table is True
 
-    def other_field_class_for_list_instance_type(
-        self, field: Field, sibling: Type[T]
-    ) -> Type[T]:
-        item_types = resolve_types(
-            field.field_types.field_description.list_item_types, sibling)
-        return cast(Type[T], item_types.field_description.instance_types)
+    def list_instance_type(self,
+                           field: Field,
+                           sibling: Type[MongoObject]) -> Type[MongoObject]:
+        from .mongo_object import MongoObject
+        fd = field.field_types.field_description
+        item_types = resolve_types(fd.list_item_types, sibling)
+        item_fd = item_types.field_description
+        return cast(Type[MongoObject], item_fd.instance_types)
 
-    def join_table_name(
-        self, cls_a: Type[T], field_a: str, cls_b: Type[T], field_b: str
-    ) -> str:
+    def join_table_name(self,
+                        cls_a: Type[MongoObject],
+                        field_a: str,
+                        cls_b: Type[MongoObject],
+                        field_b: str) -> str:
         ca = cls_a.collection().name + camelize(field_a).lower()
         cb = cls_b.collection().name + camelize(field_b).lower()
         return ca + cb if ca < cb else cb + ca

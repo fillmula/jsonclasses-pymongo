@@ -1,7 +1,6 @@
 from __future__ import annotations
 import unittest
 from typing import List, Dict
-from dotenv import load_dotenv
 from datetime import date, datetime
 from bson import ObjectId
 from jsonclasses import jsonclass, types

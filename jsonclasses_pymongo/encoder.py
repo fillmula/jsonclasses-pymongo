@@ -1,14 +1,13 @@
 from __future__ import annotations
-from typing import (List, Dict, Any, NamedTuple, Optional, TypeVar, Tuple,
-                    cast, TYPE_CHECKING)
-from jsonclasses import (fields, types, Config, FieldType, FieldStorage,
+from typing import (List, Dict, Any, NamedTuple, TypeVar, Type, cast,
+                    TYPE_CHECKING)
+from jsonclasses import (fields, types, Field, FieldType, FieldStorage,
                          resolve_types, LookupMap, concat_keypath)
 from datetime import datetime
 from inflection import camelize
 from bson.objectid import ObjectId
 from .coder import Coder
-from .utils import (ref_field_key, ref_field_keys, ref_db_field_key,
-                    ref_db_field_keys)
+from .utils import ref_db_field_key, ref_db_field_keys
 from .context import EncodingContext
 from .write_command import WriteCommand
 if TYPE_CHECKING:
@@ -31,11 +30,6 @@ class Encoder(Coder):
         value = cast(List[Any], context.value)
         fd = context.types.field_description
         item_types = resolve_types(fd.list_item_types)
-        if fd.field_storage == FieldStorage.FOREIGN_KEY:
-            fk = cast(str, fd.foreign_key)
-            item_types = item_types.linkedby(fk)
-        if fd.field_storage == FieldStorage.LOCAL_KEY:
-            item_types = item_types.linkto
         result = []
         write_commands = []
         for index, item in enumerate(value):
@@ -46,14 +40,9 @@ class Encoder(Coder):
                 keypath_owner=concat_keypath(context.keypath_owner, index),
                 keypath_parent=str(index),
                 parent=value))
-            if fd.field_storage == FieldStorage.FOREIGN_KEY:
-                result.append(item_result)
-            elif fd.field_storage == FieldStorage.LOCAL_KEY:
-                result.append(item_result['_id'])
-            else:
-                result.append(item_result)
+            result.append(item_result)
             write_commands.extend(item_commands)
-        return EncodingResult(result=result, write_commands=write_commands)
+        return EncodingResult(result, write_commands)
 
     def encode_dict(self, context: EncodingContext) -> EncodingResult:
         if context.value is None:
@@ -76,163 +65,150 @@ class Encoder(Coder):
             write_commands.extend(item_commands)
         return EncodingResult(result, write_commands)
 
-    def encode_shape(
-        self,
-        value: Optional[Dict[str, Any]],
-        owner: T,
-        types: Any,
-        parent: Optional[T] = None,
-        parent_linkedby: Optional[str] = None
-    ) -> Tuple[Optional[Dict[str, Any]], List[WriteCommand]]:
-        if value is None:
-            return None, []
-        config: Config = owner.__class__.config
-        dest = {}
+    def encode_shape(self, context: EncodingContext) -> EncodingResult:
+        if context.value is None:
+            return EncodingResult(result=None, write_commands=[])
+        value = cast(Dict[str, Any], context.value)
+        fd = context.types.field_description
+        shape_types = cast(Dict[str, Any], fd.shape_types)
+        camelized = context.owner.__class__.config.camelize_db_keys
+        result = {}
         write_commands = []
-        for (key, item) in value.items():
-            new_value, commands = self.encode_item(
+        for key, item in value.items():
+            item_types = resolve_types(shape_types[key])
+            item_result, item_commands = self.encode_item(context.new(
                 value=item,
-                owner=owner,
-                types=resolve_types(
-                    types.field_description.shape_types[key]),
-                parent=parent,
-                parent_linkedby=parent_linkedby
-            )
-            dest[camelize(key, False)
-                 if config.camelize_db_keys else key] = new_value
-            write_commands.extend(commands)
-        return dest, write_commands
+                types=item_types,
+                keypath_root=concat_keypath(context.keypath_root, key),
+                keypath_owner=concat_keypath(context.keypath_owner, key),
+                keypath_parent=str(key),
+                parent=value))
+            result[camelize(key, False) if camelized else key] = item_result
+            write_commands.extend(item_commands)
+        return EncodingResult(result, write_commands)
 
-    def encode_instance(
-        self,
-        value: Optional[T],
-        owner: T,
-        types: Optional[Any],
-        parent: Optional[T] = None,
-        parent_linkedby: Optional[str] = None
-    ) -> Tuple[Optional[Dict[str, Any]], List[WriteCommand]]:
-        if value is None:
-            return None, []
-        do_not_write_self = False
-        if types is not None:
-            if types.field_description.field_storage == FieldStorage.EMBEDDED:
-                do_not_write_self = True
-        dest = {}
+    def _join_command(self,
+                      this_instance: MongoObject,
+                      this_field: Field,
+                      that_cls: Type[MongoObject],
+                      that_id: ObjectId) -> WriteCommand:
+        this_cls = this_instance.__class__
+        this_cls_name = this_cls.__name__
+        that_cls_name = that_cls.__name__
+        this_field_name = ref_db_field_key(this_cls_name, this_cls)
+        that_field_name = ref_db_field_key(that_cls_name, that_cls)
+        join_table_name = self.join_table_name(
+            this_cls,
+            this_field.field_name,
+            that_cls,
+            cast(str, this_field.field_description.foreign_key))
+        join_table_collection = this_cls.db().get_collection(join_table_name)
+        this_pk = cast(str, this_instance.__class__.config.primary_key)
+        this_id = ObjectId(getattr(this_instance, this_pk))
+        matcher = {
+            this_field_name: this_id,
+            that_field_name: that_id
+        }
+        return WriteCommand(matcher, join_table_collection, matcher)
+
+    def encode_instance(self, context: EncodingContext) -> EncodingResult:
+        from .mongo_object import MongoObject
+        if context.value is None:
+            return EncodingResult(result=None, write_commands=[])
+        value = cast(MongoObject, context.value)
+        cls = value.__class__
+        cls_name = cls.__name__
+        id = getattr(value, cast(str, value.__class__.config.primary_key))
+        if context.lookup_map.fetch(cls_name, id) is not None:
+            return EncodingResult({'_id': ObjectId(id)}, write_commands=[])
+        context.lookup_map.put(cls_name, id, value)
+        instance_fd = context.types.field_description
+        write_instance = instance_fd.field_storage != FieldStorage.EMBEDDED
+        result = {}
         write_commands = []
         for field in fields(value):
-            if self.is_id_field(field):
-                dest['_id'] = ObjectId(getattr(value, 'id'))
+            fname = field.field_name
+            fvalue = getattr(value, fname)
+            ftypes = field.field_types
+            if self.is_id_field(field, value.__class__):
+                result['_id'] = ObjectId(fvalue)
             elif self.is_foreign_key_reference_field(field):
-                # not assign, but get write commands
-                value_at_field = getattr(value, field.field_name)
-                if value_at_field is not None:
-                    _encoded, commands = self.encode_instance(
-                        value=value_at_field,
-                        owner=owner,
-                        types=field.field_types,
-                        parent=value,
-                        parent_linkedby=(field.field_types
-                                         .field_description.foreign_key)
-                    )
-                    write_commands.extend(commands)
+                if fvalue is None:
+                    continue
+                _, item_commands = self.encode_instance(context.new(
+                    value=fvalue,
+                    types=ftypes,
+                    keypath_root=concat_keypath(context.keypath_root, fname),
+                    keypath_owner=fname,
+                    owner=value,
+                    keypath_parent=fname,
+                    parent=value))
+                write_commands.extend(item_commands)
             elif self.is_foreign_keys_reference_field(field):
-                # not assign, but get a list of write commands
-                value_at_field = getattr(value, field.field_name)
-                if value_at_field is not None:
-                    encoded, commands = self.encode_list(
-                        value=value_at_field,
-                        owner=owner,
-                        types=field.field_types,
-                        parent=value,
-                        parent_linkedby=(field.field_types
-                                         .field_description.foreign_key)
-                    )
-                    if self.is_join_table_field(field):
-                        this_field_class = value.__class__
-                        this_field_name = ref_db_field_key(
-                            this_field_class.__name__, this_field_class)
-                        other_field_class = self.other_field_class_for_list_instance_type(  # noqa: E501
-                            field, this_field_class)
-                        other_field_name = ref_db_field_key(
-                            other_field_class.__name__,
-                            other_field_class
-                        )
-                        join_table_name = self.join_table_name(
-                            this_field_class,
-                            field.field_name,
-                            other_field_class,
-                            cast(str,
-                                 field.field_types.
-                                 field_description.foreign_key)
-                        )
-                        join_table_collection = (this_field_class.db()
-                                                 .get_collection(join_table_name))  # noqa: E501
-                        this_field_id = ObjectId(value.id)
-                        assert encoded is not None
-                        for item in encoded:
-                            write_commands.append(WriteCommand({
-                                '_id': ObjectId(),
-                                this_field_name: this_field_id,
-                                other_field_name: ObjectId(item['_id'])
-                            }, join_table_collection, {
-                                this_field_name: this_field_id,
-                                other_field_name: ObjectId(item['_id'])
-                            }))
-                    write_commands.extend(commands)
-                elif parent_linkedby == field.field_name:
-                    pass
+                if fvalue is None:
+                    continue
+                item_result, item_commands = self.encode_list(context.new(
+                    value=fvalue,
+                    types=ftypes,
+                    keypath_root=concat_keypath(context.keypath_root, fname),
+                    keypath_owner=fname,
+                    owner=value,
+                    keypath_parent=fname,
+                    parent=value))
+                write_commands.extend(item_commands)
+                if not self.is_join_table_field(field):
+                    continue
+                for list_item in item_result:
+                    join_command = self._join_command(
+                        value,
+                        field,
+                        self.list_instance_type(field, cls),
+                        list_item['_id'])
+                    write_commands.append(join_command)
             elif self.is_local_key_reference_field(field):
-                # assign a local key, and get write commands
-                value_at_field = getattr(value, field.field_name)
-                if value_at_field is not None:
-                    setattr(value, ref_field_key(
-                        field.field_name), value_at_field.id)
-                    encoded_i, commands = self.encode_instance(
-                        value=value_at_field,
-                        owner=owner,
-                        types=field.field_types,
-                        parent=value,
-                        parent_linkedby=field.field_types.field_description.foreign_key  # noqa: E501
-                    )
-                    assert encoded_i is not None
-                    dest[ref_db_field_key(
-                        field.field_name, value.__class__)] = encoded_i['_id']
-                    write_commands.extend(commands)
-                elif parent_linkedby == field.field_name:
-                    assert parent is not None
-                    setattr(value, ref_field_key(field.field_name), parent.id)
-                    dest[ref_db_field_key(field.field_name, value.__class__)] = ObjectId(  # noqa: E501
-                        parent.id)
+                if fvalue is None:
+                    result[ref_db_field_key(fname, cls)] = None
+                    continue
+                item_result, item_commands = self.encode_instance(context.new(
+                    value=fvalue,
+                    types=ftypes,
+                    keypath_root=concat_keypath(context.keypath_root, fname),
+                    keypath_owner=fname,
+                    owner=value,
+                    keypath_parent=fname,
+                    parent=value))
+                result[ref_db_field_key(fname, cls)] = item_result['_id']
+                write_commands.extend(item_commands)
             elif self.is_local_keys_reference_field(field):
-                # assign a list of local keys, and get write commands
-                value_at_field = getattr(value, field.field_name)
-                if value_at_field is not None:
-                    setattr(value, ref_field_keys(field.field_name),
-                            [v.id for v in value_at_field])
-                    encoded, commands = self.encode_list(
-                        value=value_at_field,
-                        owner=owner,
-                        types=field.field_types,
-                        parent=value,
-                        parent_linkedby=field.field_name
-                    )
-                    dest[ref_db_field_keys(
-                        field.field_name, value.__class__)] = encoded
-                    write_commands.extend(commands)
+                if fvalue is None:
+                    result[ref_db_field_keys(fname, cls)] = None
+                    continue
+                item_result, item_commands = self.encode_list(context.new(
+                    value=fvalue,
+                    types=ftypes,
+                    keypath_root=concat_keypath(context.keypath_root, fname),
+                    keypath_owner=fname,
+                    owner=value,
+                    keypath_parent=fname,
+                    parent=value))
+                id_list = [result['_id'] for result in item_result]
+                result[ref_db_field_keys(fname, cls)] = id_list
+                write_commands.extend(item_commands)
             else:
-                item_value, new_write_commands = self.encode_item(
-                    value=getattr(value, field.field_name),
-                    owner=owner,
-                    types=field.field_types,
-                    parent=parent,
-                    parent_linkedby=parent_linkedby
-                )
-                dest[field.db_field_name] = item_value
-                write_commands.extend(new_write_commands)
-        if not do_not_write_self:
-            write_commands.append(WriteCommand(
-                dest, value.__class__.collection()))
-        return dest, write_commands
+                item_result, item_commands = self.encode_item(context.new(
+                    value=fvalue,
+                    types=ftypes,
+                    keypath_root=concat_keypath(context.keypath_root, fname),
+                    keypath_owner=concat_keypath(context.keypath_owner, fname),
+                    owner=value,
+                    keypath_parent=fname,
+                    parent=value))
+                result[field.db_field_name] = item_result
+                write_commands.extend(item_commands)
+        if write_instance:
+            write_commands.append(
+                WriteCommand(result, value.__class__.collection()))
+        return EncodingResult(result, write_commands)
 
     def encode_item(self, context: EncodingContext) -> EncodingResult:
         if context.value is None:

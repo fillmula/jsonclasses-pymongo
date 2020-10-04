@@ -1,7 +1,6 @@
 from __future__ import annotations
 import unittest
 from typing import List, Dict
-from dotenv import load_dotenv
 from datetime import date, datetime
 from bson import ObjectId
 from jsonclasses import jsonclass, types
@@ -95,11 +94,13 @@ class TestEncoder(unittest.TestCase):
             str_values: List[str]
             int_values: List[int]
             bool_values: List[bool]
-        simple_object = SimpleEncodeScalarTypesList(str_values=['0', '1'], int_values=[
-                                                    0, 1], bool_values=[False, True])
+        simple_object = SimpleEncodeScalarTypesList(str_values=['0', '1'],
+                                                    int_values=[0, 1],
+                                                    bool_values=[False, True])
         serialized = Encoder().encode_root(simple_object)[0].object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'strValues', 'intValues', 'boolValues']))
+            ['_id', 'createdAt', 'updatedAt', 'strValues', 'intValues',
+             'boolValues']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['strValues'], ['0', '1'])
         self.assertEqual(serialized['intValues'], [0, 1])
@@ -180,8 +181,7 @@ class TestEncoder(unittest.TestCase):
 
         @jsonclass
         class SimpleEncodeLocalKeyInstance(MongoObject):
-            address: SimpleEncodeLocalKeyInstanceAddress = types.linkto.instanceof(
-                SimpleEncodeLocalKeyInstanceAddress)
+            address: SimpleEncodeLocalKeyInstanceAddress = types.linkto.instanceof(SimpleEncodeLocalKeyInstanceAddress)
         simple_object = SimpleEncodeLocalKeyInstance(
             address={'line1': 'Flam Road'})
         commands = Encoder().encode_root(simple_object)
