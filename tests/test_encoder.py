@@ -318,19 +318,4 @@ class TestEncoder(unittest.TestCase):
         instance_a = DifficultEncodeLinkedThruA(
             aval='A', blinks=[{'bval': 'B1'}, {'bval': 'B2'}])
         commands = Encoder().encode_root(instance_a)
-        self.assertEqual(len(commands), 5)
-        self.assertEqual(
-            commands[0].object['difficultEncodeLinkedThruAId'], ObjectId(instance_a.id))
-        self.assertEqual(commands[0].object['difficultEncodeLinkedThruBId'], ObjectId(
-            instance_a.blinks[0].id))
-        self.assertEqual(commands[0].collection.name,
-                         'difficultencodelinkedthruasblinksdifficultencodelinkedthrubsalinks')
-        self.assertEqual(
-            commands[1].object['difficultEncodeLinkedThruAId'], ObjectId(instance_a.id))
-        self.assertEqual(commands[1].object['difficultEncodeLinkedThruBId'], ObjectId(
-            instance_a.blinks[1].id))
-        self.assertEqual(commands[1].collection.name,
-                         'difficultencodelinkedthruasblinksdifficultencodelinkedthrubsalinks')
-        self.assertEqual(commands[2].object['bval'], 'B1')
-        self.assertEqual(commands[3].object['bval'], 'B2')
-        self.assertEqual(commands[4].object['aval'], 'A')
+        self.assertEqual(len(commands), 7)

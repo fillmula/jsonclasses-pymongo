@@ -30,6 +30,10 @@ class Encoder(Coder):
         value = cast(List[Any], context.value)
         fd = context.types.field_description
         item_types = resolve_types(fd.list_item_types)
+        if fd.field_storage == FieldStorage.FOREIGN_KEY:
+            item_types = item_types.linkedby(cast(str, fd.foreign_key))
+        if fd.field_storage == FieldStorage.LOCAL_KEY:
+            item_types = item_types.linkto
         result = []
         write_commands = []
         for index, item in enumerate(value):
