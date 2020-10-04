@@ -111,7 +111,9 @@ class Encoder(Coder):
         }
         return WriteCommand(matcher, join_table_collection, matcher)
 
-    def encode_instance(self, context: EncodingContext) -> EncodingResult:
+    def encode_instance(self,
+                        context: EncodingContext,
+                        root: bool = False) -> EncodingResult:
         from .mongo_object import MongoObject
         if context.value is None:
             return EncodingResult(result=None, write_commands=[])
@@ -124,6 +126,8 @@ class Encoder(Coder):
         context.lookup_map.put(cls_name, id, value)
         instance_fd = context.types.field_description
         write_instance = instance_fd.field_storage != FieldStorage.EMBEDDED
+        if root:
+            write_instance = True
         result = {}
         write_commands = []
         for field in fields(value):
@@ -240,5 +244,4 @@ class Encoder(Coder):
             owner=root,
             keypath_parent='',
             parent=root,
-            lookup_map=LookupMap()
-        ))[1]
+            lookup_map=LookupMap()), root=True)[1]
