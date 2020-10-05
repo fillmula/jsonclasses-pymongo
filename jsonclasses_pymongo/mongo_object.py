@@ -14,8 +14,6 @@ from .encoder import Encoder
 from .decoder import Decoder
 from .write_command import WriteCommand
 
-T = TypeVar('T', bound='MongoObject')
-
 
 @jsonclass
 class MongoObject(ORMObject):
@@ -162,6 +160,9 @@ class MongoObject(ORMObject):
             self.validate(all_fields=validate_all_fields)
         commands = Encoder().encode_root(self)
         WriteCommand.write_commands_to_db(commands)
+        setattr(self, '_is_new', False)
+        setattr(self, '_is_modified', False)
+        setattr(self, '_modified_fields', set())
         return self
 
     def add_to(self: T,
@@ -309,3 +310,6 @@ class MongoObject(ORMObject):
         if len(args) == 0:
             args = ({},)
         return self.collection().delete_many(*args, **kwargs).deleted_count
+
+
+T = TypeVar('T', bound=MongoObject)

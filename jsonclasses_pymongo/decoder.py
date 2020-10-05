@@ -138,4 +138,7 @@ class Decoder(Coder):
                         cls=cls
                     )
                 )
+        setattr(dest, '_is_new', False)
+        setattr(dest, '_is_modified', False)
+        setattr(dest, '_modified_fields', set())
         return dest
