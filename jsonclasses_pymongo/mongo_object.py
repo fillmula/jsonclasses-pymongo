@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import (ClassVar, Optional, Sequence, TypeVar, Dict, Any, Union,
                     Type, cast)
-from jsonclasses import (jsonclass, types, JSONObject,
+from jsonclasses import (jsonclass, types, ORMObject,
                          fields, FieldType, FieldStorage,
                          resolve_types, ObjectNotFoundException)
 from datetime import datetime
@@ -18,7 +18,7 @@ T = TypeVar('T', bound='MongoObject')
 
 
 @jsonclass
-class MongoObject(JSONObject):
+class MongoObject(ORMObject):
     """Abstract and base class for JSON Classes Pymongo objects. You should
     define subclasses of this class to interact with mongoDB collections.
     """
