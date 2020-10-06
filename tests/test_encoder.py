@@ -186,7 +186,8 @@ class TestEncoder(TestCase):
                 SimpleEncodeForeignKeyInstanceAddress).linkedby('owner')
         simple_object = SimpleEncodeForeignKeyInstance(
             address={'line1': 'Flam Road'})
-        commands = Encoder().encode_root(simple_object)
+        batch_command = Encoder().encode_root(simple_object)
+        commands = batch_command.commands
         self.assertEqual(len(commands), 2)
         address_data = commands[0].object
         owner_data = commands[1].object
@@ -204,7 +205,8 @@ class TestEncoder(TestCase):
             address: SimpleEncodeLocalKeyInstanceAddress = types.linkto.instanceof(SimpleEncodeLocalKeyInstanceAddress)
         simple_object = SimpleEncodeLocalKeyInstance(
             address={'line1': 'Flam Road'})
-        commands = Encoder().encode_root(simple_object)
+        batch_command = Encoder().encode_root(simple_object)
+        commands = batch_command.commands
         self.assertEqual(len(commands), 2)
         address_data = commands[0].object
         owner_data = commands[1].object
@@ -220,7 +222,8 @@ class TestEncoder(TestCase):
             addresses: List[MediumEncodeEmbeddedInstanceAddress]
         medium_object = MediumEncodeEmbeddedInstance(
             addresses=[{'line1': 'Flam Road'}, {'line1': 'Plam Road'}])
-        commands = Encoder().encode_root(medium_object)
+        batch_command = Encoder().encode_root(medium_object)
+        commands = batch_command.commands
         self.assertEqual(len(commands), 1)
         command = commands[0]
         self.assertIs(command.collection,
@@ -244,7 +247,8 @@ class TestEncoder(TestCase):
                 MediumEncodeForeignKeyInstanceAddress).linkedby('owner')
         simple_object = MediumEncodeForeignKeyInstance(
             addresses=[{'line1': 'Flam Road'}, {'line1': 'Klam Road'}])
-        commands = Encoder().encode_root(simple_object)
+        batch_command = Encoder().encode_root(simple_object)
+        commands = batch_command.commands
         self.assertEqual(len(commands), 3)
         address_0_data = commands[0].object
         address_1_data = commands[1].object
@@ -265,7 +269,8 @@ class TestEncoder(TestCase):
                 MediumEncodeLocalKeyInstanceAddress).linkto
         simple_object = MediumEncodeLocalKeyInstance(
             addresses=[{'line1': 'Flam Road'}, {'line1': 'Klam Road'}])
-        commands = Encoder().encode_root(simple_object)
+        batch_command = Encoder().encode_root(simple_object)
+        commands = batch_command.commands
         self.assertEqual(len(commands), 3)
         address_0_data = commands[0].object
         address_1_data = commands[1].object
@@ -279,7 +284,8 @@ class TestEncoder(TestCase):
             val: Dict[str, str] = types.dictof(types.str)
         simple_object = MediumEncodeCamelizeDictKeys(
             val={'key_one': 'val_one', 'key_two': 'val_two'})
-        commands = Encoder().encode_root(simple_object)
+        batch_command = Encoder().encode_root(simple_object)
+        commands = batch_command.commands
         encoded_val = commands[0].object['val']
         self.assertEqual(
             encoded_val, {'keyOne': 'val_one', 'keyTwo': 'val_two'})
@@ -290,7 +296,8 @@ class TestEncoder(TestCase):
             val: Dict[str, str] = types.dictof(types.str)
         simple_object = MediumEncodeDoNotCamelizeDictKeys(
             val={'key_one': 'val_one', 'key_two': 'val_two'})
-        commands = Encoder().encode_root(simple_object)
+        batch_command = Encoder().encode_root(simple_object)
+        commands = batch_command.commands
         encoded_val = commands[0].object['val']
         self.assertEqual(
             encoded_val, {'key_one': 'val_one', 'key_two': 'val_two'})
@@ -304,7 +311,8 @@ class TestEncoder(TestCase):
             })
         simple_object = MediumEncodeCamelizeShapeKeys(
             val={'key_one': 'val_one', 'key_two': 'val_two'})
-        commands = Encoder().encode_root(simple_object)
+        batch_command = Encoder().encode_root(simple_object)
+        commands = batch_command.commands
         encoded_val = commands[0].object['val']
         self.assertEqual(
             encoded_val, {'keyOne': 'val_one', 'keyTwo': 'val_two'})
@@ -318,7 +326,8 @@ class TestEncoder(TestCase):
             })
         simple_object = MediumEncodeDoNotCamelizeShapeKeys(
             val={'key_one': 'val_one', 'key_two': 'val_two'})
-        commands = Encoder().encode_root(simple_object)
+        batch_command = Encoder().encode_root(simple_object)
+        commands = batch_command.commands
         encoded_val = commands[0].object['val']
         self.assertEqual(
             encoded_val, {'key_one': 'val_one', 'key_two': 'val_two'})
@@ -337,5 +346,6 @@ class TestEncoder(TestCase):
                 'DifficultEncodeLinkedThruA').linkedthru('blinks')
         instance_a = DifficultEncodeLinkedThruA(
             aval='A', blinks=[{'bval': 'B1'}, {'bval': 'B2'}])
-        commands = Encoder().encode_root(instance_a)
+        batch_command = Encoder().encode_root(instance_a)
+        commands = batch_command.commands
         self.assertEqual(len(commands), 7)

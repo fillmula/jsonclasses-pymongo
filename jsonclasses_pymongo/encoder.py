@@ -140,16 +140,17 @@ class Encoder(Coder):
         if value.is_new:
             use_insert_command = True
             fields_need_update = value.modified_fields
-        result = {}
+        result_set = {}
         matcher = {}
         commands = []
+        result_addtoset = {}
         for field in fields(value):
             fname = field.field_name
             fvalue = getattr(value, fname)
             ftypes = field.field_types
             if self.is_id_field(field, value.__class__):
                 if use_insert_command:
-                    result['_id'] = ObjectId(fvalue)
+                    result_set['_id'] = ObjectId(fvalue)
                 else:
                     matcher['_id'] = ObjectId(fvalue)
             elif self.is_foreign_key_reference_field(field):
@@ -187,8 +188,8 @@ class Encoder(Coder):
                     commands.append(join_command)
             elif self.is_local_key_reference_field(field):
                 if fvalue is None:
-                    if fname in fields_need_update:
-                        result[ref_db_field_key(fname, cls)] = None
+                    if use_insert_command or fname in fields_need_update:
+                        result_set[ref_db_field_key(fname, cls)] = None
                     continue
                 item_result, item_commands = self.encode_instance(context.new(
                     value=fvalue,
@@ -198,14 +199,14 @@ class Encoder(Coder):
                     owner=value,
                     keypath_parent=fname,
                     parent=value))
-                if fname in fields_need_update:
+                if use_insert_command or fname in fields_need_update:
                     fname_ref = ref_db_field_key(fname, cls)
-                    result[fname_ref] = item_result['_id']
+                    result_set[fname_ref] = item_result['_id']
                 commands.extend(item_commands)
             elif self.is_local_keys_reference_field(field):
                 if fvalue is None:
-                    if fname in fields_need_update:
-                        result[ref_db_field_keys(fname, cls)] = None
+                    if use_insert_command or fname in fields_need_update:
+                        result_set[ref_db_field_keys(fname, cls)] = None
                     continue
                 item_result, item_commands = self.encode_list(context.new(
                     value=fvalue,
@@ -215,9 +216,13 @@ class Encoder(Coder):
                     owner=value,
                     keypath_parent=fname,
                     parent=value))
-                if fname in fields_need_update:
+                if use_insert_command or fname in fields_need_update:
                     id_list = [result['_id'] for result in item_result]
-                    result[ref_db_field_keys(fname, cls)] = id_list
+                    fname_ref = ref_db_field_keys(fname, cls)
+                    if use_insert_command:
+                        result_set[fname_ref] = id_list
+                    else:
+                        result_addtoset[fname_ref] = {'$each': id_list}
                 commands.extend(item_commands)
             else:
                 item_result, item_commands = self.encode_item(context.new(
@@ -229,17 +234,20 @@ class Encoder(Coder):
                     keypath_parent=fname,
                     parent=value))
                 if use_insert_command or fname in fields_need_update:
-                    result[field.db_field_name] = item_result
+                    result_set[field.db_field_name] = item_result
                 commands.extend(item_commands)
         if write_instance:
             collection = value.__class__.collection()
             if use_insert_command:
-                insert_command = InsertOneCommand(collection, result)
+                insert_command = InsertOneCommand(collection, result_set)
                 commands.append(insert_command)
             else:
-                update_command = UpdateOneCommand(collection, result, matcher)
+                update_command = UpdateOneCommand(
+                    collection,
+                    {'$set': result_set, '$addToSet': result_addtoset},
+                    matcher)
                 commands.append(update_command)
-        return EncodingResult(result, commands)
+        return EncodingResult(result_set, commands)
 
     def encode_item(self, context: EncodingContext) -> EncodingResult:
         if context.value is None:
