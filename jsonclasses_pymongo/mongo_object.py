@@ -12,7 +12,7 @@ from inflection import pluralize
 from .utils import default_db, ref_field_key, ref_field_keys, ref_db_field_key
 from .encoder import Encoder
 from .decoder import Decoder
-from .write_command import WriteCommand
+from .command import BatchCommand
 from .query import IDQuery, ListQuery
 
 
@@ -56,101 +56,101 @@ class MongoObject(ORMObject):
                                     pluralize(cls.__name__).lower())
             return cls._collection
 
-    def _include(self, key_path: str):
-        field = next(field for field in fields(self)
-                     if field.field_name == key_path)
-        fd = field.field_types.field_description
-        if (fd.field_type == FieldType.INSTANCE and
-                fd.field_storage == FieldStorage.LOCAL_KEY):
-            ref_id = getattr(self, ref_field_key(field.field_name))
-            if ref_id is not None:
-                Cls = cast(Type[MongoObject], resolve_types(
-                        fd.instance_types,
-                        graph_sibling=self.__class__
-                    ).field_description.instance_types)
-                setattr(self, field.field_name, Cls.find_by_id(ref_id))
-        elif (fd.field_type == FieldType.INSTANCE and
-                fd.field_storage == FieldStorage.FOREIGN_KEY):
-            foreign_key_name = ref_db_field_key(cast(str, fd.foreign_key),
-                                                self.__class__)
-            Cls = cast(Type[MongoObject], resolve_types(
-                fd.instance_types,
-                graph_sibling=self.__class__).field_description.instance_types)
-            setattr(self, field.field_name, Cls.find_one(
-                {foreign_key_name: ObjectId(self.id)}))
-        elif (fd.field_type == FieldType.LIST and
-                fd.field_storage == FieldStorage.LOCAL_KEY):
-            ref_ids = getattr(self, ref_field_keys(field.field_name))
-            if ref_ids is not None:
-                item_types = resolve_types(
-                    fd.list_item_types, self.__class__)
-                Cls = cast(Type[MongoObject], resolve_types(
-                    item_types.field_description.instance_types,
-                    self.__class__))
-                setattr(self, field.field_name, Cls.find_many(
-                    {'_id': {'$in': [ObjectId(id) for id in ref_ids]}}))
-        elif (fd.field_type == FieldType.LIST and
-                fd.field_storage == FieldStorage.FOREIGN_KEY):
-            if fd.use_join_table:
-                decoder = Decoder()
-                self_class = self.__class__
-                other_class = decoder.list_instance_type(
-                    field, self.__class__)
-                join_table_name = decoder.join_table_name(
-                    self_class,
-                    field.field_name,
-                    other_class,
-                    cast(str, fd.foreign_key)
-                )
-                jt_collection = self_class.db().get_collection(join_table_name)
-                cursor = jt_collection.aggregate([
-                    {
-                        '$match': {
-                            ref_db_field_key(self_class.__name__, self_class):
-                                ObjectId(self.id)
-                        }
-                    },
-                    {
-                        '$lookup': {
-                            'from': other_class.collection().name,
-                            'localField': ref_db_field_key(
-                                    other_class.__name__,
-                                    other_class),
-                            'foreignField': '_id',
-                            'as': 'result'
-                        }
-                    },
-                    {
-                        '$project': {
-                            'result': {'$arrayElemAt': ['$result', 0]}
-                        }
-                    },
-                    {
-                        '$replaceRoot': {
-                            'newRoot': '$result'
-                        }
-                    }
-                ])
-                results = [decoder.decode_root(
-                    doc, other_class) for doc in cursor]
-                setattr(self, field.field_name, results)
-            else:
-                foreign_key_name = ref_db_field_key(
-                    cast(str, fd.foreign_key), self.__class__)
-                item_types = resolve_types(
-                    fd.list_item_types, self.__class__)
-                Cls = cast(Type[MongoObject], resolve_types(
-                    item_types.field_description.instance_types,
-                    self.__class__).field_description.instance_types)
-                setattr(self, field.field_name, Cls.find_many(
-                    {foreign_key_name: ObjectId(self.id)}))
-        else:
-            pass
+    # def _include(self, key_path: str):
+    #     field = next(field for field in fields(self)
+    #                  if field.field_name == key_path)
+    #     fd = field.field_types.field_description
+    #     if (fd.field_type == FieldType.INSTANCE and
+    #             fd.field_storage == FieldStorage.LOCAL_KEY):
+    #         ref_id = getattr(self, ref_field_key(field.field_name))
+    #         if ref_id is not None:
+    #             Cls = cast(Type[MongoObject], resolve_types(
+    #                     fd.instance_types,
+    #                     graph_sibling=self.__class__
+    #                 ).field_description.instance_types)
+    #             setattr(self, field.field_name, Cls.find_by_id(ref_id))
+    #     elif (fd.field_type == FieldType.INSTANCE and
+    #             fd.field_storage == FieldStorage.FOREIGN_KEY):
+    #         foreign_key_name = ref_db_field_key(cast(str, fd.foreign_key),
+    #                                             self.__class__)
+    #         Cls = cast(Type[MongoObject], resolve_types(
+    #             fd.instance_types,
+    #             graph_sibling=self.__class__).field_description.instance_types)
+    #         setattr(self, field.field_name, Cls.find_one(
+    #             {foreign_key_name: ObjectId(self.id)}))
+    #     elif (fd.field_type == FieldType.LIST and
+    #             fd.field_storage == FieldStorage.LOCAL_KEY):
+    #         ref_ids = getattr(self, ref_field_keys(field.field_name))
+    #         if ref_ids is not None:
+    #             item_types = resolve_types(
+    #                 fd.list_item_types, self.__class__)
+    #             Cls = cast(Type[MongoObject], resolve_types(
+    #                 item_types.field_description.instance_types,
+    #                 self.__class__))
+    #             setattr(self, field.field_name, Cls.find_many(
+    #                 {'_id': {'$in': [ObjectId(id) for id in ref_ids]}}))
+    #     elif (fd.field_type == FieldType.LIST and
+    #             fd.field_storage == FieldStorage.FOREIGN_KEY):
+    #         if fd.use_join_table:
+    #             decoder = Decoder()
+    #             self_class = self.__class__
+    #             other_class = decoder.list_instance_type(
+    #                 field, self.__class__)
+    #             join_table_name = decoder.join_table_name(
+    #                 self_class,
+    #                 field.field_name,
+    #                 other_class,
+    #                 cast(str, fd.foreign_key)
+    #             )
+    #             jt_collection = self_class.db().get_collection(join_table_name)
+    #             cursor = jt_collection.aggregate([
+    #                 {
+    #                     '$match': {
+    #                         ref_db_field_key(self_class.__name__, self_class):
+    #                             ObjectId(self.id)
+    #                     }
+    #                 },
+    #                 {
+    #                     '$lookup': {
+    #                         'from': other_class.collection().name,
+    #                         'localField': ref_db_field_key(
+    #                                 other_class.__name__,
+    #                                 other_class),
+    #                         'foreignField': '_id',
+    #                         'as': 'result'
+    #                     }
+    #                 },
+    #                 {
+    #                     '$project': {
+    #                         'result': {'$arrayElemAt': ['$result', 0]}
+    #                     }
+    #                 },
+    #                 {
+    #                     '$replaceRoot': {
+    #                         'newRoot': '$result'
+    #                     }
+    #                 }
+    #             ])
+    #             results = [decoder.decode_root(
+    #                 doc, other_class) for doc in cursor]
+    #             setattr(self, field.field_name, results)
+    #         else:
+    #             foreign_key_name = ref_db_field_key(
+    #                 cast(str, fd.foreign_key), self.__class__)
+    #             item_types = resolve_types(
+    #                 fd.list_item_types, self.__class__)
+    #             Cls = cast(Type[MongoObject], resolve_types(
+    #                 item_types.field_description.instance_types,
+    #                 self.__class__).field_description.instance_types)
+    #             setattr(self, field.field_name, Cls.find_many(
+    #                 {foreign_key_name: ObjectId(self.id)}))
+    #     else:
+    #         pass
 
-    def include(self: T, *args: str) -> T:
-        for arg in args:
-            self._include(arg)
-        return self
+    # def include(self: T, *args: str) -> T:
+    #     for arg in args:
+    #         self._include(arg)
+    #     return self
 
     def save(
         self: T,
@@ -159,86 +159,85 @@ class MongoObject(ORMObject):
     ) -> T:
         if not skip_validation:
             self.validate(all_fields=validate_all_fields)
-        commands = Encoder().encode_root(self)
-        WriteCommand.write_commands_to_db(commands)
+        Encoder().encode_root(self).execute()
         setattr(self, '_is_new', False)
         setattr(self, '_is_modified', False)
         setattr(self, '_modified_fields', set())
         return self
 
-    def add_to(self: T,
-               list_field_name: str,
-               *args: Union[MongoObject, ObjectId, str]) -> T:
-        field = next(field for field in fields(self)
-                     if field.field_name == list_field_name)
-        decoder = Decoder()
-        if not decoder.is_join_table_field(field):
-            return self
-        write_commands = []
-        for arg in args:
-            object_id = arg.id if isinstance(arg, MongoObject) else arg
-            if type(object_id) is str:
-                object_id = ObjectId(object_id)
-            other_class = decoder.list_instance_type(
-                field, self.__class__)
-            join_table_name = decoder.join_table_name(
-                self.__class__,
-                field.field_name,
-                other_class,
-                cast(str, field.field_types.field_description.foreign_key)
-            )
-            join_table_collection = self.__class__.db().get_collection(
-                                        join_table_name)
-            this_field_name = ref_db_field_key(
-                self.__class__.__name__, self.__class__)
-            other_field_name = ref_db_field_key(
-                other_class.__name__, other_class)
-            write_commands.append(WriteCommand({
-                this_field_name: ObjectId(self.id),
-                other_field_name: object_id
-            }, join_table_collection, {
-                this_field_name: ObjectId(self.id),
-                other_field_name: object_id
-            }))
-        WriteCommand.write_commands_to_db(write_commands)
-        return self
+    # def add_to(self: T,
+    #            list_field_name: str,
+    #            *args: Union[MongoObject, ObjectId, str]) -> T:
+    #     field = next(field for field in fields(self)
+    #                  if field.field_name == list_field_name)
+    #     decoder = Decoder()
+    #     if not decoder.is_join_table_field(field):
+    #         return self
+    #     write_commands = []
+    #     for arg in args:
+    #         object_id = arg.id if isinstance(arg, MongoObject) else arg
+    #         if type(object_id) is str:
+    #             object_id = ObjectId(object_id)
+    #         other_class = decoder.list_instance_type(
+    #             field, self.__class__)
+    #         join_table_name = decoder.join_table_name(
+    #             self.__class__,
+    #             field.field_name,
+    #             other_class,
+    #             cast(str, field.field_types.field_description.foreign_key)
+    #         )
+    #         join_table_collection = self.__class__.db().get_collection(
+    #                                     join_table_name)
+    #         this_field_name = ref_db_field_key(
+    #             self.__class__.__name__, self.__class__)
+    #         other_field_name = ref_db_field_key(
+    #             other_class.__name__, other_class)
+    #         write_commands.append(WriteCommand({
+    #             this_field_name: ObjectId(self.id),
+    #             other_field_name: object_id
+    #         }, join_table_collection, {
+    #             this_field_name: ObjectId(self.id),
+    #             other_field_name: object_id
+    #         }))
+    #     WriteCommand.write_commands_to_db(write_commands)
+    #     return self
 
-    def remove_from(self: T,
-                    list_field_name: str,
-                    *args: Union[MongoObject, ObjectId]) -> T:
-        field = next(field for field in fields(self)
-                     if field.field_name == list_field_name)
-        decoder = Decoder()
-        if not decoder.is_join_table_field(field):
-            return self
-        write_commands = []
-        for arg in args:
-            object_id = arg.id if isinstance(arg, MongoObject) else arg
-            if type(object_id) is str:
-                object_id = ObjectId(object_id)
-            other_class = decoder.list_instance_type(
-                field, self.__class__)
-            join_table_name = decoder.join_table_name(
-                self.__class__,
-                field.field_name,
-                other_class,
-                cast(str, field.field_types.field_description.foreign_key)
-            )
-            join_table_collection = self.__class__.db().get_collection(
-                                            join_table_name)
-            this_field_name = ref_db_field_key(
-                self.__class__.__name__, self.__class__)
-            other_field_name = ref_db_field_key(
-                other_class.__name__, other_class)
-            write_commands.append(WriteCommand({
-                this_field_name: ObjectId(self.id),
-                other_field_name: object_id
-            }, join_table_collection, {
-                this_field_name: ObjectId(self.id),
-                other_field_name: object_id
-            }))
-        WriteCommand.remove_commands_from_db(write_commands)
-        return self
+    # def remove_from(self: T,
+    #                 list_field_name: str,
+    #                 *args: Union[MongoObject, ObjectId]) -> T:
+    #     field = next(field for field in fields(self)
+    #                  if field.field_name == list_field_name)
+    #     decoder = Decoder()
+    #     if not decoder.is_join_table_field(field):
+    #         return self
+    #     write_commands = []
+    #     for arg in args:
+    #         object_id = arg.id if isinstance(arg, MongoObject) else arg
+    #         if type(object_id) is str:
+    #             object_id = ObjectId(object_id)
+    #         other_class = decoder.list_instance_type(
+    #             field, self.__class__)
+    #         join_table_name = decoder.join_table_name(
+    #             self.__class__,
+    #             field.field_name,
+    #             other_class,
+    #             cast(str, field.field_types.field_description.foreign_key)
+    #         )
+    #         join_table_collection = self.__class__.db().get_collection(
+    #                                         join_table_name)
+    #         this_field_name = ref_db_field_key(
+    #             self.__class__.__name__, self.__class__)
+    #         other_field_name = ref_db_field_key(
+    #             other_class.__name__, other_class)
+    #         write_commands.append(WriteCommand({
+    #             this_field_name: ObjectId(self.id),
+    #             other_field_name: object_id
+    #         }, join_table_collection, {
+    #             this_field_name: ObjectId(self.id),
+    #             other_field_name: object_id
+    #         }))
+    #     WriteCommand.remove_commands_from_db(write_commands)
+    #     return self
 
     @classmethod
     def delete_by_id(self, id: str) -> None:

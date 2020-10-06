@@ -1,14 +1,15 @@
 from __future__ import annotations
-import unittest
-from typing import List, Dict
+from unittest import TestCase
+from typing import List, Dict, cast
 from datetime import date, datetime
 from bson import ObjectId
 from jsonclasses import jsonclass, types
 from jsonclasses_pymongo import MongoObject
 from jsonclasses_pymongo.encoder import Encoder
+from jsonclasses_pymongo.command import InsertOneCommand
 
 
-class TestEncoder(unittest.TestCase):
+class TestEncoder(TestCase):
 
     def test_encode_str_into_str(self):
         @jsonclass
@@ -16,7 +17,9 @@ class TestEncoder(unittest.TestCase):
             val1: str
             val2: str
         simple_object = SimpleEncodeStr(val1='q', val2='e')
-        serialized = Encoder().encode_root(simple_object)[0].object
+        batch_command = Encoder().encode_root(simple_object)
+        insert_command = cast(InsertOneCommand, batch_command.commands[0])
+        serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
             ['_id', 'createdAt', 'updatedAt', 'val1', 'val2']))
         self.assertIsInstance(serialized['_id'], ObjectId)
@@ -29,7 +32,9 @@ class TestEncoder(unittest.TestCase):
             age: int
             length: int
         simple_object = SimpleEncodeInt(age=4, length=8)
-        serialized = Encoder().encode_root(simple_object)[0].object
+        batch_command = Encoder().encode_root(simple_object)
+        insert_command = cast(InsertOneCommand, batch_command.commands[0])
+        serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
             ['_id', 'createdAt', 'updatedAt', 'age', 'length']))
         self.assertIsInstance(serialized['_id'], ObjectId)
@@ -42,7 +47,9 @@ class TestEncoder(unittest.TestCase):
             width: float
             length: float
         simple_object = SimpleEncodeFloat(width=4.5, length=8.5)
-        serialized = Encoder().encode_root(simple_object)[0].object
+        batch_command = Encoder().encode_root(simple_object)
+        insert_command = cast(InsertOneCommand, batch_command.commands[0])
+        serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
             ['_id', 'createdAt', 'updatedAt', 'width', 'length']))
         self.assertIsInstance(serialized['_id'], ObjectId)
@@ -55,7 +62,9 @@ class TestEncoder(unittest.TestCase):
             b1: bool
             b2: bool
         simple_object = SimpleEncodeBool(b1=True, b2=False)
-        serialized = Encoder().encode_root(simple_object)[0].object
+        batch_command = Encoder().encode_root(simple_object)
+        insert_command = cast(InsertOneCommand, batch_command.commands[0])
+        serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
             ['_id', 'createdAt', 'updatedAt', 'b1', 'b2']))
         self.assertIsInstance(serialized['_id'], ObjectId)
@@ -68,7 +77,9 @@ class TestEncoder(unittest.TestCase):
             d1: date = date(2012, 9, 15)
             d2: date = date(2020, 9, 14)
         simple_object = SimpleEncodeDate()
-        serialized = Encoder().encode_root(simple_object)[0].object
+        batch_command = Encoder().encode_root(simple_object)
+        insert_command = cast(InsertOneCommand, batch_command.commands[0])
+        serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
             ['_id', 'createdAt', 'updatedAt', 'd1', 'd2']))
         self.assertIsInstance(serialized['_id'], ObjectId)
@@ -81,7 +92,9 @@ class TestEncoder(unittest.TestCase):
             d1: date = datetime(2012, 9, 15, 0, 0, 0)
             d2: date = datetime(2020, 9, 14, 0, 0, 0)
         simple_object = SimpleEncodeDatetime()
-        serialized = Encoder().encode_root(simple_object)[0].object
+        batch_command = Encoder().encode_root(simple_object)
+        insert_command = cast(InsertOneCommand, batch_command.commands[0])
+        serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
             ['_id', 'createdAt', 'updatedAt', 'd1', 'd2']))
         self.assertIsInstance(serialized['_id'], ObjectId)
@@ -97,7 +110,9 @@ class TestEncoder(unittest.TestCase):
         simple_object = SimpleEncodeScalarTypesList(str_values=['0', '1'],
                                                     int_values=[0, 1],
                                                     bool_values=[False, True])
-        serialized = Encoder().encode_root(simple_object)[0].object
+        batch_command = Encoder().encode_root(simple_object)
+        insert_command = cast(InsertOneCommand, batch_command.commands[0])
+        serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
             ['_id', 'createdAt', 'updatedAt', 'strValues', 'intValues',
              'boolValues']))
@@ -112,7 +127,9 @@ class TestEncoder(unittest.TestCase):
             str_values: Dict[str, str]
         simple_object = SimpleEncodeScalarTypesDict(
             str_values={'0': 'zero', '1': 'one'})
-        serialized = Encoder().encode_root(simple_object)[0].object
+        batch_command = Encoder().encode_root(simple_object)
+        insert_command = cast(InsertOneCommand, batch_command.commands[0])
+        serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
             ['_id', 'createdAt', 'updatedAt', 'strValues']))
         self.assertIsInstance(serialized['_id'], ObjectId)
@@ -127,7 +144,9 @@ class TestEncoder(unittest.TestCase):
             })
         simple_object = SimpleEncodeScalarTypesShape(
             vals={'0': 'zero', '1': 1})
-        serialized = Encoder().encode_root(simple_object)[0].object
+        batch_command = Encoder().encode_root(simple_object)
+        insert_command = cast(InsertOneCommand, batch_command.commands[0])
+        serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
             ['_id', 'createdAt', 'updatedAt', 'vals']))
         self.assertIsInstance(serialized['_id'], ObjectId)
@@ -143,7 +162,8 @@ class TestEncoder(unittest.TestCase):
             address: SimpleEncodeEmbeddedInstanceAddress
         simple_object = SimpleEncodeEmbeddedInstance(
             address={'line1': 'Flam Road'})
-        commands = Encoder().encode_root(simple_object)
+        batch_command = Encoder().encode_root(simple_object)
+        commands = batch_command.commands
         self.assertEqual(len(commands), 1)
         command = commands[0]
         self.assertIs(command.collection,

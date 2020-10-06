@@ -164,22 +164,22 @@ class TestMongoObjectQuery(IsolatedAsyncioTestCase):
                   .one.optional)
         self.assertEqual(result, None)
 
-    def test_include_includes_many_to_many(self):
-        @jsonclass
-        class UestAuthor(MongoObject):
-            name: str
-            posts: List[UestPost] = types.listof(
-                'UestPost').linkedthru('authors')
+    # def test_include_includes_many_to_many(self):
+    #     @jsonclass
+    #     class UestAuthor(MongoObject):
+    #         name: str
+    #         posts: List[UestPost] = types.listof(
+    #             'UestPost').linkedthru('authors')
 
-        @jsonclass
-        class UestPost(MongoObject):
-            title: str
-            authors: List[UestAuthor] = types.listof(
-                'UestAuthor').linkedthru('posts')
-        author = UestAuthor(
-            **{'name': 'Michael', 'posts': [{'title': 'PA'}, {'title': 'PB'}]})
-        author.save()
-        returned_author = UestAuthor.find_by_id(author.id).include('posts')
-        self.assertEqual(len(returned_author.posts), 2)
-        self.assertEqual(returned_author.posts[0].title, author.posts[0].title)
-        self.assertEqual(returned_author.posts[1].title, author.posts[1].title)
+    #     @jsonclass
+    #     class UestPost(MongoObject):
+    #         title: str
+    #         authors: List[UestAuthor] = types.listof(
+    #             'UestAuthor').linkedthru('posts')
+    #     author = UestAuthor(
+    #         **{'name': 'Michael', 'posts': [{'title': 'PA'}, {'title': 'PB'}]})
+    #     author.save()
+    #     returned_author = UestAuthor.find_by_id(author.id).include('posts')
+    #     self.assertEqual(len(returned_author.posts), 2)
+    #     self.assertEqual(returned_author.posts[0].title, author.posts[0].title)
+    #     self.assertEqual(returned_author.posts[1].title, author.posts[1].title)

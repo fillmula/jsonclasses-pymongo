@@ -3,17 +3,17 @@ from typing import List, Dict, Any
 from pymongo.collection import Collection
 
 
-class AbstractCommand:
+class Command:
 
     def execute(self) -> None:
         raise NotImplementedError(
-            'Please use concrete subclasses of AbstractCommand.')
+            'Please use concrete subclasses of Command.')
 
     def __repr__(self) -> str:
-        return '<AbstractCommand()>'
+        return '<Command()>'
 
 
-class InsertOneCommand(AbstractCommand):
+class InsertOneCommand(Command):
 
     def __init__(self, collection: Collection, object: Dict[str, Any]) -> None:
         self.collection = collection
@@ -27,7 +27,7 @@ class InsertOneCommand(AbstractCommand):
                 f'object={self.object})>')
 
 
-class UpdateOneCommand(AbstractCommand):
+class UpdateOneCommand(Command):
 
     def __init__(self,
                  collection: Collection,
@@ -63,7 +63,7 @@ class UpsertOneCommand(UpdateOneCommand):
                 f'object={self.object}), matcher={self.matcher}>')
 
 
-class DeleteOneCommand(AbstractCommand):
+class DeleteOneCommand(Command):
 
     def __init__(self,
                  collection: Collection,
@@ -79,9 +79,9 @@ class DeleteOneCommand(AbstractCommand):
                 f'matcher={self.matcher}>')
 
 
-class BatchCommand(AbstractCommand):
+class BatchCommand(Command):
 
-    def __init__(self, commands: List[AbstractCommand]) -> None:
+    def __init__(self, commands: List[Command]) -> None:
         self.commands = commands
 
     def execute(self) -> None:
