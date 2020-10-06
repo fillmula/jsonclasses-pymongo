@@ -18,6 +18,6 @@ class TestDatabaseConnection(unittest.TestCase):
         @jsonclass
         class Author(MongoObject):
             name: str
-        _articles = Article.find()
-        _authors = Author.find()
+        _articles = Article.find_many()
+        _authors = Author.find_many()
         self.assertEqual(Article.db(), Author.db())

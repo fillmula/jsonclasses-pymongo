@@ -1,6 +1,6 @@
 from __future__ import annotations
-from typing import (ClassVar, Optional, Sequence, TypeVar, Dict, Any, Union,
-                    Type, cast)
+from typing import (ClassVar, List, Optional, Sequence, TypeVar, Dict, Any,
+                    Union, Type, overload, cast)
 from jsonclasses import (jsonclass, types, ORMObject,
                          fields, FieldType, FieldStorage,
                          resolve_types, ObjectNotFoundException)
@@ -13,6 +13,7 @@ from .utils import default_db, ref_field_key, ref_field_keys, ref_db_field_key
 from .encoder import Encoder
 from .decoder import Decoder
 from .write_command import WriteCommand
+from .query import IDQuery, ListQuery
 
 
 @jsonclass
@@ -86,7 +87,7 @@ class MongoObject(ORMObject):
                 Cls = cast(Type[MongoObject], resolve_types(
                     item_types.field_description.instance_types,
                     self.__class__))
-                setattr(self, field.field_name, Cls.find(
+                setattr(self, field.field_name, Cls.find_many(
                     {'_id': {'$in': [ObjectId(id) for id in ref_ids]}}))
         elif (fd.field_type == FieldType.LIST and
                 fd.field_storage == FieldStorage.FOREIGN_KEY):
@@ -141,7 +142,7 @@ class MongoObject(ORMObject):
                 Cls = cast(Type[MongoObject], resolve_types(
                     item_types.field_description.instance_types,
                     self.__class__).field_description.instance_types)
-                setattr(self, field.field_name, Cls.find(
+                setattr(self, field.field_name, Cls.find_many(
                     {foreign_key_name: ObjectId(self.id)}))
         else:
             pass
@@ -289,7 +290,7 @@ class MongoObject(ORMObject):
             return self(**input)
 
     @classmethod
-    def find(self: Type[T], *args, **kwargs) -> Sequence[T]:
+    def find_many(self: Type[T], *args, **kwargs) -> Sequence[T]:
         cursor = self.collection().find(*args, **kwargs)
         retval = [doc for doc in cursor]
         return list(
@@ -310,6 +311,27 @@ class MongoObject(ORMObject):
         if len(args) == 0:
             args = ({},)
         return self.collection().delete_many(*args, **kwargs).deleted_count
+
+    @overload
+    @classmethod
+    def find(cls: Type[T], id: Union[str, ObjectId]) -> IDQuery: ...
+
+    @overload
+    @classmethod
+    def find(cls: Type[T], query: Dict[str, Any]) -> ListQuery: ...
+
+    @overload
+    @classmethod
+    def find(cls: Type[T]) -> ListQuery: ...
+
+    @classmethod
+    def find(cls: Type[T], *args, **kwargs) -> Union[IDQuery, ListQuery]:
+        id = kwargs.get('id') or args[0] if len(args) > 0 else None
+        query = kwargs.get('query') or args[0] if len(args) > 0 else None
+        arg = id if id is not None else query
+        if isinstance(arg, str) or isinstance(arg, ObjectId):
+            return IDQuery(cls=cls, id=arg)
+        return ListQuery(cls=cls, filter=arg)
 
 
 T = TypeVar('T', bound=MongoObject)
