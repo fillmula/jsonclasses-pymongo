@@ -30,15 +30,15 @@ class TestMongoObjectQuery(IsolatedAsyncioTestCase):
                 'Find\\(_id=1234567890abcd1234567890\\) not found\\.'):
             await Find.find('1234567890abcd1234567890')
 
-    async def test_find_by_id_softly_returns_object(self):
+    async def test_find_by_id_optional_returns_object(self):
         object = Find(username='John').save()
         id = object.id
-        result = await Find.find(id).softly
+        result = await Find.find(id).optional
         self.assertEqual(result.username, 'John')
         self.assertEqual(result.password, None)
 
-    async def test_find_by_id_softly_returns_none_if_not_found(self):
-        result = await Find.find('1234567890abcd1234567890').softly
+    async def test_find_by_id_optional_returns_none_if_not_found(self):
+        result = await Find.find('1234567890abcd1234567890').optional
         self.assertIs(result, None)
 
     async def test_find_without_arguments_returns_list(self):
@@ -129,6 +129,44 @@ class TestMongoObjectQuery(IsolatedAsyncioTestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].username, 'b')
         self.assertEqual(results[0].password, 'o')
+
+    async def test_find_one_returns_one_result(self):
+        Find.delete()
+        Find(username='a', password='o').save()
+        Find(username='b', password='o').save()
+        Find(username='c', password='o').save()
+        result = await Find.find().order('username').one
+        self.assertEqual(result.username, 'a')
+        self.assertEqual(result.password, 'o')
+
+    async def test_find_one_raises_if_no_results_found(self):
+        Find.delete()
+        Find(username='a', password='o').save()
+        Find(username='b', password='o').save()
+        Find(username='c', password='o').save()
+        with self.assertRaisesRegex(
+                ObjectNotFoundException,
+                ("Find\\(filter={'username': 'z'}, sort=None, "
+                 "projection=None, skipping=5\\) not found\\.")):
+            await Find.find().where({'username': 'z'}).skip(5).one
+
+    async def test_find_one_optional_returns_one_result(self):
+        Find.delete()
+        Find(username='a', password='o').save()
+        Find(username='b', password='o').save()
+        Find(username='c', password='o').save()
+        result = await Find.find().order('username').one.optional
+        self.assertEqual(result.username, 'a')
+        self.assertEqual(result.password, 'o')
+
+    async def test_find_one_optional_returns_none_if_no_results_found(self):
+        Find.delete()
+        Find(username='a', password='o').save()
+        Find(username='b', password='o').save()
+        Find(username='c', password='o').save()
+        result = (await Find.find().where({'username': 'z'}).skip(5)
+                  .one.optional)
+        self.assertEqual(result, None)
 
     def test_include_includes_many_to_many(self):
         @jsonclass

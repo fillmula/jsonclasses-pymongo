@@ -33,11 +33,11 @@ class IDQuery(BaseIDQuery):
         return self._fetch()
 
     @property
-    def softly(self) -> SoftIDQuery:
-        return SoftIDQuery(cls=self.cls, id=self.id)
+    def optional(self) -> OptionalIDQuery:
+        return OptionalIDQuery(cls=self.cls, id=self.id)
 
 
-class SoftIDQuery(BaseIDQuery):
+class OptionalIDQuery(BaseIDQuery):
 
     def __await__(self) -> Generator[None, None, Optional[T]]:
         yield
@@ -47,21 +47,49 @@ class SoftIDQuery(BaseIDQuery):
             return None
 
 
-class ListQuery():
+class BaseQuery():
 
-    def __init__(self,
-                 cls: Type[T],
-                 filter: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, cls: Type[T]) -> None:
         self.cls = cls
-        self.filter = filter
+        self.filter: Optional[Dict[str, Any]] = None
         self.sort: Optional[List[Tuple[str, int]]] = None
         self.projection: Optional[Union[List[str], Dict[str, Any]]] = None
         self.skipping: Optional[int] = None
         self.limiting: Optional[int] = None
 
+    def _fetch(self) -> List[T]:
+        kwargs: Dict[str, Any] = {}
+        if self.filter is not None:
+            kwargs['filter'] = self.filter
+        if self.sort is not None:
+            kwargs['sort'] = self.sort
+        if self.projection is not None:
+            kwargs['projection'] = self.projection
+        if self.skipping is not None:
+            kwargs['skip'] = self.skipping
+        if self.limiting is not None:
+            kwargs['limit'] = self.limiting
+        cursor = self.cls.collection().find(**kwargs)
+        results = [doc for doc in cursor]
+        coder = Decoder()
+        return list(map(lambda doc: coder.decode_root(doc, self.cls), results))
+
+
+class ListQuery(BaseQuery):
+
+    def __init__(self,
+                 cls: Type[T],
+                 filter: Optional[Dict[str, Any]] = None) -> None:
+        super().__init__(cls=cls)
+        self.filter = filter
+
     def __call__(self, filter: Optional[Dict[str, Any]] = None) -> ListQuery:
         self.filter = filter
         return self
+
+    def __await__(self) -> Generator[None, None, List[T]]:
+        yield
+        return self._fetch()
 
     def where(self, filter: Dict[str, Any]) -> ListQuery:
         self.filter = filter
@@ -105,23 +133,49 @@ class ListQuery():
         self.limiting = limiting
         return self
 
-    def _fetch(self) -> List[T]:
-        kwargs: Dict[str, Any] = {}
-        if self.filter is not None:
-            kwargs['filter'] = self.filter
-        if self.sort is not None:
-            kwargs['sort'] = self.sort
-        if self.projection is not None:
-            kwargs['projection'] = self.projection
-        if self.skipping is not None:
-            kwargs['skip'] = self.skipping
-        if self.limiting is not None:
-            kwargs['limit'] = self.limiting
-        cursor = self.cls.collection().find(**kwargs)
-        results = [doc for doc in cursor]
-        coder = Decoder()
-        return list(map(lambda doc: coder.decode_root(doc, self.cls), results))
+    @property
+    def one(self) -> SingleQuery:
+        return SingleQuery(self)
 
-    def __await__(self) -> Generator[None, None, List[T]]:
+
+class SingleQuery(BaseQuery):
+
+    def __init__(self, query: BaseQuery) -> None:
+        super().__init__(cls=query.cls)
+        self.filter = query.filter
+        self.sort = query.sort
+        self.projection = query.projection
+        self.skipping = query.skipping
+        self.limiting = 1
+
+    def __await__(self) -> Generator[None, None, T]:
         yield
-        return self._fetch()
+        results: List[T] = self._fetch()
+        if len(results) < 1:
+            raise ObjectNotFoundException(
+                f'{self.cls.__name__}(filter={self.filter}, '
+                f'sort={self.sort}, projection={self.projection}, '
+                f'skipping={self.skipping}) not found.')
+        return results[0]
+
+    @property
+    def optional(self) -> OptionalSingleQuery:
+        return OptionalSingleQuery(self)
+
+
+class OptionalSingleQuery(BaseQuery):
+
+    def __init__(self, query: SingleQuery) -> None:
+        super().__init__(cls=query.cls)
+        self.filter = query.filter
+        self.sort = query.sort
+        self.projection = query.projection
+        self.skipping = query.skipping
+        self.limiting = 1
+
+    def __await__(self) -> Generator[None, None, Optional[T]]:
+        yield
+        results: List[T] = self._fetch()
+        if len(results) < 1:
+            return None
+        return results[0]
