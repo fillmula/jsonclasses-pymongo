@@ -1,5 +1,5 @@
 from __future__ import annotations
-import unittest
+from unittest import TestCase
 from typing import List, Dict
 from datetime import date, datetime
 from bson import ObjectId
@@ -8,7 +8,7 @@ from jsonclasses_pymongo import MongoObject
 from jsonclasses_pymongo.decoder import Decoder
 
 
-class TestDecoder(unittest.TestCase):
+class TestDecoder(TestCase):
 
     def test_decode_str_into_str(self):
         @jsonclass
@@ -137,8 +137,8 @@ class TestDecoder(unittest.TestCase):
 
         @jsonclass
         class SimpleDecodeLocalKeyList(MongoObject):
-            addresses: List[SimpleDecodeLocalKeyListAddress] = types.linkto.listof(
-                SimpleDecodeLocalKeyListAddress)
+            addresses: List[SimpleDecodeLocalKeyListAddress] = (types.linkto
+                .listof(SimpleDecodeLocalKeyListAddress))
         data = {
             '_id': ObjectId(),
             'createdAt': datetime.now(),
@@ -216,8 +216,9 @@ class TestDecoder(unittest.TestCase):
 
         @jsonclass
         class SimpleDecodeLocalKeyInstance(MongoObject):
-            address: SimpleDecodeLocalKeyInstanceAddress = types.linkto.instanceof(
-                SimpleDecodeLocalKeyInstanceAddress)
+            address: SimpleDecodeLocalKeyInstanceAddress = (types
+                    .linkto.instanceof(
+                        SimpleDecodeLocalKeyInstanceAddress))
         data = {
             '_id': ObjectId(),
             'createdAt': datetime.now(),

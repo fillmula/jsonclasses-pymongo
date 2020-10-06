@@ -1,7 +1,6 @@
 from __future__ import annotations
-import unittest
+from unittest import IsolatedAsyncioTestCase
 from typing import List
-from dotenv import load_dotenv
 from jsonclasses import jsonclass, types
 from jsonclasses_pymongo import MongoObject
 
@@ -18,12 +17,9 @@ class Customer(MongoObject):
     products: List[Product] = types.listof('Product').linkedthru('customers')
 
 
-class TestMongoObjectSave(unittest.TestCase):
+class TestMongoObjectSave(IsolatedAsyncioTestCase):
 
-    def setUp(self):
-        load_dotenv()
-
-    def test_save_multiple_instances_to_db(self):
+    async def test_save_multiple_instances_to_db(self):
         @jsonclass
         class TestAuthor(MongoObject):
             name: str
@@ -49,14 +45,14 @@ class TestMongoObjectSave(unittest.TestCase):
         }
         author = TestAuthor(**input)
         author.save()
-        returned_author = TestAuthor.find_by_id(author.id)
+        returned_author = await TestAuthor.find(author.id)
         self.assertEqual(returned_author.name, author.name)
-        returned_author_with_posts = TestAuthor.find_by_id(
-            author.id).include('posts')
+        returned_author_with_posts = ((await TestAuthor.find(author.id))
+                                                    .include('posts'))
         self.assertEqual(len(returned_author_with_posts.posts), 2)
-        returned_post_0 = TestPost.find_by_id(author.posts[0].id)
+        returned_post_0 = await TestPost.find(author.posts[0].id)
         self.assertEqual(returned_post_0.title, author.posts[0].title)
-        returned_post_0_with_author = TestPost.find_by_id(
+        returned_post_0_with_author = await TestPost.find(
             author.posts[0].id).include('author')
         self.assertEqual(returned_post_0_with_author.author.name, author.name)
 

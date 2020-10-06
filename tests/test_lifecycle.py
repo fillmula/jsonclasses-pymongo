@@ -1,7 +1,6 @@
 from __future__ import annotations
 import unittest
-from typing import List
-from jsonclasses import jsonclass, types
+from jsonclasses import jsonclass
 from jsonclasses_pymongo import MongoObject
 
 

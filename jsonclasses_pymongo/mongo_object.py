@@ -241,63 +241,6 @@ class MongoObject(ORMObject):
         return self
 
     @classmethod
-    def find_by_id(self: Type[T], id: str) -> T:
-        mongo_object = self.collection().find_one({'_id': ObjectId(id)})
-        if mongo_object is None:
-            raise ObjectNotFoundException(
-                f'{self.__name__} record with id \'{id}\' is not found.')
-        else:
-            return Decoder().decode_root(mongo_object, self)
-
-    @classmethod
-    def find_one(self: Type[T], *args, **kwargs) -> T:
-        mongo_object = self.collection().find_one(*args, **kwargs)
-        if mongo_object is None:
-            raise ObjectNotFoundException(
-                f'{self.__name__} record is not found.')
-        else:
-            return Decoder().decode_root(mongo_object, self)
-
-    @classmethod
-    def find_one_or_none(self: Type[T], *args, **kwargs) -> Optional[T]:
-        try:
-            return self.find_one(self, *args, **kwargs)
-        except ObjectNotFoundException:
-            return None
-
-    @classmethod
-    def find_one_or_new(self: Type[T], *args, **kwargs) -> T:
-        try:
-            return self.find_one(self, *args, **kwargs)
-        except ObjectNotFoundException:
-            return self()
-
-    @classmethod
-    def find_one_or(self: Type[T], callable, *args, **kwargs) -> Optional[T]:
-        try:
-            return self.find_one(self, *args, **kwargs)
-        except ObjectNotFoundException:
-            return callable()
-
-    @classmethod
-    def find_one_or_create(self: Type[T],
-                           input: Dict[str, Any],
-                           *args,
-                           **kwargs) -> T:
-        try:
-            return self.find_one(self, *args, **kwargs)
-        except ObjectNotFoundException:
-            return self(**input)
-
-    @classmethod
-    def find_many(self: Type[T], *args, **kwargs) -> Sequence[T]:
-        cursor = self.collection().find(*args, **kwargs)
-        retval = [doc for doc in cursor]
-        return list(
-            map(lambda mongo_object: Decoder().decode_root(mongo_object, self),
-                retval))
-
-    @classmethod
     def delete_by_id(self, id: str) -> None:
         deletion_result = self.collection().delete_one({'_id': ObjectId(id)})
         if deletion_result.deleted_count < 1:

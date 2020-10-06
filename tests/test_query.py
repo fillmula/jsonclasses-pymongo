@@ -1,7 +1,6 @@
 from __future__ import annotations
 from unittest import IsolatedAsyncioTestCase
 from typing import List, Optional
-from dotenv import load_dotenv
 from jsonclasses import jsonclass, types, ObjectNotFoundException
 from jsonclasses_pymongo import MongoObject
 
@@ -13,9 +12,6 @@ class Find(MongoObject):
 
 
 class TestMongoObjectQuery(IsolatedAsyncioTestCase):
-
-    def setUp(self):
-        load_dotenv()
 
     async def test_find_by_id_returns_object(self):
         object = Find(username='John').save()

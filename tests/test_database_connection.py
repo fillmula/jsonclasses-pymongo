@@ -1,15 +1,11 @@
-import unittest
-from dotenv import load_dotenv
+from unittest import IsolatedAsyncioTestCase
 from jsonclasses import jsonclass
 from jsonclasses_pymongo import MongoObject
 
 
-class TestDatabaseConnection(unittest.TestCase):
+class TestDatabaseConnection(IsolatedAsyncioTestCase):
 
-    def setUp(self):
-        load_dotenv()
-
-    def test_two_classes_share_same_database(self):
+    async def test_two_classes_share_same_database(self):
         @jsonclass
         class Article(MongoObject):
             title: str
@@ -18,6 +14,6 @@ class TestDatabaseConnection(unittest.TestCase):
         @jsonclass
         class Author(MongoObject):
             name: str
-        _articles = Article.find_many()
-        _authors = Author.find_many()
+        await Article.find()
+        await Author.find()
         self.assertEqual(Article.db(), Author.db())
