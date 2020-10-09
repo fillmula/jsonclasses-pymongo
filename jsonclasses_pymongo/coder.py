@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Type, cast, TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 from jsonclasses import (Field, FieldType, FieldStorage, resolve_types)
 from inflection import camelize
 if TYPE_CHECKING:
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 class Coder():
 
-    def is_id_field(self, field: Field, cls: Type[MongoObject]) -> bool:
+    def is_id_field(self, field: Field, cls: type[MongoObject]) -> bool:
         pk = cast(str, cls.config.primary_key)
         return field.field_name == pk
 
@@ -46,17 +46,17 @@ class Coder():
 
     def list_instance_type(self,
                            field: Field,
-                           sibling: Type[MongoObject]) -> Type[MongoObject]:
+                           sibling: type[MongoObject]) -> type[MongoObject]:
         from .mongo_object import MongoObject
         fd = field.field_types.field_description
         item_types = resolve_types(fd.list_item_types, sibling)
         item_fd = item_types.field_description
-        return cast(Type[MongoObject], item_fd.instance_types)
+        return cast(type[MongoObject], item_fd.instance_types)
 
     def join_table_name(self,
-                        cls_a: Type[MongoObject],
+                        cls_a: type[MongoObject],
                         field_a: str,
-                        cls_b: Type[MongoObject],
+                        cls_b: type[MongoObject],
                         field_b: str) -> str:
         ca = cls_a.collection().name + camelize(field_a).lower()
         cb = cls_b.collection().name + camelize(field_b).lower()

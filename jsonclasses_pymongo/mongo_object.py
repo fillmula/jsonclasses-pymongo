@@ -1,18 +1,13 @@
 from __future__ import annotations
-from typing import (ClassVar, List, Optional, Sequence, TypeVar, Dict, Any,
-                    Union, Type, overload, cast)
-from jsonclasses import (jsonclass, types, ORMObject,
-                         fields, FieldType, FieldStorage,
-                         resolve_types, ObjectNotFoundException)
+from typing import ClassVar, TypeVar, Any, Union, Type, overload
+from jsonclasses import jsonclass, types, ORMObject, ObjectNotFoundException
 from datetime import datetime
 from pymongo.collection import Collection
 from pymongo.database import Database
 from bson.objectid import ObjectId
 from inflection import pluralize
-from .utils import default_db, ref_field_key, ref_field_keys, ref_db_field_key
+from .utils import default_db
 from .encoder import Encoder
-from .decoder import Decoder
-from .command import BatchCommand
 from .query import IDQuery, ListQuery
 
 
@@ -165,80 +160,6 @@ class MongoObject(ORMObject):
         setattr(self, '_modified_fields', set())
         return self
 
-    # def add_to(self: T,
-    #            list_field_name: str,
-    #            *args: Union[MongoObject, ObjectId, str]) -> T:
-    #     field = next(field for field in fields(self)
-    #                  if field.field_name == list_field_name)
-    #     decoder = Decoder()
-    #     if not decoder.is_join_table_field(field):
-    #         return self
-    #     write_commands = []
-    #     for arg in args:
-    #         object_id = arg.id if isinstance(arg, MongoObject) else arg
-    #         if type(object_id) is str:
-    #             object_id = ObjectId(object_id)
-    #         other_class = decoder.list_instance_type(
-    #             field, self.__class__)
-    #         join_table_name = decoder.join_table_name(
-    #             self.__class__,
-    #             field.field_name,
-    #             other_class,
-    #             cast(str, field.field_types.field_description.foreign_key)
-    #         )
-    #         join_table_collection = self.__class__.db().get_collection(
-    #                                     join_table_name)
-    #         this_field_name = ref_db_field_key(
-    #             self.__class__.__name__, self.__class__)
-    #         other_field_name = ref_db_field_key(
-    #             other_class.__name__, other_class)
-    #         write_commands.append(WriteCommand({
-    #             this_field_name: ObjectId(self.id),
-    #             other_field_name: object_id
-    #         }, join_table_collection, {
-    #             this_field_name: ObjectId(self.id),
-    #             other_field_name: object_id
-    #         }))
-    #     WriteCommand.write_commands_to_db(write_commands)
-    #     return self
-
-    # def remove_from(self: T,
-    #                 list_field_name: str,
-    #                 *args: Union[MongoObject, ObjectId]) -> T:
-    #     field = next(field for field in fields(self)
-    #                  if field.field_name == list_field_name)
-    #     decoder = Decoder()
-    #     if not decoder.is_join_table_field(field):
-    #         return self
-    #     write_commands = []
-    #     for arg in args:
-    #         object_id = arg.id if isinstance(arg, MongoObject) else arg
-    #         if type(object_id) is str:
-    #             object_id = ObjectId(object_id)
-    #         other_class = decoder.list_instance_type(
-    #             field, self.__class__)
-    #         join_table_name = decoder.join_table_name(
-    #             self.__class__,
-    #             field.field_name,
-    #             other_class,
-    #             cast(str, field.field_types.field_description.foreign_key)
-    #         )
-    #         join_table_collection = self.__class__.db().get_collection(
-    #                                         join_table_name)
-    #         this_field_name = ref_db_field_key(
-    #             self.__class__.__name__, self.__class__)
-    #         other_field_name = ref_db_field_key(
-    #             other_class.__name__, other_class)
-    #         write_commands.append(WriteCommand({
-    #             this_field_name: ObjectId(self.id),
-    #             other_field_name: object_id
-    #         }, join_table_collection, {
-    #             this_field_name: ObjectId(self.id),
-    #             other_field_name: object_id
-    #         }))
-    #     WriteCommand.remove_commands_from_db(write_commands)
-    #     return self
-
     @classmethod
     def delete_by_id(self, id: str) -> None:
         deletion_result = self.collection().delete_one({'_id': ObjectId(id)})
@@ -260,7 +181,7 @@ class MongoObject(ORMObject):
 
     @overload
     @classmethod
-    def find(cls: Type[T], query: Dict[str, Any]) -> ListQuery: ...
+    def find(cls: Type[T], query: dict[str, Any]) -> ListQuery: ...
 
     @overload
     @classmethod

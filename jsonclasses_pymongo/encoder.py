@@ -1,6 +1,5 @@
 from __future__ import annotations
-from typing import (List, Dict, Set, Any, NamedTuple, TypeVar, Type, cast,
-                    TYPE_CHECKING)
+from typing import Any, NamedTuple, TypeVar, cast, TYPE_CHECKING
 from jsonclasses import (fields, types, Field, FieldType, FieldStorage,
                          resolve_types, LookupMap, concat_keypath)
 from datetime import datetime
@@ -19,7 +18,7 @@ if TYPE_CHECKING:
 class EncodingResult(NamedTuple):
     """The result from encoding an item."""
     result: Any
-    commands: List[Command]
+    commands: list[Command]
 
 
 class Encoder(Coder):
@@ -28,7 +27,7 @@ class Encoder(Coder):
     def encode_list(self, context: EncodingContext) -> EncodingResult:
         if context.value is None:
             return EncodingResult(result=None, commands=[])
-        value = cast(List[Any], context.value)
+        value = cast(list[Any], context.value)
         fd = context.types.field_description
         item_types = resolve_types(fd.list_item_types)
         if fd.field_storage == FieldStorage.FOREIGN_KEY:
@@ -52,7 +51,7 @@ class Encoder(Coder):
     def encode_dict(self, context: EncodingContext) -> EncodingResult:
         if context.value is None:
             return EncodingResult(result=None, commands=[])
-        value = cast(Dict[str, Any], context.value)
+        value = cast(dict[str, Any], context.value)
         fd = context.types.field_description
         item_types = resolve_types(fd.dict_item_types)
         camelized = context.owner.__class__.config.camelize_db_keys
@@ -73,9 +72,9 @@ class Encoder(Coder):
     def encode_shape(self, context: EncodingContext) -> EncodingResult:
         if context.value is None:
             return EncodingResult(result=None, commands=[])
-        value = cast(Dict[str, Any], context.value)
+        value = cast(dict[str, Any], context.value)
         fd = context.types.field_description
-        shape_types = cast(Dict[str, Any], fd.shape_types)
+        shape_types = cast(dict[str, Any], fd.shape_types)
         camelized = context.owner.__class__.config.camelize_db_keys
         result = {}
         commands = []
@@ -95,7 +94,7 @@ class Encoder(Coder):
     def _join_command(self,
                       this_instance: MongoObject,
                       this_field: Field,
-                      that_cls: Type[MongoObject],
+                      that_cls: type[MongoObject],
                       that_id: ObjectId) -> UpsertOneCommand:
         this_cls = this_instance.__class__
         this_cls_name = this_cls.__name__
@@ -136,7 +135,7 @@ class Encoder(Coder):
         if root:
             write_instance = True
         use_insert_command = False
-        fields_need_update: Set[str] = set()
+        fields_need_update: set[str] = set()
         if value.is_new:
             use_insert_command = True
             fields_need_update = value.modified_fields

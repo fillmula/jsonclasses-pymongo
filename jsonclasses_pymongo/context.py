@@ -1,6 +1,6 @@
 """This module defines encoding and decoding context objects."""
 from __future__ import annotations
-from typing import NamedTuple, Any, List, Dict, Union, TYPE_CHECKING
+from typing import NamedTuple, Any, Union, TYPE_CHECKING
 from jsonclasses import Types, LookupMap
 if TYPE_CHECKING:
     from .mongo_object import MongoObject
@@ -17,7 +17,7 @@ class EncodingContext(NamedTuple):
     keypath_owner: str
     owner: MongoObject
     keypath_parent: str
-    parent: Union[List[Any], Dict[str, Any], MongoObject]
+    parent: Union[list[Any], dict[str, Any], MongoObject]
     lookup_map: LookupMap
 
     def new(self, **kwargs):

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Any
+from typing import Any
 from pymongo.collection import Collection
 
 
@@ -15,7 +15,7 @@ class Command:
 
 class InsertOneCommand(Command):
 
-    def __init__(self, collection: Collection, object: Dict[str, Any]) -> None:
+    def __init__(self, collection: Collection, object: dict[str, Any]) -> None:
         self.collection = collection
         self.object = object
 
@@ -31,8 +31,8 @@ class UpdateOneCommand(Command):
 
     def __init__(self,
                  collection: Collection,
-                 object: Dict[str, Any],
-                 matcher: Dict[str, Any]) -> None:
+                 object: dict[str, Any],
+                 matcher: dict[str, Any]) -> None:
         self.collection = collection
         self.object = object
         self.matcher = matcher
@@ -53,8 +53,8 @@ class UpsertOneCommand(UpdateOneCommand):
 
     def __init__(self,
                  collection: Collection,
-                 object: Dict[str, Any],
-                 matcher: Dict[str, Any]) -> None:
+                 object: dict[str, Any],
+                 matcher: dict[str, Any]) -> None:
         super().__init__(collection=collection, object=object, matcher=matcher)
         self.upsert = True
 
@@ -67,7 +67,7 @@ class DeleteOneCommand(Command):
 
     def __init__(self,
                  collection: Collection,
-                 matcher: Dict[str, Any]) -> None:
+                 matcher: dict[str, Any]) -> None:
         self.collection = collection
         self.matcher = matcher
 
@@ -81,7 +81,7 @@ class DeleteOneCommand(Command):
 
 class BatchCommand(Command):
 
-    def __init__(self, commands: List[Command]) -> None:
+    def __init__(self, commands: list[Command]) -> None:
         self.commands = commands
 
     def execute(self) -> None:

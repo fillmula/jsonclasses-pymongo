@@ -1,7 +1,7 @@
 """This module contains id query."""
 from __future__ import annotations
-from typing import (Union, TypeVar, Type, Generator, Optional, List, Dict, Any,
-                    Tuple, overload, cast, TYPE_CHECKING)
+from typing import (Union, TypeVar, Generator, Optional, Any, overload, cast,
+                    TYPE_CHECKING)
 from bson import ObjectId
 from jsonclasses import ObjectNotFoundException
 from .decoder import Decoder
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class BaseIDQuery():
 
     def __init__(self,
-                 cls: Type[T],
+                 cls: type[T],
                  id: Union[str, ObjectId]) -> None:
         self.cls = cls
         self.id = ObjectId(id)
@@ -49,16 +49,16 @@ class OptionalIDQuery(BaseIDQuery):
 
 class BaseQuery():
 
-    def __init__(self, cls: Type[T]) -> None:
+    def __init__(self, cls: type[T]) -> None:
         self.cls = cls
-        self.filter: Optional[Dict[str, Any]] = None
-        self.sort: Optional[List[Tuple[str, int]]] = None
-        self.projection: Optional[Union[List[str], Dict[str, Any]]] = None
+        self.filter: Optional[dict[str, Any]] = None
+        self.sort: Optional[list[tuple[str, int]]] = None
+        self.projection: Optional[Union[list[str], dict[str, Any]]] = None
         self.skipping: Optional[int] = None
         self.limiting: Optional[int] = None
 
-    def _fetch(self) -> List[T]:
-        kwargs: Dict[str, Any] = {}
+    def _fetch(self) -> list[T]:
+        kwargs: dict[str, Any] = {}
         if self.filter is not None:
             kwargs['filter'] = self.filter
         if self.sort is not None:
@@ -79,19 +79,19 @@ class ListQuery(BaseQuery):
 
     def __init__(self,
                  cls: Type[T],
-                 filter: Optional[Dict[str, Any]] = None) -> None:
+                 filter: Optional[dict[str, Any]] = None) -> None:
         super().__init__(cls=cls)
         self.filter = filter
 
-    def __call__(self, filter: Optional[Dict[str, Any]] = None) -> ListQuery:
+    def __call__(self, filter: Optional[dict[str, Any]] = None) -> ListQuery:
         self.filter = filter
         return self
 
-    def __await__(self) -> Generator[None, None, List[T]]:
+    def __await__(self) -> Generator[None, None, list[T]]:
         yield
         return self._fetch()
 
-    def where(self, filter: Dict[str, Any]) -> ListQuery:
+    def where(self, filter: dict[str, Any]) -> ListQuery:
         self.filter = filter
         return self
 
@@ -99,16 +99,16 @@ class ListQuery(BaseQuery):
     def order(self, sort: str) -> ListQuery: ...
 
     @overload
-    def order(self, sort: Tuple[str, int]) -> ListQuery: ...
+    def order(self, sort: tuple[str, int]) -> ListQuery: ...
 
     @overload
-    def order(self, sort: List[Tuple[str, int]]) -> ListQuery: ...
+    def order(self, sort: list[tuple[str, int]]) -> ListQuery: ...
 
     def order(self, sort: Any) -> ListQuery:
         if isinstance(sort, str):
             self.sort = [(sort, 1)]
         elif isinstance(sort, tuple):
-            self.sort = [cast(Tuple[str, int], sort)]
+            self.sort = [cast(tuple[str, int], sort)]
         elif isinstance(sort, list):
             self.sort = sort
         else:
@@ -116,10 +116,10 @@ class ListQuery(BaseQuery):
         return self
 
     @overload
-    def project(self, projection: List[str]) -> ListQuery: ...
+    def project(self, projection: list[str]) -> ListQuery: ...
 
     @overload
-    def project(self, projection: Dict[str, Any]) -> ListQuery: ...
+    def project(self, projection: dict[str, Any]) -> ListQuery: ...
 
     def project(self, projection: Any) -> ListQuery:
         self.projection = projection
@@ -150,7 +150,7 @@ class SingleQuery(BaseQuery):
 
     def __await__(self) -> Generator[None, None, T]:
         yield
-        results: List[T] = self._fetch()
+        results: list[T] = self._fetch()
         if len(results) < 1:
             raise ObjectNotFoundException(
                 f'{self.cls.__name__}(filter={self.filter}, '
@@ -175,7 +175,7 @@ class OptionalSingleQuery(BaseQuery):
 
     def __await__(self) -> Generator[None, None, Optional[T]]:
         yield
-        results: List[T] = self._fetch()
+        results: list[T] = self._fetch()
         if len(results) < 1:
             return None
         return results[0]

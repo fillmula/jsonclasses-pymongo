@@ -1,6 +1,5 @@
 from __future__ import annotations
-from typing import (List, Dict, Any, Type, Optional, TypeVar, cast,
-                    TYPE_CHECKING)
+from typing import Any, Optional, TypeVar, cast, TYPE_CHECKING
 from datetime import date
 from jsonclasses import (fields, Types, Config, FieldType, FieldStorage,
                          resolve_types)
@@ -16,9 +15,9 @@ if TYPE_CHECKING:
 class Decoder(Coder):
 
     def decode_list(self,
-                    value: List[Any],
-                    cls: Type[T],
-                    types: Types) -> Optional[List[Any]]:
+                    value: list[Any],
+                    cls: type[T],
+                    types: Types) -> Optional[list[Any]]:
         if value is None:
             return None
         if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
@@ -31,9 +30,9 @@ class Decoder(Coder):
                     for item in value])
 
     def decode_dict(self,
-                    value: Dict[str, Any],
-                    cls: Type[T],
-                    types: Types) -> Optional[Dict[str, Any]]:
+                    value: dict[str, Any],
+                    cls: type[T],
+                    types: Types) -> Optional[dict[str, Any]]:
         if value is None:
             return None
         config: Config = cls.config
@@ -49,11 +48,11 @@ class Decoder(Coder):
                     for k, v in value.items()})
 
     def decode_shape(self,
-                     value: Dict[str, Any],
-                     cls: Type[T],
-                     types: Types) -> Dict[str, Any]:
+                     value: dict[str, Any],
+                     cls: type[T],
+                     types: Types) -> dict[str, Any]:
         config: Config = cls.config
-        shape_types = cast(Dict[str, Any], types.field_description.shape_types)
+        shape_types = cast(dict[str, Any], types.field_description.shape_types)
         retval = {}
         for k, item_types in shape_types.items():
             retval[k] = self.decode_item(
@@ -64,8 +63,8 @@ class Decoder(Coder):
         return retval
 
     def decode_instance(self,
-                        value: Dict[str, Any],
-                        cls: Type[T],
+                        value: dict[str, Any],
+                        cls: type[T],
                         types: Types) -> Any:
         from .mongo_object import MongoObject
         if types.field_description.field_storage == FieldStorage.FOREIGN_KEY:
@@ -75,13 +74,13 @@ class Decoder(Coder):
         else:
             return self.decode_root(
                 root=value,
-                cls=cast(Type[MongoObject], resolve_types(
+                cls=cast(type[MongoObject], resolve_types(
                     types.field_description.instance_types,
                     graph_sibling=cls
                 ).field_description.instance_types)
             )
 
-    def decode_item(self, value: Any, cls: Type[T], types: Types) -> Any:
+    def decode_item(self, value: Any, cls: type[T], types: Types) -> Any:
         if value is None:
             return value
         if types.field_description.field_type == FieldType.DATE:
@@ -98,8 +97,8 @@ class Decoder(Coder):
             return value
 
     def decode_root(self,
-                    root: Dict[str, Any],
-                    cls: Type[T]) -> T:
+                    root: dict[str, Any],
+                    cls: type[T]) -> T:
         dest = cls()
         for field in fields(cls):
             if self.is_id_field(field, cls):
