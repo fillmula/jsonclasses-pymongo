@@ -38,12 +38,12 @@ class TestORMObject(unittest.TestCase):
         self.assertFalse(o.is_valid())
 
     def test_mongo_object_has_timestamps_in_nested_instances(self):
-        @jsonclass(graph='test_persistable_json_01')
+        @jsonclass(class_graph='test_persistable_json_01')
         class TestAuthor(MongoObject):
             name: str
             posts: List[TestPost] = types.listof('TestPost').linkedby('author')
 
-        @jsonclass(graph='test_persistable_json_01')
+        @jsonclass(class_graph='test_persistable_json_01')
         class TestPost(MongoObject):
             title: str
             content: str
