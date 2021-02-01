@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any, NamedTuple, TypeVar, cast, TYPE_CHECKING
-from jsonclasses import (fields, types, Field, FieldType, FieldStorage,
+from jsonclasses import (get_fields, types, Field, FieldType, FieldStorage,
                          resolve_types, LookupMap, concat_keypath)
 from datetime import datetime
 from inflection import camelize
@@ -28,7 +28,7 @@ class Encoder(Coder):
         if context.value is None:
             return EncodingResult(result=None, commands=[])
         value = cast(list[Any], context.value)
-        fd = context.types.field_description
+        fd = context.types.fdesc
         item_types = resolve_types(fd.list_item_types)
         if fd.field_storage == FieldStorage.FOREIGN_KEY:
             item_types = item_types.linkedby(cast(str, fd.foreign_key))
@@ -52,7 +52,7 @@ class Encoder(Coder):
         if context.value is None:
             return EncodingResult(result=None, commands=[])
         value = cast(dict[str, Any], context.value)
-        fd = context.types.field_description
+        fd = context.types.fdesc
         item_types = resolve_types(fd.dict_item_types)
         camelized = context.owner.__class__.config.camelize_db_keys
         result = {}
@@ -73,7 +73,7 @@ class Encoder(Coder):
         if context.value is None:
             return EncodingResult(result=None, commands=[])
         value = cast(dict[str, Any], context.value)
-        fd = context.types.field_description
+        fd = context.types.fdesc
         shape_types = cast(dict[str, Any], fd.shape_types)
         camelized = context.owner.__class__.config.camelize_db_keys
         result = {}
@@ -105,7 +105,7 @@ class Encoder(Coder):
             this_cls,
             this_field.field_name,
             that_cls,
-            cast(str, this_field.field_description.foreign_key))
+            cast(str, this_field.fdesc.foreign_key))
         collection = this_cls.db().get_collection(join_table_name)
         this_pk = cast(str, this_instance.__class__.config.primary_key)
         this_id = ObjectId(getattr(this_instance, this_pk))
@@ -130,7 +130,7 @@ class Encoder(Coder):
         if context.lookup_map.fetch(cls_name, id) is not None:
             return EncodingResult({'_id': ObjectId(id)}, commands=[])
         context.lookup_map.put(cls_name, id, value)
-        instance_fd = context.types.field_description
+        instance_fd = context.types.fdesc
         write_instance = instance_fd.field_storage != FieldStorage.EMBEDDED
         if root:
             write_instance = True
@@ -143,7 +143,7 @@ class Encoder(Coder):
         matcher = {}
         commands = []
         result_addtoset = {}
-        for field in fields(value):
+        for field in get_fields(value):
             fname = field.field_name
             fvalue = getattr(value, fname)
             ftypes = field.field_types
@@ -251,7 +251,7 @@ class Encoder(Coder):
     def encode_item(self, context: EncodingContext) -> EncodingResult:
         if context.value is None:
             return EncodingResult(result=None, commands=[])
-        field_type = context.types.field_description.field_type
+        field_type = context.types.fdesc.field_type
         if field_type == FieldType.LIST:
             return self.encode_list(context)
         elif field_type == FieldType.DICT:

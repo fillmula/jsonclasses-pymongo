@@ -180,4 +180,4 @@ class BaseMongoObject(ORMObject):
         return ListQuery(cls=cls, filter=arg)
 
 
-T = TypeVar('T', bound=MongoObject)
+T = TypeVar('T', bound=BaseMongoObject)
