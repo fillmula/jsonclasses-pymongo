@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any, NamedTuple, TypeVar, cast, TYPE_CHECKING
 from jsonclasses import (get_fields, types, Field, FieldType, FieldStorage,
-                         resolve_types, LookupMap, concat_keypath)
+                         resolve_types, ObjectGraph, concat_keypath)
 from datetime import datetime
 from inflection import camelize
 from bson.objectid import ObjectId
@@ -11,8 +11,8 @@ from .context import EncodingContext
 from .command import (Command, InsertOneCommand, UpdateOneCommand,
                       UpsertOneCommand, BatchCommand)
 if TYPE_CHECKING:
-    from .mongo_object import MongoObject
-    T = TypeVar('T', bound=MongoObject)
+    from .base_mongo_object import BaseMongoObject
+    T = TypeVar('T', bound=BaseMongoObject)
 
 
 class EncodingResult(NamedTuple):
@@ -29,7 +29,7 @@ class Encoder(Coder):
             return EncodingResult(result=None, commands=[])
         value = cast(list[Any], context.value)
         fd = context.types.fdesc
-        item_types = resolve_types(fd.list_item_types)
+        item_types = resolve_types(fd.raw_item_types)
         if fd.field_storage == FieldStorage.FOREIGN_KEY:
             item_types = item_types.linkedby(cast(str, fd.foreign_key))
         if fd.field_storage == FieldStorage.LOCAL_KEY:
@@ -53,7 +53,7 @@ class Encoder(Coder):
             return EncodingResult(result=None, commands=[])
         value = cast(dict[str, Any], context.value)
         fd = context.types.fdesc
-        item_types = resolve_types(fd.dict_item_types)
+        item_types = resolve_types(fd.raw_item_types)
         camelized = context.owner.__class__.config.camelize_db_keys
         result = {}
         commands = []
@@ -92,9 +92,9 @@ class Encoder(Coder):
         return EncodingResult(result, commands)
 
     def _join_command(self,
-                      this_instance: MongoObject,
+                      this_instance: BaseMongoObject,
                       this_field: Field,
-                      that_cls: type[MongoObject],
+                      that_cls: type[BaseMongoObject],
                       that_id: ObjectId) -> UpsertOneCommand:
         this_cls = this_instance.__class__
         this_cls_name = this_cls.__name__
@@ -107,7 +107,7 @@ class Encoder(Coder):
             that_cls,
             cast(str, this_field.fdesc.foreign_key))
         collection = this_cls.db().get_collection(join_table_name)
-        this_pk = cast(str, this_instance.__class__.config.primary_key)
+        this_pk = cast(str, this_instance._id)
         this_id = ObjectId(getattr(this_instance, this_pk))
         matcher = {
             this_field_name: this_id,
@@ -120,16 +120,14 @@ class Encoder(Coder):
     def encode_instance(self,
                         context: EncodingContext,
                         root: bool = False) -> EncodingResult:
-        from .mongo_object import MongoObject
         if context.value is None:
             return EncodingResult(result=None, commands=[])
-        value = cast(MongoObject, context.value)
+        value = cast(BaseMongoObject, context.value)
         cls = value.__class__
-        cls_name = cls.__name__
-        id = getattr(value, cast(str, value.__class__.config.primary_key))
-        if context.lookup_map.fetch(cls_name, id) is not None:
+        id = getattr(value, cast(str, value._id))
+        if context.object_graph.getp(cls, id) is not None:
             return EncodingResult({'_id': ObjectId(id)}, commands=[])
-        context.lookup_map.put(cls_name, id, value)
+        context.object_graph.put(value)
         instance_fd = context.types.fdesc
         write_instance = instance_fd.field_storage != FieldStorage.EMBEDDED
         if root:
@@ -147,7 +145,7 @@ class Encoder(Coder):
             fname = field.field_name
             fvalue = getattr(value, fname)
             ftypes = field.field_types
-            if self.is_id_field(field, value.__class__):
+            if self.is_id_field(field):
                 if use_insert_command:
                     result_set['_id'] = ObjectId(fvalue)
                 else:
@@ -277,5 +275,5 @@ class Encoder(Coder):
             owner=root,
             keypath_parent='',
             parent=root,
-            lookup_map=LookupMap()), root=True)[1]
+            object_graph=ObjectGraph()), root=True)[1]
         return BatchCommand(commands=commands)

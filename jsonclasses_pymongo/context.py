@@ -1,9 +1,9 @@
 """This module defines encoding and decoding context objects."""
 from __future__ import annotations
 from typing import NamedTuple, Any, Union, TYPE_CHECKING
-from jsonclasses import Types, LookupMap
+from jsonclasses import Types, ObjectGraph
 if TYPE_CHECKING:
-    from .mongo_object import MongoObject
+    from .base_mongo_object import BaseMongoObject
 
 
 class EncodingContext(NamedTuple):
@@ -13,12 +13,12 @@ class EncodingContext(NamedTuple):
     value: Any
     types: Types
     keypath_root: str
-    root: MongoObject
+    root: BaseMongoObject
     keypath_owner: str
-    owner: MongoObject
+    owner: BaseMongoObject
     keypath_parent: str
-    parent: Union[list[Any], dict[str, Any], MongoObject]
-    lookup_map: LookupMap
+    parent: Union[list[Any], dict[str, Any], BaseMongoObject]
+    object_graph: ObjectGraph
 
     def new(self, **kwargs):
         """Return a new encoding context by replacing provided values."""
@@ -36,5 +36,5 @@ class EncodingContext(NamedTuple):
                             if 'keypath_parent' in keys
                             else self.keypath_parent),
             parent=kwargs['parent'] if 'parent' in keys else self.parent,
-            lookup_map=(kwargs['lookup_map']
-                        if 'lookup_map' in keys else self.lookup_map))
+            object_graph=(kwargs['object_graph']
+                          if 'object_graph' in keys else self.object_graph))

@@ -25,7 +25,7 @@ class Decoder(Coder):
         elif types.fdesc.field_storage == FieldStorage.LOCAL_KEY:
             return [str(item) for item in value]
         else:
-            item_types = resolve_types(types.fdesc.list_item_types)
+            item_types = resolve_types(types.fdesc.raw_item_types)
             return ([self.decode_item(value=item, cls=cls, types=item_types)
                     for item in value])
 

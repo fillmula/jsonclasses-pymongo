@@ -5,7 +5,7 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from inflection import camelize
 if TYPE_CHECKING:
-    from .mongo_object import MongoObject
+    from .base_mongo_object import BaseMongoObject
 
 __database_url: str = getenv(
     'DATABASE_URL') or 'mongodb://localhost:27017/jsonclassespymongodemo'
@@ -31,7 +31,7 @@ def default_db() -> Database:
     return __database
 
 
-def ref_key(key: str, cls: type[MongoObject]) -> tuple[str, str]:
+def ref_key(key: str, cls: type[BaseMongoObject]) -> tuple[str, str]:
     field_name = key + '_id'
     if cls.config.camelize_db_keys:
         db_field_name = camelize(field_name, False)
@@ -44,7 +44,7 @@ def ref_field_key(key: str) -> str:
     return key + '_id'
 
 
-def ref_db_field_key(key: str, cls: type[MongoObject]) -> str:
+def ref_db_field_key(key: str, cls: type[BaseMongoObject]) -> str:
     field_name = ref_field_key(key)
     if cls.config.camelize_db_keys:
         db_field_name = camelize(field_name, False)
@@ -57,7 +57,7 @@ def ref_field_keys(key: str) -> str:
     return key + '_ids'
 
 
-def ref_db_field_keys(key: str, cls: type[MongoObject]) -> str:
+def ref_db_field_keys(key: str, cls: type[BaseMongoObject]) -> str:
     field_name = ref_field_keys(key)
     if cls.config.camelize_db_keys:
         db_field_name = camelize(field_name, False)
