@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, NamedTuple, TypeVar, cast, TYPE_CHECKING
+from typing import Any, NamedTuple, TypeVar, Union, cast, TYPE_CHECKING
 from jsonclasses import (get_fields, types, Field, FieldType, FieldStorage,
                          resolve_types, ObjectGraph, concat_keypath)
 from datetime import datetime
@@ -125,7 +125,7 @@ class Encoder(Coder):
             return EncodingResult(result=None, commands=[])
         value = cast(BaseMongoObject, context.value)
         cls = value.__class__
-        id = getattr(value, cast(str, value._id))
+        id = cast(Union[str, int], value._id)
         if context.object_graph.getp(cls, id) is not None:
             return EncodingResult({'_id': ObjectId(id)}, commands=[])
         context.object_graph.put(value)

@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import List
 import unittest
 from jsonclasses import jsonclass, types
 from datetime import datetime
@@ -41,13 +40,14 @@ class TestORMObject(unittest.TestCase):
         @jsonclass(class_graph='test_persistable_json_01')
         class TestAuthor(MongoObject):
             name: str
-            posts: List[TestPost] = types.listof('TestPost').linkedby('author')
+            posts: list[TestPost] = types.listof('TestPost').linkedby('author')
 
         @jsonclass(class_graph='test_persistable_json_01')
         class TestPost(MongoObject):
             title: str
             content: str
             author: TestAuthor = types.linkto.instanceof(TestAuthor)
+
         input = {
             'name': 'John Lesque',
             'posts': [
@@ -61,6 +61,7 @@ class TestORMObject(unittest.TestCase):
                 }
             ]
         }
+        print(TestAuthor.fields())
         author = TestAuthor(**input)
         self.assertIs(type(author.created_at), datetime)
         self.assertIs(type(author.updated_at), datetime)
