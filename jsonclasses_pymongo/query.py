@@ -6,8 +6,8 @@ from bson import ObjectId
 from jsonclasses import ObjectNotFoundException
 from .decoder import Decoder
 if TYPE_CHECKING:
-    from .mongo_object import MongoObject
-    T = TypeVar('T', bound=MongoObject)
+    from .base_mongo_object import BaseMongoObject
+    T = TypeVar('T', bound=BaseMongoObject)
 
 
 class BaseIDQuery():
@@ -78,7 +78,7 @@ class BaseQuery():
 class ListQuery(BaseQuery):
 
     def __init__(self,
-                 cls: Type[T],
+                 cls: type[T],
                  filter: Optional[dict[str, Any]] = None) -> None:
         super().__init__(cls=cls)
         self.filter = filter

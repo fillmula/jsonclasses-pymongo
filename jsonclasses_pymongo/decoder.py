@@ -42,7 +42,7 @@ class Decoder(Coder):
             return ({underscore(k) if config.camelize_db_keys else k: str(v)
                     for k, v in value.items()})
         else:
-            item_types = resolve_types(types.fdesc.dict_item_types)
+            item_types = resolve_types(types.fdesc.raw_item_types)
             return ({underscore(k) if config.camelize_db_keys else k:
                     self.decode_item(value=v, cls=cls, types=item_types)
                     for k, v in value.items()})
@@ -100,7 +100,7 @@ class Decoder(Coder):
                     cls: type[T]) -> T:
         dest = cls()
         for field in get_fields(cls):
-            if self.is_id_field(field, cls):
+            if self.is_id_field(field):
                 setattr(dest, 'id', str(root.get('_id')))
             elif self.is_foreign_key_storage(field):
                 pass
