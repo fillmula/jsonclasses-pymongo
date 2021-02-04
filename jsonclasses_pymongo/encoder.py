@@ -120,6 +120,7 @@ class Encoder(Coder):
     def encode_instance(self,
                         context: EncodingContext,
                         root: bool = False) -> EncodingResult:
+        from .base_mongo_object import BaseMongoObject
         if context.value is None:
             return EncodingResult(result=None, commands=[])
         value = cast(BaseMongoObject, context.value)

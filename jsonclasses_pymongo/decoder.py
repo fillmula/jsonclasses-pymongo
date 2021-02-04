@@ -66,6 +66,7 @@ class Decoder(Coder):
                         value: dict[str, Any],
                         cls: type[T],
                         types: Types) -> Any:
+        from .base_mongo_object import BaseMongoObject
         if types.fdesc.field_storage == FieldStorage.FOREIGN_KEY:
             return None
         elif types.fdesc.field_storage == FieldStorage.LOCAL_KEY:
