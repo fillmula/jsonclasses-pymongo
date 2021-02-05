@@ -29,7 +29,8 @@ class Encoder(Coder):
             return EncodingResult(result=None, commands=[])
         value = cast(list[Any], context.value)
         fd = context.types.fdesc
-        item_types = resolve_types(fd.raw_item_types)
+        item_types = resolve_types(fd.raw_item_types,
+                                   graph_sibling=context.root.__class__)
         if fd.field_storage == FieldStorage.FOREIGN_KEY:
             item_types = item_types.linkedby(cast(str, fd.foreign_key))
         if fd.field_storage == FieldStorage.LOCAL_KEY:
@@ -107,8 +108,7 @@ class Encoder(Coder):
             that_cls,
             cast(str, this_field.fdesc.foreign_key))
         collection = this_cls.db().get_collection(join_table_name)
-        this_pk = cast(str, this_instance._id)
-        this_id = ObjectId(getattr(this_instance, this_pk))
+        this_id = ObjectId(this_instance._id)
         matcher = {
             this_field_name: this_id,
             that_field_name: that_id
