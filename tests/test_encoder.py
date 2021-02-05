@@ -21,7 +21,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'val1', 'val2']))
+            ['_id', 'createdAt', 'updatedAt', 'val1', 'val2', 'deletedAt']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['val1'], 'q')
         self.assertEqual(serialized['val2'], 'e')
@@ -51,7 +51,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'width', 'length']))
+            ['_id', 'createdAt', 'updatedAt', 'width', 'length', 'deletedAt']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['width'], 4.5)
         self.assertEqual(serialized['length'], 8.5)
@@ -66,7 +66,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'b1', 'b2']))
+            ['_id', 'createdAt', 'updatedAt', 'b1', 'b2', 'deletedAt']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['b1'], True)
         self.assertEqual(serialized['b2'], False)
@@ -81,7 +81,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'd1', 'd2']))
+            ['_id', 'createdAt', 'updatedAt', 'd1', 'd2', 'deletedAt']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['d1'], datetime(2012, 9, 15, 0, 0, 0))
         self.assertEqual(serialized['d2'], datetime(2020, 9, 14, 0, 0, 0))
@@ -96,7 +96,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'd1', 'd2']))
+            ['_id', 'createdAt', 'updatedAt', 'd1', 'd2', 'deletedAt']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['d1'], datetime(2012, 9, 15, 0, 0, 0))
         self.assertEqual(serialized['d2'], datetime(2020, 9, 14, 0, 0, 0))
@@ -115,7 +115,7 @@ class TestEncoder(TestCase):
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
             ['_id', 'createdAt', 'updatedAt', 'strValues', 'intValues',
-             'boolValues']))
+             'boolValues', 'deletedAt']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['strValues'], ['0', '1'])
         self.assertEqual(serialized['intValues'], [0, 1])
@@ -131,7 +131,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'strValues']))
+            ['_id', 'createdAt', 'updatedAt', 'strValues', 'deletedAt']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['strValues'], {'0': 'zero', '1': 'one'})
 
@@ -148,7 +148,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'vals']))
+            ['_id', 'createdAt', 'updatedAt', 'vals', 'deletedAt']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['vals'], {'0': 'zero', '1': 1})
 
