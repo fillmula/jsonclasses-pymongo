@@ -36,7 +36,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'age', 'length']))
+            ['_id', 'createdAt', 'updatedAt', 'age', 'length', 'deletedAt']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['age'], 4)
         self.assertEqual(serialized['length'], 8)
@@ -239,7 +239,7 @@ class TestEncoder(TestCase):
         class MediumEncodeForeignKeyInstanceAddress(MongoObject):
             line1: str
             owner: MediumEncodeForeignKeyInstance = types.linkto.instanceof(
-                'SimpleEncodeForeignKeyInstance')
+                'MediumEncodeForeignKeyInstance')
 
         @jsonclass
         class MediumEncodeForeignKeyInstance(MongoObject):

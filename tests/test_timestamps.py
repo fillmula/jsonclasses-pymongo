@@ -61,7 +61,6 @@ class TestORMObject(unittest.TestCase):
                 }
             ]
         }
-        print(TestAuthor.fields())
         author = TestAuthor(**input)
         self.assertIs(type(author.created_at), datetime)
         self.assertIs(type(author.updated_at), datetime)
