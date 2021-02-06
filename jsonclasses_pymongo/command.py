@@ -41,7 +41,7 @@ class UpdateOneCommand(Command):
     def execute(self) -> None:
         self.collection.update_one(
             filter=self.matcher,
-            update={'$set': self.object},
+            update=self.object,
             upsert=self.upsert)
 
     def __repr__(self) -> str:
