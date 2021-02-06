@@ -134,10 +134,9 @@ class Encoder(Coder):
         if root:
             write_instance = True
         use_insert_command = False
-        fields_need_update: set[str] = set()
+        fields_need_update: set[str] = value.modified_fields
         if value.is_new:
             use_insert_command = True
-            fields_need_update = value.modified_fields
         result_set = {}
         matcher = {}
         commands = []
@@ -240,11 +239,14 @@ class Encoder(Coder):
                 insert_command = InsertOneCommand(collection, result_set)
                 commands.append(insert_command)
             else:
-                update_command = UpdateOneCommand(
-                    collection,
-                    {'$set': result_set, '$addToSet': result_addtoset},
-                    matcher)
-                commands.append(update_command)
+                updator = {}
+                if len(result_set) > 0:
+                    updator['$set'] = result_set
+                if len(result_addtoset) > 0:
+                    updator['$addToSet'] = result_addtoset
+                if len(updator) > 0:
+                    update_c = UpdateOneCommand(collection, updator, matcher)
+                    commands.append(update_c)
         return EncodingResult(result_set, commands)
 
     def encode_item(self, context: EncodingContext) -> EncodingResult:
