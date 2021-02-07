@@ -130,18 +130,11 @@ class BaseMongoObject(ORMObject):
     #         self._include(arg)
     #     return self
 
-    def save(
-        self: T,
-        validate_all_fields: bool = False,
-        skip_validation: bool = False
-    ) -> T:
-        if not skip_validation:
-            self.validate(all_fields=validate_all_fields)
+    def _database_write(self: T) -> None:
         Encoder().encode_root(self).execute()
         setattr(self, '_is_new', False)
         setattr(self, '_is_modified', False)
         setattr(self, '_modified_fields', set())
-        return self
 
     @classmethod
     def delete_by_id(self, id: str) -> None:
