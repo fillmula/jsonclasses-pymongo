@@ -4,6 +4,7 @@ from typing import (Union, TypeVar, Generator, Optional, Any, overload, cast,
                     TYPE_CHECKING)
 from bson import ObjectId
 from jsonclasses import ObjectNotFoundException
+from inflection import camelize
 from .decoder import Decoder
 if TYPE_CHECKING:
     from .base_mongo_object import BaseMongoObject
@@ -77,11 +78,20 @@ class ListQuery(BaseQuery):
                  cls: type[T],
                  filter: Optional[dict[str, Any]] = None) -> None:
         super().__init__(cls=cls)
-        self.filter = filter
+        self.filter = self._update_cases(filter)
 
     def __call__(self, filter: Optional[dict[str, Any]] = None) -> ListQuery:
-        self.filter = filter
+        self.filter = self._update_cases(filter)
         return self
+
+    def _update_cases(self,
+                      d: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
+        if d is None:
+            return None
+        retval: dict[str, Any] = {}
+        for key, value in d.items():
+            retval[camelize(key, False)] = value
+        return retval
 
     def where(self, filter: dict[str, Any]) -> ListQuery:
         self.filter = filter
