@@ -39,7 +39,7 @@ class TestMongoObjectLifeCycle(IsolatedAsyncioTestCase):
     async def test_not_new_not_modified_after_fetch(self):
         cycle = Cycle(name='qq')
         cycle.save()
-        cycle = await Cycle.find({'name': 'qq'}).one
+        cycle = await Cycle.find(name='qq').first
         self.assertEqual(cycle.is_new, False)
         self.assertEqual(cycle.is_modified, False)
         self.assertEqual(cycle.modified_fields, set())
@@ -47,7 +47,7 @@ class TestMongoObjectLifeCycle(IsolatedAsyncioTestCase):
     async def test_change_marks_modified_after_fetch(self):
         cycle = Cycle(name='qq')
         cycle.save()
-        cycle = await Cycle.find({'name': 'qq'}).one
+        cycle = await Cycle.find(name='qq').first
         cycle.name = 'alter'
         self.assertEqual(cycle.is_new, False)
         self.assertEqual(cycle.is_modified, True)

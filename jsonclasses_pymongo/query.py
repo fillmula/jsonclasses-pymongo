@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     T = TypeVar('T', bound=BaseMongoObject)
 
 
-class BaseIDQuery():
+class IDQuery():
 
     def __init__(self,
                  cls: type[T],
@@ -18,31 +18,23 @@ class BaseIDQuery():
         self.cls = cls
         self.id = ObjectId(id)
 
-    def _fetch(self) -> T:
+    def exec(self) -> T:
         fetched_object = self.cls.collection().find_one({'_id': self.id})
         if fetched_object is not None:
             return Decoder().decode_root(fetched_object, self.cls)
         raise ObjectNotFoundException(
             f'{self.cls.__name__}(_id={self.id}) not found.')
 
-
-class IDQuery(BaseIDQuery):
-
     def __await__(self) -> Generator[None, None, T]:
         yield
-        return self._fetch()
-
-    @property
-    def optional(self) -> OptionalIDQuery:
-        return OptionalIDQuery(cls=self.cls, id=self.id)
+        return self.exec()
 
 
-class OptionalIDQuery(BaseIDQuery):
+class OptionalIDQuery(IDQuery):
 
-    def __await__(self) -> Generator[None, None, Optional[T]]:
-        yield
+    def exec(self) -> Optional[T]:
         try:
-            return self._fetch()
+            return super().exec()
         except ObjectNotFoundException:
             return None
 
@@ -57,7 +49,7 @@ class BaseQuery():
         self.skipping: Optional[int] = None
         self.limiting: Optional[int] = None
 
-    def _fetch(self) -> list[T]:
+    def exec(self) -> list[T]:
         kwargs: dict[str, Any] = {}
         if self.filter is not None:
             kwargs['filter'] = self.filter
@@ -89,7 +81,7 @@ class ListQuery(BaseQuery):
 
     def __await__(self) -> Generator[None, None, list[T]]:
         yield
-        return self._fetch()
+        return self.exec()
 
     def where(self, filter: dict[str, Any]) -> ListQuery:
         self.filter = filter
@@ -134,8 +126,12 @@ class ListQuery(BaseQuery):
         return self
 
     @property
-    def one(self) -> SingleQuery:
+    def first(self) -> SingleQuery:
         return SingleQuery(self)
+
+    @property
+    def first_or_none(self) -> OptionalSingleQuery:
+        return OptionalSingleQuery(SingleQuery(self))
 
 
 class SingleQuery(BaseQuery):
@@ -150,17 +146,13 @@ class SingleQuery(BaseQuery):
 
     def __await__(self) -> Generator[None, None, T]:
         yield
-        results: list[T] = self._fetch()
+        results: list[T] = self.exec()
         if len(results) < 1:
             raise ObjectNotFoundException(
                 f'{self.cls.__name__}(filter={self.filter}, '
                 f'sort={self.sort}, projection={self.projection}, '
                 f'skipping={self.skipping}) not found.')
         return results[0]
-
-    @property
-    def optional(self) -> OptionalSingleQuery:
-        return OptionalSingleQuery(self)
 
 
 class OptionalSingleQuery(BaseQuery):
@@ -175,7 +167,7 @@ class OptionalSingleQuery(BaseQuery):
 
     def __await__(self) -> Generator[None, None, Optional[T]]:
         yield
-        results: list[T] = self._fetch()
+        results: list[T] = self.exec()
         if len(results) < 1:
             return None
         return results[0]

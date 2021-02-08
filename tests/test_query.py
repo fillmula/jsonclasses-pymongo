@@ -16,7 +16,7 @@ class TestMongoObjectQuery(IsolatedAsyncioTestCase):
     async def test_find_by_id_returns_object(self):
         object = Find(username='John').save()
         id = object.id
-        result = await Find.find(id)
+        result = await Find.find_by_id(id)
         self.assertEqual(result.username, 'John')
         self.assertEqual(result.password, None)
 
@@ -24,17 +24,17 @@ class TestMongoObjectQuery(IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(
                 ObjectNotFoundException,
                 'Find\\(_id=1234567890abcd1234567890\\) not found\\.'):
-            await Find.find('1234567890abcd1234567890')
+            await Find.find_by_id('1234567890abcd1234567890')
 
     async def test_find_by_id_optional_returns_object(self):
         object = Find(username='John').save()
         id = object.id
-        result = await Find.find(id).optional
+        result = await Find.find_by(id=id)
         self.assertEqual(result.username, 'John')
         self.assertEqual(result.password, None)
 
     async def test_find_by_id_optional_returns_none_if_not_found(self):
-        result = await Find.find('1234567890abcd1234567890').optional
+        result = await Find.find_by(id='1234567890abcd1234567890')
         self.assertIs(result, None)
 
     async def test_find_without_arguments_returns_list(self):
@@ -52,7 +52,7 @@ class TestMongoObjectQuery(IsolatedAsyncioTestCase):
         Find.delete()
         Find(username='a', password='b').save()
         Find(username='c', password='d').save()
-        results = await Find.find({'username': 'a'})
+        results = await Find.find(username='a')
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].username, 'a')
         self.assertEqual(results[0].password, 'b')
@@ -131,7 +131,7 @@ class TestMongoObjectQuery(IsolatedAsyncioTestCase):
         Find(username='a', password='o').save()
         Find(username='b', password='o').save()
         Find(username='c', password='o').save()
-        result = await Find.find().order('username').one
+        result = await Find.find().order('username').first
         self.assertEqual(result.username, 'a')
         self.assertEqual(result.password, 'o')
 
@@ -144,14 +144,14 @@ class TestMongoObjectQuery(IsolatedAsyncioTestCase):
                 ObjectNotFoundException,
                 ("Find\\(filter={'username': 'z'}, sort=None, "
                  "projection=None, skipping=5\\) not found\\.")):
-            await Find.find().where({'username': 'z'}).skip(5).one
+            await Find.find().where({'username': 'z'}).skip(5).first
 
     async def test_find_one_optional_returns_one_result(self):
         Find.delete()
         Find(username='a', password='o').save()
         Find(username='b', password='o').save()
         Find(username='c', password='o').save()
-        result = await Find.find().order('username').one.optional
+        result = await Find.find().order('username').first_or_none
         self.assertEqual(result.username, 'a')
         self.assertEqual(result.password, 'o')
 
@@ -161,7 +161,7 @@ class TestMongoObjectQuery(IsolatedAsyncioTestCase):
         Find(username='b', password='o').save()
         Find(username='c', password='o').save()
         result = (await Find.find().where({'username': 'z'}).skip(5)
-                  .one.optional)
+                  .first_or_none)
         self.assertEqual(result, None)
 
     # def test_include_includes_many_to_many(self):

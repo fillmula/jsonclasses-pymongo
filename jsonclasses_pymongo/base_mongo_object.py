@@ -7,7 +7,7 @@ from bson.objectid import ObjectId
 from inflection import pluralize
 from .utils import default_db
 from .encoder import Encoder
-from .query import IDQuery, ListQuery
+from .query import IDQuery, ListQuery, SingleQuery, OptionalSingleQuery
 
 
 @jsonclass
@@ -148,26 +148,23 @@ class BaseMongoObject(ORMObject):
             args = ({},)
         return self.collection().delete_many(*args, **kwargs).deleted_count
 
-    @overload
     @classmethod
-    def find(cls: Type[T], id: Union[str, ObjectId]) -> IDQuery: ...
-
-    @overload
-    @classmethod
-    def find(cls: Type[T], query: dict[str, Any]) -> ListQuery: ...
-
-    @overload
-    @classmethod
-    def find(cls: Type[T]) -> ListQuery: ...
+    def find_by_id(cls: Type[T], id: Union[str, ObjectId]) -> IDQuery:
+        return IDQuery(cls=cls, id=id)
 
     @classmethod
-    def find(cls: Type[T], *args, **kwargs) -> Union[IDQuery, ListQuery]:
-        id = kwargs.get('id') or args[0] if len(args) > 0 else None
-        query = kwargs.get('query') or args[0] if len(args) > 0 else None
-        arg = id if id is not None else query
-        if isinstance(arg, str) or isinstance(arg, ObjectId):
-            return IDQuery(cls=cls, id=arg)
-        return ListQuery(cls=cls, filter=arg)
+    def find(cls: Type[T], **kwargs: Any) -> ListQuery:
+        return ListQuery(cls=cls, filter=kwargs)
+
+    @classmethod
+    def find_one(cls: Type[T], **kwargs: Any) -> SingleQuery:
+        if kwargs.get('id'):
+            kwargs['id'] = ObjectId(kwargs['id'])
+        return SingleQuery(ListQuery(cls=cls, filter=kwargs))
+
+    @classmethod
+    def find_by(cls: Type[T], **kwargs: Any) -> OptionalSingleQuery:
+        return OptionalSingleQuery(cls.find_one(**kwargs))
 
 
 T = TypeVar('T', bound=BaseMongoObject)
