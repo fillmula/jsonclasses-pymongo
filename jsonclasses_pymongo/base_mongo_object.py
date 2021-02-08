@@ -132,9 +132,6 @@ class BaseMongoObject(ORMObject):
 
     def _database_write(self: T) -> None:
         Encoder().encode_root(self).execute()
-        setattr(self, '_is_new', False)
-        setattr(self, '_is_modified', False)
-        setattr(self, '_modified_fields', set())
 
     @classmethod
     def delete_by_id(self, id: str) -> None:

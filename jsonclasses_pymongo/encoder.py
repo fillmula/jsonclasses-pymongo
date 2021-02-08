@@ -134,7 +134,7 @@ class Encoder(Coder):
         if root:
             write_instance = True
         use_insert_command = False
-        fields_need_update: set[str] = value.modified_fields
+        fields_need_update: set[str] = value.modified_fields_p
         if value.is_new:
             use_insert_command = True
         result_set = {}
@@ -247,6 +247,10 @@ class Encoder(Coder):
                 if len(updator) > 0:
                     update_c = UpdateOneCommand(collection, updator, matcher)
                     commands.append(update_c)
+        value._clear_temp_fields()
+        setattr(value, '_is_new', False)
+        setattr(value, '_is_modified', False)
+        setattr(value, '_modified_fields', set())
         return EncodingResult(result_set, commands)
 
     def encode_item(self, context: EncodingContext) -> EncodingResult:
