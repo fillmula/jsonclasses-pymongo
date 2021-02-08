@@ -159,7 +159,8 @@ class BaseMongoObject(ORMObject):
     @classmethod
     def find_one(cls: Type[T], **kwargs: Any) -> SingleQuery:
         if kwargs.get('id'):
-            kwargs['id'] = ObjectId(kwargs['id'])
+            kwargs['_id'] = ObjectId(kwargs['id'])
+            del kwargs['id']
         return SingleQuery(ListQuery(cls=cls, filter=kwargs))
 
     @classmethod

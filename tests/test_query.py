@@ -30,7 +30,6 @@ class TestMongoObjectQuery(IsolatedAsyncioTestCase):
         object = Find(username='John').save()
         id = object.id
         result = await Find.find_by(id=id)
-        print("find result is", result)
         self.assertEqual(result.username, 'John')
         self.assertEqual(result.password, None)
 
