@@ -153,6 +153,10 @@ class BaseMongoObject(ORMObject):
         return IDQuery(cls=cls, id=id)
 
     @classmethod
+    def id(cls: Type[T], id: Union[str, ObjectId]) -> IDQuery:
+        return cls.find_by_id(id)
+
+    @classmethod
     def find(cls: Type[T], **kwargs: Any) -> ListQuery:
         return ListQuery(cls=cls, filter=kwargs)
 
