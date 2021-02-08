@@ -66,6 +66,10 @@ class BaseQuery():
         coder = Decoder()
         return list(map(lambda doc: coder.decode_root(doc, self.cls), results))
 
+    def __await__(self) -> Generator[None, None, list[T]]:
+        yield
+        return self.exec()
+
 
 class ListQuery(BaseQuery):
 
@@ -78,10 +82,6 @@ class ListQuery(BaseQuery):
     def __call__(self, filter: Optional[dict[str, Any]] = None) -> ListQuery:
         self.filter = filter
         return self
-
-    def __await__(self) -> Generator[None, None, list[T]]:
-        yield
-        return self.exec()
 
     def where(self, filter: dict[str, Any]) -> ListQuery:
         self.filter = filter
@@ -144,9 +144,8 @@ class SingleQuery(BaseQuery):
         self.skipping = query.skipping
         self.limiting = 1
 
-    def __await__(self) -> Generator[None, None, T]:
-        yield
-        results: list[T] = self.exec()
+    def exec(self) -> T:
+        results: list[T] = super().exec()
         if len(results) < 1:
             raise ObjectNotFoundException(
                 f'{self.cls.__name__}(filter={self.filter}, '
@@ -165,9 +164,8 @@ class OptionalSingleQuery(BaseQuery):
         self.skipping = query.skipping
         self.limiting = 1
 
-    def __await__(self) -> Generator[None, None, Optional[T]]:
-        yield
-        results: list[T] = self.exec()
+    def exec(self) -> Optional[T]:
+        results: list[T] = super().exec()
         if len(results) < 1:
             return None
         return results[0]
