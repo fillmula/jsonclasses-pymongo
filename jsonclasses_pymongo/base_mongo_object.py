@@ -153,7 +153,7 @@ class BaseMongoObject(ORMObject):
         return IDQuery(cls=cls, id=id)
 
     @classmethod
-    def withid(cls: Type[T], id: Union[str, ObjectId]) -> IDQuery:
+    def with_id(cls: Type[T], id: Union[str, ObjectId]) -> IDQuery:
         return cls.find_by_id(id)
 
     @classmethod
