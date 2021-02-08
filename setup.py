@@ -8,7 +8,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 setup(name='jsonclasses-pymongo',
-      version='1.0.9',
+      version='1.0.10',
       description='jsonclasses integration with pymongo',
       long_description=README,
       long_description_content_type="text/markdown",
