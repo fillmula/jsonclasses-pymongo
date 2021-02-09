@@ -86,6 +86,8 @@ class ListQuery(BaseQuery):
 
     def _update_cases(self,
                       d: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
+        if not self.cls.config.camelize_db_keys:
+            return d
         if d is None:
             return None
         retval: dict[str, Any] = {}
