@@ -142,6 +142,8 @@ class Encoder(Coder):
         commands = []
         result_addtoset = {}
         for field in get_fields(value):
+            if field.fdesc.is_temp_field:
+                continue
             fname = field.field_name
             fvalue = getattr(value, fname)
             ftypes = field.field_types
