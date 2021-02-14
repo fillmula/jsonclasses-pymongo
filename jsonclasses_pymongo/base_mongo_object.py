@@ -34,6 +34,10 @@ class BaseMongoObject(ORMObject):
                                     pluralize(cls.__name__).lower())
             return cls._collection
 
+    @classmethod
+    def __loaded__(cls, class_) -> None:
+        pass
+
     def _database_write(self: T) -> None:
         Encoder().encode_root(self).execute()
 
