@@ -13,6 +13,15 @@ __mongo_client: Optional[MongoClient] = None
 __database: Optional[Database] = None
 
 
+def connect(url: str) -> None:
+    global __database_url
+    global __mongo_client
+    global __database
+    __database_url = url
+    __mongo_client = MongoClient(__database_url)
+    __database = __mongo_client.get_database()
+
+
 def database_url() -> str:
     return __database_url
 
