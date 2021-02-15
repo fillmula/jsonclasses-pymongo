@@ -6,7 +6,6 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from bson.objectid import ObjectId
 from inflection import pluralize
-from threading import Timer
 from .utils import default_db
 from .encoder import Encoder
 from .query import IDQuery, ListQuery, SingleQuery, OptionalSingleQuery
@@ -38,10 +37,7 @@ class BaseMongoObject(ORMObject):
 
     @classmethod
     def __loaded__(cls: type[T], class_: type[T]) -> None:
-        def __sync():
-            cls._sync_db_settings(class_)
-        timer = Timer(0, __sync)
-        timer.start()
+        cls._sync_db_settings(class_)
 
     @classmethod
     def _sync_db_settings(cls: type[T], class_: type[T]) -> None:
