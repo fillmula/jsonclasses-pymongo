@@ -6,6 +6,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from bson.objectid import ObjectId
 from inflection import pluralize
+from threading import Timer
 from .utils import default_db
 from .encoder import Encoder
 from .query import IDQuery, ListQuery, SingleQuery, OptionalSingleQuery
@@ -38,13 +39,15 @@ class BaseMongoObject(ORMObject):
     @classmethod
     def __loaded__(cls: type[T], class_: type[T]) -> None:
         if not class_.config.abstract:
-            class_._sync_db_settings(class_)
+            timer = Timer(0.1, cls._sync_db_settings, [class_])
+            timer.start()
 
     @classmethod
     def _sync_db_settings(cls: type[T], class_: type[T]) -> None:
         fields = get_fields(class_)
         coll = class_.collection()
-        print(f'will create index for class {class_.__name__}, coll {coll.name}')
+        print("coll index info", coll.name)
+        print(coll.index_information())
         for field in fields:
             name = field.db_field_name
             index = field.fdesc.index
@@ -52,18 +55,15 @@ class BaseMongoObject(ORMObject):
             required = field.fdesc.required
             if unique:
                 if required:
-                    iname = coll.create_index(name, unique=True)
-                    print("created index", iname, coll.name)
+                    coll.create_index(name, name=f'{name}_1', unique=True)
                 else:
-                    iname = coll.create_index(name, unique=True, sparse=True)
-                    print("created index", iname, coll.name)
+                    coll.create_index(name, name=f'{name}_1', unique=True,
+                                      sparse=True)
             elif index:
                 if required:
-                    iname = coll.create_index(name)
-                    print("created index", iname, coll.name)
+                    coll.create_index(name, name=f'{name}_1')
                 else:
-                    iname = coll.create_index(name, sparse=True)
-                    print("created index", iname, coll.name)
+                    coll.create_index(name, name=f'{name}_1', sparse=True)
             else:
                 pass
                 coll.drop_index

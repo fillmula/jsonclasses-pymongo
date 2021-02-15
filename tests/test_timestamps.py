@@ -1,38 +1,44 @@
 from __future__ import annotations
-import unittest
+from typing import Optional
+from unittest import TestCase
 from jsonclasses import jsonclass, types
 from datetime import datetime
 from jsonclasses_pymongo import MongoObject
 
 
-class TestORMObject(unittest.TestCase):
+@jsonclass
+class MyMongoObject(MongoObject):
+    name: Optional[str]
+
+
+class TestMongoObject(TestCase):
 
     def test_mongo_object_has_created_at_on_initializing(self):
-        o = MongoObject()
+        o = MyMongoObject()
         self.assertTrue(type(o.created_at) is datetime)
         self.assertTrue(o.created_at < datetime.now())
 
     def test_mongo_object_has_updated_at_on_initializing(self):
-        o = MongoObject()
+        o = MyMongoObject()
         self.assertTrue(type(o.updated_at) is datetime)
         self.assertTrue(o.updated_at < datetime.now())
 
     def test_mongo_object_has_id_with_random_str_default_value(self):
-        o = MongoObject()
+        o = MyMongoObject()
         self.assertTrue(o.id is not None)
 
     def test_mongo_object_id_can_not_be_int(self):
-        o = MongoObject()
+        o = MyMongoObject()
         o.id = 5
         self.assertFalse(o.is_valid())
 
     def test_mongo_object_id_can_be_str(self):
-        o = MongoObject()
+        o = MyMongoObject()
         o.id = "sbd"
         self.assertTrue(o.is_valid())
 
     def test_mongo_object_id_can_not_be_none(self):
-        o = MongoObject()
+        o = MyMongoObject()
         o.id = None
         self.assertFalse(o.is_valid())
 
