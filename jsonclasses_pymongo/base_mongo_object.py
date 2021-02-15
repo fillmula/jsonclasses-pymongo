@@ -1,6 +1,8 @@
 from __future__ import annotations
-from typing import ClassVar, TypeVar, Any, Union, Type
-from jsonclasses import jsonclass, ORMObject, ObjectNotFoundException
+from typing import ClassVar, TypeVar, Any, Union
+from jsonclasses import (jsonclass, ORMObject, ObjectNotFoundException,
+                         get_fields)
+from pymongo import ASCENDING
 from pymongo.collection import Collection
 from pymongo.database import Database
 from bson.objectid import ObjectId
@@ -35,8 +37,33 @@ class BaseMongoObject(ORMObject):
             return cls._collection
 
     @classmethod
-    def __loaded__(cls, class_) -> None:
-        pass
+    def __loaded__(cls: type[T], class_: type[T]) -> None:
+        cls._sync_db_settings(class_)
+
+    @classmethod
+    def _sync_db_settings(cls: type[T], class_: type[T]) -> None:
+        fields = get_fields(class_)
+        coll = class_.collection()
+        for field in fields:
+            name = field.db_field_name
+            index = field.fdesc.index
+            unique = field.fdesc.unique
+            required = field.fdesc.required
+            if unique:
+                if required:
+                    coll.create_index(name,
+                                      ASCENDING,
+                                      unique=True)
+                else:
+                    coll.create_index(name,
+                                      ASCENDING,
+                                      unique=True,
+                                      sparse=True)
+            elif index:
+                if required:
+                    coll.create_index(name, ASCENDING)
+                else:
+                    coll.create_index(name, ASCENDING, sparse=True)
 
     def _database_write(self: T) -> None:
         Encoder().encode_root(self).execute()
@@ -57,26 +84,26 @@ class BaseMongoObject(ORMObject):
         return self.collection().delete_many(*args, **kwargs).deleted_count
 
     @classmethod
-    def find_by_id(cls: Type[T], id: Union[str, ObjectId]) -> IDQuery:
+    def find_by_id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery:
         return IDQuery(cls=cls, id=id)
 
     @classmethod
-    def with_id(cls: Type[T], id: Union[str, ObjectId]) -> IDQuery:
+    def with_id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery:
         return cls.find_by_id(id)
 
     @classmethod
-    def find(cls: Type[T], **kwargs: Any) -> ListQuery:
+    def find(cls: type[T], **kwargs: Any) -> ListQuery:
         return ListQuery(cls=cls, filter=kwargs)
 
     @classmethod
-    def find_one(cls: Type[T], **kwargs: Any) -> SingleQuery:
+    def find_one(cls: type[T], **kwargs: Any) -> SingleQuery:
         if kwargs.get('id'):
             kwargs['_id'] = ObjectId(kwargs['id'])
             del kwargs['id']
         return SingleQuery(ListQuery(cls=cls, filter=kwargs))
 
     @classmethod
-    def find_by(cls: Type[T], **kwargs: Any) -> OptionalSingleQuery:
+    def find_by(cls: type[T], **kwargs: Any) -> OptionalSingleQuery:
         return OptionalSingleQuery(cls.find_one(**kwargs))
 
 
