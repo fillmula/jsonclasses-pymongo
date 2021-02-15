@@ -46,27 +46,27 @@ class BaseMongoObject(ORMObject):
     def _sync_db_settings(cls: type[T], class_: type[T]) -> None:
         fields = get_fields(class_)
         coll = class_.collection()
-        print("coll index info", coll.name)
-        print(coll.index_information())
+        info = coll.index_information()
         for field in fields:
             name = field.db_field_name
             index = field.fdesc.index
             unique = field.fdesc.unique
             required = field.fdesc.required
+            index_name = f'{name}_1'
             if unique:
                 if required:
-                    coll.create_index(name, name=f'{name}_1', unique=True)
+                    coll.create_index(name, name=index_name, unique=True)
                 else:
-                    coll.create_index(name, name=f'{name}_1', unique=True,
+                    coll.create_index(name, name=index_name, unique=True,
                                       sparse=True)
             elif index:
                 if required:
-                    coll.create_index(name, name=f'{name}_1')
+                    coll.create_index(name, name=index_name)
                 else:
-                    coll.create_index(name, name=f'{name}_1', sparse=True)
+                    coll.create_index(name, name=index_name, sparse=True)
             else:
-                pass
-                coll.drop_index
+                if index_name in info.keys():
+                    coll.drop_index(index_name)
 
     def _database_write(self: T) -> None:
         Encoder().encode_root(self).execute()
