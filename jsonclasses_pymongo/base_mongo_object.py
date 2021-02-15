@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import ClassVar, TypeVar, Any, Union
 from jsonclasses import (jsonclass, ORMObject, ObjectNotFoundException,
                          get_fields)
-from pymongo import ASCENDING
 from pymongo.collection import Collection
 from pymongo.database import Database
 from bson.objectid import ObjectId
@@ -55,19 +54,21 @@ class BaseMongoObject(ORMObject):
             required = field.fdesc.required
             if unique:
                 if required:
-                    coll.create_index(name,
-                                      ASCENDING,
-                                      unique=True)
+                    iname = coll.create_index(name, unique=True)
+                    print("created index", iname, coll.name)
                 else:
-                    coll.create_index(name,
-                                      ASCENDING,
-                                      unique=True,
-                                      sparse=True)
+                    iname = coll.create_index(name, unique=True, sparse=True)
+                    print("created index", iname, coll.name)
             elif index:
                 if required:
-                    coll.create_index(name, ASCENDING)
+                    iname = coll.create_index(name)
+                    print("created index", iname, coll.name)
                 else:
-                    coll.create_index(name, ASCENDING, sparse=True)
+                    iname = coll.create_index(name, sparse=True)
+                    print("created index", iname, coll.name)
+            else:
+                pass
+                coll.drop_index
 
     def _database_write(self: T) -> None:
         Encoder().encode_root(self).execute()
