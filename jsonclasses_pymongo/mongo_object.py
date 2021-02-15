@@ -6,7 +6,7 @@ from bson.objectid import ObjectId
 from .base_mongo_object import BaseMongoObject
 
 
-@jsonclass
+@jsonclass(abstract=True)
 class MongoObject(BaseMongoObject):
     """MongoObject is a concrete subclass for defining your business models
     with MongoDB. A `MongoObject` class represents a MongoDB collection.

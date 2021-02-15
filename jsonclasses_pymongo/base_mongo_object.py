@@ -11,7 +11,7 @@ from .encoder import Encoder
 from .query import IDQuery, ListQuery, SingleQuery, OptionalSingleQuery
 
 
-@jsonclass
+@jsonclass(abstract=True)
 class BaseMongoObject(ORMObject):
     """BaseMongoObject is a `JSONObject` subclass for defining your business
     models with MongoDB. A `BaseMongoObject` class represents a MongoDB
@@ -37,12 +37,14 @@ class BaseMongoObject(ORMObject):
 
     @classmethod
     def __loaded__(cls: type[T], class_: type[T]) -> None:
-        cls._sync_db_settings(class_)
+        if not class_.config.abstract:
+            class_._sync_db_settings(class_)
 
     @classmethod
     def _sync_db_settings(cls: type[T], class_: type[T]) -> None:
         fields = get_fields(class_)
         coll = class_.collection()
+        print(f'will create index for class {class_.__name__}, coll {coll.name}')
         for field in fields:
             name = field.db_field_name
             index = field.fdesc.index
