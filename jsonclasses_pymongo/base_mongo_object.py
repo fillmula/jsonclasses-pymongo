@@ -1,15 +1,13 @@
 from __future__ import annotations
-from typing import ClassVar, TypeVar, Any, Union
+from typing import TypeVar, Any, Union
 from jsonclasses import (jsonclass, ORMObject, ObjectNotFoundException,
                          get_fields)
 from pymongo.collection import Collection
-from pymongo.database import Database
 from bson.objectid import ObjectId
 from inflection import pluralize
-from threading import Timer
-from .utils import default_db
 from .encoder import Encoder
 from .query import IDQuery, ListQuery, SingleQuery, OptionalSingleQuery
+from .connector import connector
 
 
 @jsonclass(abstract=True)
@@ -21,26 +19,42 @@ class BaseMongoObject(ORMObject):
     `MongoObject`.
     """
 
-    _collection: ClassVar[Collection]
-
     @classmethod
-    def db(cls) -> Database:
-        return default_db()
-
-    @classmethod
-    def collection(cls) -> Collection:
-        try:
-            return cls._collection
-        except AttributeError:
-            cls._collection = cls.db().get_collection(
-                                    pluralize(cls.__name__).lower())
-            return cls._collection
+    def collection(cls: type[T]) -> Collection:
+        name = pluralize(cls.__name__).lower()
+        return connector.collection(name)
 
     @classmethod
     def __loaded__(cls: type[T], class_: type[T]) -> None:
-        if not class_.config.abstract:
-            timer = Timer(0.1, cls._sync_db_settings, [class_])
-            timer.start()
+        if class_.config.abstract:
+            return
+        name = pluralize(class_.__name__).lower()
+
+        def sync_db_settings(coll: Collection) -> None:
+            fields = get_fields(class_)
+            info = coll.index_information()
+            for field in fields:
+                name = field.db_field_name
+                index = field.fdesc.index
+                unique = field.fdesc.unique
+                required = field.fdesc.required
+                index_name = f'{name}_1'
+                if unique:
+                    if required:
+                        coll.create_index(name, name=index_name, unique=True)
+                    else:
+                        coll.create_index(name, name=index_name, unique=True,
+                                          sparse=True)
+                elif index:
+                    if required:
+                        coll.create_index(name, name=index_name)
+                    else:
+                        coll.create_index(name, name=index_name, sparse=True)
+                else:
+                    if index_name in info.keys():
+                        coll.drop_index(index_name)
+
+        connector._add_callback(name, sync_db_settings)
 
     @classmethod
     def _sync_db_settings(cls: type[T], class_: type[T]) -> None:

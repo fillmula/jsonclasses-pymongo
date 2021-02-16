@@ -1,8 +1,8 @@
 from __future__ import annotations
 from unittest import IsolatedAsyncioTestCase
-from typing import List, Optional
-from jsonclasses import jsonclass, types, ObjectNotFoundException
-from jsonclasses_pymongo import MongoObject
+from typing import Optional
+from jsonclasses import jsonclass, ObjectNotFoundException
+from jsonclasses_pymongo import MongoObject, connector
 
 
 @jsonclass
@@ -12,6 +12,10 @@ class Find(MongoObject):
 
 
 class TestMongoObjectQuery(IsolatedAsyncioTestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        connector.connect('mongodb://localhost:27017/jsonclasses')
 
     async def test_find_by_id_returns_object(self):
         object = Find(username='John').save()

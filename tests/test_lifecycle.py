@@ -1,7 +1,7 @@
 from __future__ import annotations
 from unittest import IsolatedAsyncioTestCase
 from jsonclasses import jsonclass
-from jsonclasses_pymongo import MongoObject
+from jsonclasses_pymongo import MongoObject, connector
 
 
 @jsonclass
@@ -10,6 +10,10 @@ class Cycle(MongoObject):
 
 
 class TestMongoObjectLifeCycle(IsolatedAsyncioTestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        connector.connect('mongodb://localhost:27017/jsonclasses')
 
     def test_new_on_create(self):
         cycle = Cycle()

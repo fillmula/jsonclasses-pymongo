@@ -3,7 +3,7 @@ from typing import Optional
 from unittest import TestCase
 from jsonclasses import jsonclass, types
 from datetime import datetime
-from jsonclasses_pymongo import MongoObject
+from jsonclasses_pymongo import MongoObject, connector
 
 
 @jsonclass
@@ -12,6 +12,10 @@ class MyMongoObject(MongoObject):
 
 
 class TestMongoObject(TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        connector.connect('mongodb://localhost:27017/jsonclasses')
 
     def test_mongo_object_has_created_at_on_initializing(self):
         o = MyMongoObject()

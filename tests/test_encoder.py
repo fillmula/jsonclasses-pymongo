@@ -4,12 +4,16 @@ from typing import List, Dict, cast
 from datetime import date, datetime
 from bson import ObjectId
 from jsonclasses import jsonclass, types
-from jsonclasses_pymongo import MongoObject
+from jsonclasses_pymongo import MongoObject, connector
 from jsonclasses_pymongo.encoder import Encoder
 from jsonclasses_pymongo.command import InsertOneCommand
 
 
 class TestEncoder(TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        connector.connect('mongodb://localhost:27017/jsonclasses')
 
     def test_encode_str_into_str(self):
         @jsonclass

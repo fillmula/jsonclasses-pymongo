@@ -10,6 +10,8 @@ from .utils import ref_db_field_key, ref_db_field_keys
 from .context import EncodingContext
 from .command import (Command, InsertOneCommand, UpdateOneCommand,
                       UpsertOneCommand, BatchCommand)
+from .connector import connector
+
 if TYPE_CHECKING:
     from .base_mongo_object import BaseMongoObject
     T = TypeVar('T', bound=BaseMongoObject)
@@ -107,7 +109,7 @@ class Encoder(Coder):
             this_field.field_name,
             that_cls,
             cast(str, this_field.fdesc.foreign_key))
-        collection = this_cls.db().get_collection(join_table_name)
+        collection = connector._database.get_collection(join_table_name)
         this_id = ObjectId(this_instance._id)
         matcher = {
             this_field_name: this_id,

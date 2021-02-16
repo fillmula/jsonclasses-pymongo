@@ -1,43 +1,8 @@
 from __future__ import annotations
-from os import getenv
-from typing import Optional, TYPE_CHECKING
-from pymongo import MongoClient
-from pymongo.database import Database
+from typing import TYPE_CHECKING
 from inflection import camelize
 if TYPE_CHECKING:
     from .base_mongo_object import BaseMongoObject
-
-__database_url: str = getenv(
-    'DATABASE_URL') or 'mongodb://localhost:27017/jsonclassespymongodemo'
-__mongo_client: Optional[MongoClient] = None
-__database: Optional[Database] = None
-
-
-def connect(url: str) -> None:
-    global __database_url
-    global __mongo_client
-    global __database
-    __database_url = url
-    __mongo_client = MongoClient(__database_url)
-    __database = __mongo_client.get_database()
-
-
-def database_url() -> str:
-    return __database_url
-
-
-def default_client() -> MongoClient:
-    global __mongo_client
-    if __mongo_client is None:
-        __mongo_client = MongoClient(database_url())
-    return __mongo_client
-
-
-def default_db() -> Database:
-    global __database
-    if __database is None:
-        __database = default_client().get_database()
-    return __database
 
 
 def ref_key(key: str, cls: type[BaseMongoObject]) -> tuple[str, str]:
