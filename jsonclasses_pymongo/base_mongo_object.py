@@ -1,10 +1,12 @@
 from __future__ import annotations
 from typing import TypeVar, Any, Union
-from jsonclasses import (jsonclass, ORMObject, ObjectNotFoundException,
-                         get_fields)
+from jsonclasses import (jsonclass, ORMObject, get_fields,
+                         ObjectNotFoundException, UniqueFieldException)
 from pymongo.collection import Collection
+from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
-from inflection import pluralize
+from inflection import camelize, pluralize, underscore
+from re import search
 from .encoder import Encoder
 from .query import IDQuery, ListQuery, SingleQuery, OptionalSingleQuery
 from .connector import connector
@@ -56,34 +58,21 @@ class BaseMongoObject(ORMObject):
 
         connector._add_callback(name, sync_db_settings)
 
-    @classmethod
-    def _sync_db_settings(cls: type[T], class_: type[T]) -> None:
-        fields = get_fields(class_)
-        coll = class_.collection()
-        info = coll.index_information()
-        for field in fields:
-            name = field.db_field_name
-            index = field.fdesc.index
-            unique = field.fdesc.unique
-            required = field.fdesc.required
-            index_name = f'{name}_1'
-            if unique:
-                if required:
-                    coll.create_index(name, name=index_name, unique=True)
-                else:
-                    coll.create_index(name, name=index_name, unique=True,
-                                      sparse=True)
-            elif index:
-                if required:
-                    coll.create_index(name, name=index_name)
-                else:
-                    coll.create_index(name, name=index_name, sparse=True)
-            else:
-                if index_name in info.keys():
-                    coll.drop_index(index_name)
-
     def _database_write(self: T) -> None:
-        Encoder().encode_root(self).execute()
+        try:
+            Encoder().encode_root(self).execute()
+        except DuplicateKeyError as exception:
+            result = search('index: (.+?)_1', exception._message)
+            db_key = result.group(1)
+            pt_key = db_key
+            json_key = db_key
+            if self.__class__.config.camelize_db_keys:
+                pt_key = underscore(db_key)
+                json_key = pt_key
+            if self.__class__.config.camelize_json_keys:
+                json_key = camelize(pt_key, False)
+            raise UniqueFieldException(
+                getattr(self, pt_key), json_key, self) from None
 
     @classmethod
     def delete_by_id(self, id: str) -> None:
