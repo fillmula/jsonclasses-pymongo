@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TypeVar, Any, Union
 from jsonclasses import (jsonclass, ORMObject, get_fields,
-                         ObjectNotFoundException, UniqueFieldException)
+                         ObjectNotFoundException, UniqueConstraintException)
 from pymongo.collection import Collection
 from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
@@ -71,8 +71,8 @@ class BaseMongoObject(ORMObject):
                 json_key = pt_key
             if self.__class__.config.camelize_json_keys:
                 json_key = camelize(pt_key, False)
-            raise UniqueFieldException(
-                getattr(self, pt_key), json_key, self) from None
+            raise UniqueConstraintException(
+                    getattr(self, pt_key), json_key) from None
 
     @classmethod
     def delete_by_id(self, id: str) -> None:

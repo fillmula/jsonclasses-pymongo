@@ -1,6 +1,6 @@
 from __future__ import annotations
 from unittest import IsolatedAsyncioTestCase
-from jsonclasses import jsonclass, types, UniqueFieldException
+from jsonclasses import jsonclass, types, UniqueConstraintException
 from jsonclasses_pymongo import MongoObject, connector
 
 
@@ -19,4 +19,4 @@ class TestUniqueRecordSave(IsolatedAsyncioTestCase):
         a = SpecialClass(name='special')
         b = SpecialClass(name='special')
         a.save()
-        self.assertRaises(UniqueFieldException, b.save)
+        self.assertRaises(UniqueConstraintException, b.save)
