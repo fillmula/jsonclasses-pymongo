@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import Union, TYPE_CHECKING
 from inflection import camelize
+from jsonclasses.fields import FieldType
 if TYPE_CHECKING:
     from .base_mongo_object import BaseMongoObject
 
@@ -38,3 +39,20 @@ def ref_db_field_keys(key: str, cls: type[BaseMongoObject]) -> str:
     else:
         db_field_name = field_name
     return db_field_name
+
+
+def btype_from_ftype(field_type: FieldType) -> Union[str, list[str]]:
+    if field_type == FieldType.STR:
+        return 'string'
+    elif field_type == FieldType.INT:
+        return ['int', 'long', 'decimal']
+    elif field_type == FieldType.FLOAT:
+        return 'double'
+    elif field_type == FieldType.BOOL:
+        return 'bool'
+    elif field_type == FieldType.DATE:
+        return 'date'
+    elif field_type == FieldType.DATETIME:
+        return 'date'
+    else:
+        return []

@@ -10,6 +10,7 @@ from re import search
 from .encoder import Encoder
 from .query import IDQuery, ListQuery, SingleQuery, OptionalSingleQuery
 from .connector import connector
+from .utils import btype_from_ftype
 
 
 @jsonclass(abstract=True)
@@ -41,17 +42,25 @@ class BaseMongoObject(ORMObject):
                 unique = field.fdesc.unique
                 required = field.fdesc.required
                 index_name = f'{name}_1'
+                ftype = field.fdesc.field_type
                 if unique:
                     if required:
                         coll.create_index(name, name=index_name, unique=True)
                     else:
-                        coll.create_index(name, name=index_name, unique=True,
-                                          sparse=True)
+                        coll.create_index(
+                            name, name=index_name, unique=True,
+                            partialFilterExpression={
+                                name: {'$type': btype_from_ftype(ftype)}
+                            })
                 elif index:
                     if required:
                         coll.create_index(name, name=index_name)
                     else:
-                        coll.create_index(name, name=index_name, sparse=True)
+                        coll.create_index(
+                            name, name=index_name,
+                            partialFilterExpression={
+                                name: {'$type': btype_from_ftype(ftype)}
+                            })
                 else:
                     if index_name in info.keys():
                         coll.drop_index(index_name)
