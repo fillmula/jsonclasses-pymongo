@@ -255,6 +255,7 @@ class Encoder(Coder):
         setattr(value, '_is_new', False)
         setattr(value, '_is_modified', False)
         setattr(value, '_modified_fields', set())
+        setattr(value, '_previous_values', {})
         return EncodingResult(result_set, commands)
 
     def encode_item(self, context: EncodingContext) -> EncodingResult:
