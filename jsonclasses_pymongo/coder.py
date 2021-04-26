@@ -3,7 +3,7 @@ from typing import cast, TYPE_CHECKING
 from jsonclasses import (Field, FieldType, FieldStorage, resolve_types)
 from inflection import camelize
 if TYPE_CHECKING:
-    from .base_mongo_object import BaseMongoObject
+    from .pymongo_object import PymongoObject
 
 
 class Coder():
@@ -45,8 +45,8 @@ class Coder():
 
     def list_instance_type(self,
                            field: Field,
-                           sibling: type[BaseMongoObject]
-                           ) -> type[BaseMongoObject]:
+                           sibling: type[PymongoObject]
+                           ) -> type[PymongoObject]:
         from .mongo_object import MongoObject
         fd = field.field_types.fdesc
         item_types = resolve_types(fd.raw_item_types, sibling)
@@ -54,9 +54,9 @@ class Coder():
         return cast(type[MongoObject], item_fd.instance_types)
 
     def join_table_name(self,
-                        cls_a: type[BaseMongoObject],
+                        cls_a: type[PymongoObject],
                         field_a: str,
-                        cls_b: type[BaseMongoObject],
+                        cls_b: type[PymongoObject],
                         field_b: str) -> str:
         ca = cls_a.collection().name + camelize(field_a).lower()
         cb = cls_b.collection().name + camelize(field_b).lower()

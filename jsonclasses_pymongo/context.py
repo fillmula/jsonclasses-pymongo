@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import NamedTuple, Any, Union, TYPE_CHECKING
 from jsonclasses import Types, ObjectGraph
 if TYPE_CHECKING:
-    from .base_mongo_object import BaseMongoObject
+    from .pymongo_object import PymongoObject
 
 
 class EncodingContext(NamedTuple):
@@ -13,11 +13,11 @@ class EncodingContext(NamedTuple):
     value: Any
     types: Types
     keypath_root: str
-    root: BaseMongoObject
+    root: PymongoObject
     keypath_owner: str
-    owner: BaseMongoObject
+    owner: PymongoObject
     keypath_parent: str
-    parent: Union[list[Any], dict[str, Any], BaseMongoObject]
+    parent: Union[list[Any], dict[str, Any], PymongoObject]
     object_graph: ObjectGraph
 
     def new(self, **kwargs):

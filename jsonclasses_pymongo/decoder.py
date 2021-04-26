@@ -8,8 +8,8 @@ from .utils import (ref_field_key, ref_field_keys, ref_db_field_key,
                     ref_db_field_keys)
 from .coder import Coder
 if TYPE_CHECKING:
-    from .base_mongo_object import BaseMongoObject
-    T = TypeVar('T', bound=BaseMongoObject)
+    from .pymongo_object import PymongoObject
+    T = TypeVar('T', bound=PymongoObject)
 
 
 class Decoder(Coder):
@@ -66,7 +66,7 @@ class Decoder(Coder):
                         value: dict[str, Any],
                         cls: type[T],
                         types: Types) -> Any:
-        from .base_mongo_object import BaseMongoObject
+        from .pymongo_object import PymongoObject
         if types.fdesc.field_storage == FieldStorage.FOREIGN_KEY:
             return None
         elif types.fdesc.field_storage == FieldStorage.LOCAL_KEY:
@@ -74,7 +74,7 @@ class Decoder(Coder):
         else:
             return self.decode_root(
                 root=value,
-                cls=cast(type[BaseMongoObject], resolve_types(
+                cls=cast(type[PymongoObject], resolve_types(
                     types.fdesc.instance_types,
                     graph_sibling=cls
                 ).fdesc.instance_types)

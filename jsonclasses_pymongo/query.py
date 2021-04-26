@@ -7,8 +7,8 @@ from jsonclasses import ObjectNotFoundException
 from inflection import camelize
 from .decoder import Decoder
 if TYPE_CHECKING:
-    from .base_mongo_object import BaseMongoObject
-    T = TypeVar('T', bound=BaseMongoObject)
+    from .pymongo_object import PymongoObject
+    T = TypeVar('T', bound=PymongoObject)
 
 
 class IDQuery():

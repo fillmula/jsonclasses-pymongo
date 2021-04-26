@@ -1,10 +1,14 @@
 from __future__ import annotations
 from typing import Any, NamedTuple, TypeVar, Union, cast, TYPE_CHECKING
-from jsonclasses import (get_fields, types, Field, FieldType, FieldStorage,
-                         resolve_types, ObjectGraph, concat_keypath)
 from datetime import datetime
 from inflection import camelize
 from bson.objectid import ObjectId
+from jsonclasses.fields import Field, get_fields
+from jsonclasses.field_definition import FieldStorage, FieldType
+from jsonclasses.keypath_utils import concat_keypath
+from jsonclasses.types_resolver import TypesResolver
+from jsonclasses.object_graph import ObjectGraph
+from jsonclasses.types import types
 from .coder import Coder
 from .utils import ref_db_field_key, ref_db_field_keys
 from .context import EncodingContext
@@ -13,8 +17,8 @@ from .command import (Command, InsertOneCommand, UpdateOneCommand,
 from .connector import connector
 
 if TYPE_CHECKING:
-    from .base_mongo_object import BaseMongoObject
-    T = TypeVar('T', bound=BaseMongoObject)
+    from .pymongo_object import PymongoObject
+    T = TypeVar('T', bound=PymongoObject)
 
 
 class EncodingResult(NamedTuple):
@@ -31,8 +35,8 @@ class Encoder(Coder):
             return EncodingResult(result=None, commands=[])
         value = cast(list[Any], context.value)
         fd = context.types.fdesc
-        item_types = resolve_types(fd.raw_item_types,
-                                   graph_sibling=context.root.__class__)
+        item_types = TypesResolver().resolve_types(
+            fd.raw_item_types, context.root.__class__.definition.config)
         if fd.field_storage == FieldStorage.FOREIGN_KEY:
             item_types = item_types.linkedby(cast(str, fd.foreign_key))
         if fd.field_storage == FieldStorage.LOCAL_KEY:
@@ -56,7 +60,7 @@ class Encoder(Coder):
             return EncodingResult(result=None, commands=[])
         value = cast(dict[str, Any], context.value)
         fd = context.types.fdesc
-        item_types = resolve_types(fd.raw_item_types)
+        item_types = TypesResolver().resolve_types(fd.raw_item_types)
         camelized = context.owner.__class__.config.camelize_db_keys
         result = {}
         commands = []
@@ -82,7 +86,7 @@ class Encoder(Coder):
         result = {}
         commands = []
         for key, item in value.items():
-            item_types = resolve_types(shape_types[key])
+            item_types = TypesResolver().resolve_types(shape_types[key])
             item_result, item_commands = self.encode_item(context.new(
                 value=item,
                 types=item_types,
@@ -95,9 +99,9 @@ class Encoder(Coder):
         return EncodingResult(result, commands)
 
     def _join_command(self,
-                      this_instance: BaseMongoObject,
+                      this_instance: PymongoObject,
                       this_field: Field,
-                      that_cls: type[BaseMongoObject],
+                      that_cls: type[PymongoObject],
                       that_id: ObjectId) -> UpsertOneCommand:
         this_cls = this_instance.__class__
         this_cls_name = this_cls.__name__
@@ -122,10 +126,10 @@ class Encoder(Coder):
     def encode_instance(self,
                         context: EncodingContext,
                         root: bool = False) -> EncodingResult:
-        from .base_mongo_object import BaseMongoObject
+        from .pymongo_object import PymongoObject
         if context.value is None:
             return EncodingResult(result=None, commands=[])
-        value = cast(BaseMongoObject, context.value)
+        value = cast(PymongoObject, context.value)
         cls = value.__class__
         id = cast(Union[str, int], value._id)
         if context.object_graph.getp(cls, id) is not None:

@@ -106,9 +106,7 @@ class BaseMongoObject(ORMObject):
     def with_id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery:
         return cls.find_by_id(id)
 
-    @classmethod
-    def find(cls: type[T], **kwargs: Any) -> ListQuery:
-        return ListQuery(cls=cls, filter=kwargs)
+
 
     @classmethod
     def find_one(cls: type[T], **kwargs: Any) -> SingleQuery:
