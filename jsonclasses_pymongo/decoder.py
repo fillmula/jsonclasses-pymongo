@@ -114,32 +114,28 @@ class Decoder(Coder):
                     ref_field_key(field.name),
                     self.decode_item(
                         value=root.get(ref_db_field_key(
-                            field.db_name, cls=cls)),
+                            field.name, cls=cls)),
                         types=field.types,
-                        cls=cls
-                    )
-                )
+                        cls=cls))
             elif self.is_local_keys_reference_field(field):
                 setattr(
                     dest,
                     ref_field_keys(field.name),
                     self.decode_item(
                         value=root.get(ref_db_field_keys(
-                            field.db_name, cls=cls)),
+                            field.name, cls=cls)),
                         types=field.types,
-                        cls=cls
-                    )
-                )
+                        cls=cls))
             else:
                 setattr(
                     dest,
                     field.name,
                     self.decode_item(
-                        value=root.get(field.db_name),
+                        value=root.get(camelize(field.name, False) if
+                                       cls.dbconf.camelize_db_keys else
+                                       field.name),
                         types=field.types,
-                        cls=cls
-                    )
-                )
+                        cls=cls))
         setattr(dest, '_is_new', False)
         setattr(dest, '_is_modified', False)
         setattr(dest, '_modified_fields', set())
