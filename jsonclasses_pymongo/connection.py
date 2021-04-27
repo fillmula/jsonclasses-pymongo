@@ -5,6 +5,7 @@ from pymongo.mongo_client import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
 from inflection import parameterize, camelize
+from .pymongo_object import PymongoObject
 
 
 ConnectedCallback = Callable[[Collection], None]
@@ -104,7 +105,24 @@ class Connection:
                        callback: ConnectedCallback) -> None:
         callback(self.collection(name))
 
+    def collection_from(self: Connection,
+                        cls: type[PymongoObject]) -> Collection:
+        coll_name = cls.dbconf.collection_name
+        return self.collection(coll_name)
+
     default: ClassVar[Connection]
+
+    @classmethod
+    def get_collection(cls: type[Connection],
+                       pmcls: type[PymongoObject]) -> Collection:
+        graph = pmcls.definition.config.class_graph.name
+        connection = Connection(graph)
+        return connection.collection_from(pmcls)
+
+    @classmethod
+    def from_class(cls: type[Connection],
+                   pmcls: type[PymongoObject]) -> Connection:
+        return Connection(pmcls.definition.config.class_graph.name)
 
 
 Connection.default = Connection('default')

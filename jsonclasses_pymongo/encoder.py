@@ -14,7 +14,7 @@ from .utils import ref_db_field_key, ref_db_field_keys
 from .context import EncodingContext
 from .command import (Command, InsertOneCommand, UpdateOneCommand,
                       UpsertOneCommand, BatchCommand)
-from .connector import connector
+from .connection import Connection
 
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
@@ -34,7 +34,7 @@ class Encoder(Coder):
         if context.value is None:
             return EncodingResult(result=None, commands=[])
         value = cast(list[Any], context.value)
-        fd = context.types.fdesc
+        fd = context.types.definition
         item_types = TypesResolver().resolve_types(
             fd.raw_item_types, context.root.__class__.definition.config)
         if fd.field_storage == FieldStorage.FOREIGN_KEY:
@@ -59,9 +59,9 @@ class Encoder(Coder):
         if context.value is None:
             return EncodingResult(result=None, commands=[])
         value = cast(dict[str, Any], context.value)
-        fd = context.types.fdesc
+        fd = context.types.definition
         item_types = TypesResolver().resolve_types(fd.raw_item_types)
-        camelized = context.owner.__class__.config.camelize_db_keys
+        camelized = context.owner.__class__.definition.config.camelize_db_keys
         result = {}
         commands = []
         for key, item in value.items():
@@ -80,7 +80,7 @@ class Encoder(Coder):
         if context.value is None:
             return EncodingResult(result=None, commands=[])
         value = cast(dict[str, Any], context.value)
-        fd = context.types.fdesc
+        fd = context.types.definition
         shape_types = cast(dict[str, Any], fd.shape_types)
         camelized = context.owner.__class__.definition.config.camelize_db_keys
         result = {}
@@ -104,6 +104,7 @@ class Encoder(Coder):
                       that_cls: type[PymongoObject],
                       that_id: ObjectId) -> UpsertOneCommand:
         this_cls = this_instance.__class__
+        connection = Connection.from_class(this_instance.__class__)
         this_cls_name = this_cls.__name__
         that_cls_name = that_cls.__name__
         this_field_name = ref_db_field_key(this_cls_name, this_cls)
@@ -113,7 +114,7 @@ class Encoder(Coder):
             this_field.name,
             that_cls,
             cast(str, this_field.definition.foreign_key))
-        collection = connector._database.get_collection(join_table_name)
+        collection = connection.collection(join_table_name)
         this_id = ObjectId(this_instance._id)
         matcher = {
             this_field_name: this_id,
@@ -135,7 +136,7 @@ class Encoder(Coder):
         if context.mark_graph.getp(cls, id) is not None:
             return EncodingResult({'_id': ObjectId(id)}, commands=[])
         context.mark_graph.put(value)
-        instance_fd = context.types.fdesc
+        instance_fd = context.types.definition
         write_instance = instance_fd.field_storage != FieldStorage.EMBEDDED
         if root:
             write_instance = True
@@ -242,7 +243,7 @@ class Encoder(Coder):
                     result_set[field.db_name] = item_result
                 commands.extend(item_commands)
         if write_instance:
-            collection = value.__class__.collection()
+            collection = Connection.get_collection(value.__class__)
             if use_insert_command:
                 insert_command = InsertOneCommand(collection, result_set)
                 commands.append(insert_command)
@@ -265,7 +266,7 @@ class Encoder(Coder):
     def encode_item(self, context: EncodingContext) -> EncodingResult:
         if context.value is None:
             return EncodingResult(result=None, commands=[])
-        field_type = context.types.fdesc.field_type
+        field_type = context.types.definition.field_type
         if field_type == FieldType.LIST:
             return self.encode_list(context)
         elif field_type == FieldType.DICT:

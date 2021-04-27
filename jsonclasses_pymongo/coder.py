@@ -4,6 +4,7 @@ from jsonclasses.jsonclass_field import JSONClassField
 from jsonclasses.field_definition import FieldType, FieldStorage
 from jsonclasses.types_resolver import TypesResolver
 from inflection import camelize
+from .connection import Connection
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
 
@@ -61,6 +62,9 @@ class Coder():
                         field_a: str,
                         cls_b: type[PymongoObject],
                         field_b: str) -> str:
-        ca = cls_a.collection().name + camelize(field_a).lower()
-        cb = cls_b.collection().name + camelize(field_b).lower()
+        connection = Connection.from_class(cls_a)
+        cabase = connection.collection_from(cls_a).name
+        cbbase = connection.collection_from(cls_b).name
+        ca = cabase + camelize(field_a).lower()
+        cb = cbbase + camelize(field_b).lower()
         return ca + cb if ca < cb else cb + ca

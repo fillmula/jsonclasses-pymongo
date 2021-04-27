@@ -4,11 +4,11 @@ from datetime import date
 from jsonclasses.types import Types
 from jsonclasses.field_definition import FieldStorage, FieldType
 from jsonclasses.types_resolver import TypesResolver
-from jsonclasses.config import Config
 from inflection import underscore, camelize
 from .utils import (ref_field_key, ref_field_keys, ref_db_field_key,
                     ref_db_field_keys)
 from .coder import Coder
+from .dbconf import DBConf
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
     T = TypeVar('T', bound=PymongoObject)
@@ -38,7 +38,7 @@ class Decoder(Coder):
                     types: Types) -> Optional[dict[str, Any]]:
         if value is None:
             return None
-        config: Config = cls.definition.config
+        config: DBConf = cls.dbconf
         if types.definition.field_storage == FieldStorage.FOREIGN_KEY:
             return None
         if types.definition.field_storage == FieldStorage.LOCAL_KEY:
@@ -55,7 +55,7 @@ class Decoder(Coder):
                      value: dict[str, Any],
                      cls: type[T],
                      types: Types) -> dict[str, Any]:
-        config: Config = cls.definition.config
+        config: DBConf = cls.dbconf
         shape_types = cast(dict[str, Any], types.definition.shape_types)
         retval = {}
         for k, item_types in shape_types.items():
@@ -81,8 +81,7 @@ class Decoder(Coder):
                 cls=cast(type[PymongoObject], TypesResolver().resolve_types(
                     types.definition.instance_types,
                     config=cls.definition.config
-                ).definition.instance_types)
-            )
+                ).definition.instance_types))
 
     def decode_item(self, value: Any, cls: type[T], types: Types) -> Any:
         if value is None:
