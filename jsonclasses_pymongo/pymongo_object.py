@@ -2,7 +2,8 @@
 jsonclass object should confirm to.
 """
 from __future__ import annotations
-from typing import TypeVar, ClassVar
+from typing import TypeVar, ClassVar, Any, Union
+from bson.objectid import ObjectId
 from jsonclasses.jsonclass_object import JSONClassObject
 from .dbconf import DBConf
 from .query import (ListQuery, IDQuery, SingleQuery, OptionalIDQuery,
@@ -23,9 +24,13 @@ class PymongoObject(JSONClassObject):
     """
 
     @classmethod
-    def find(cls: type[T], ) -> ListQuery[T]:
+    def find(cls: type[T], **kwargs: Any) -> ListQuery[T]:
         ...
 
     @classmethod
-    def one(cls: type[T], ) -> SingleQuery[T]:
+    def one(cls: type[T], **kwargs: Any) -> SingleQuery[T]:
+        ...
+
+    @classmethod
+    def id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery[T]:
         ...

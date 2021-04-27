@@ -32,6 +32,7 @@ class IDQuery(Generic[T]):
         yield
         return self.exec()
 
+    @property
     def optional(self) -> OptionalIDQuery:
         return OptionalIDQuery(cls=self.cls, id=self.id)
 
@@ -77,7 +78,7 @@ class BaseQuery(Generic[T]):
         return self._exec()
 
 
-class ListQuery(BaseQuery):
+class ListQuery(BaseQuery, Generic[T]):
 
     def __init__(self,
                  cls: type[T],
@@ -146,15 +147,11 @@ class ListQuery(BaseQuery):
         return self
 
     @property
-    def first(self) -> SingleQuery:
+    def first(self) -> SingleQuery[T]:
         return SingleQuery(self)
 
-    @property
-    def first_or_none(self) -> OptionalSingleQuery:
-        return OptionalSingleQuery(SingleQuery(self))
 
-
-class SingleQuery(BaseQuery):
+class SingleQuery(BaseQuery, Generic[T]):
 
     def __init__(self, query: BaseQuery) -> None:
         super().__init__(cls=query.cls)
@@ -173,16 +170,12 @@ class SingleQuery(BaseQuery):
                 f'skipping={self.skipping}) not found.')
         return results[0]
 
+    @property
+    def optional(self) -> OptionalSingleQuery[T]:
+        return OptionalSingleQuery(self)
 
-class OptionalSingleQuery(BaseQuery):
 
-    def __init__(self, query: SingleQuery) -> None:
-        super().__init__(cls=query.cls)
-        self.filter = query.filter
-        self.sort = query.sort
-        self.projection = query.projection
-        self.skipping = query.skipping
-        self.limiting = 1
+class OptionalSingleQuery(SingleQuery, Generic[T]):
 
     def exec(self) -> Optional[T]:
         results: list[T] = super()._exec()

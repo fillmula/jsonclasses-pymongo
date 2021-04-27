@@ -18,7 +18,7 @@ def find(cls: type[T], **kwargs: Any) -> ListQuery[T]:
 
 
 def one(cls: type[T], **kwargs: Any) -> SingleQuery[T]:
-    return SingleQuery(cls=cls, filter=kwargs)
+    return ListQuery(cls=cls, filter=kwargs).first
 
 
 def pymongo_id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery[T]:
@@ -30,16 +30,18 @@ def _database_write(self: T) -> None:
         Encoder().encode_root(self).execute()
     except DuplicateKeyError as exception:
         result = search('index: (.+?)_1', exception._message)
+        assert result is not None
         db_key = result.group(1)
         pt_key = db_key
         json_key = db_key
-        if self.__class__.config.camelize_db_keys:
+        if self.__class__.dbconf.camelize_db_keys:
             pt_key = underscore(db_key)
             json_key = pt_key
         if self.__class__.config.camelize_json_keys:
             json_key = camelize(pt_key, False)
         raise UniqueConstraintException(
                 getattr(self, pt_key), json_key) from None
+
 
 def pymongofy(class_: type) -> PymongoObject:
     # do not install methods for subclasses

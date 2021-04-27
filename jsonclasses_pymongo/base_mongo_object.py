@@ -1,14 +1,3 @@
-from __future__ import annotations
-from typing import TypeVar, Any, Union
-from jsonclasses import (jsonclass, ORMObject, get_fields,
-                         ObjectNotFoundException, UniqueConstraintException)
-from pymongo.collection import Collection
-from pymongo.errors import DuplicateKeyError
-from bson.objectid import ObjectId
-from inflection import camelize, pluralize, underscore
-from re import search
-from .encoder import Encoder
-from .query import IDQuery, ListQuery, SingleQuery, OptionalSingleQuery
 from .utils import btype_from_ftype
 
 
@@ -61,22 +50,6 @@ class BaseMongoObject(ORMObject):
 
         connector._add_callback(name, sync_db_settings)
 
-    def _database_write(self: T) -> None:
-        try:
-            Encoder().encode_root(self).execute()
-        except DuplicateKeyError as exception:
-            result = search('index: (.+?)_1', exception._message)
-            db_key = result.group(1)
-            pt_key = db_key
-            json_key = db_key
-            if self.__class__.config.camelize_db_keys:
-                pt_key = underscore(db_key)
-                json_key = pt_key
-            if self.__class__.config.camelize_json_keys:
-                json_key = camelize(pt_key, False)
-            raise UniqueConstraintException(
-                    getattr(self, pt_key), json_key) from None
-
     @classmethod
     def delete_by_id(self, id: str) -> None:
         deletion_result = self.collection().delete_one({'_id': ObjectId(id)})
@@ -93,25 +66,8 @@ class BaseMongoObject(ORMObject):
         return self.collection().delete_many(*args, **kwargs).deleted_count
 
     @classmethod
-    def find_by_id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery:
-        return IDQuery(cls=cls, id=id)
-
-    @classmethod
-    def with_id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery:
-        return cls.find_by_id(id)
-
-
-
-    @classmethod
     def find_one(cls: type[T], **kwargs: Any) -> SingleQuery:
         if kwargs.get('id'):
             kwargs['_id'] = ObjectId(kwargs['id'])
             del kwargs['id']
         return SingleQuery(ListQuery(cls=cls, filter=kwargs))
-
-    @classmethod
-    def find_by(cls: type[T], **kwargs: Any) -> OptionalSingleQuery:
-        return OptionalSingleQuery(cls.find_one(**kwargs))
-
-
-T = TypeVar('T', bound=BaseMongoObject)
