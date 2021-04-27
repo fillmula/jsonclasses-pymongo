@@ -1,8 +1,10 @@
 from __future__ import annotations
 from typing import Any, Optional, TypeVar, cast, TYPE_CHECKING
 from datetime import date
-from jsonclasses import (get_fields, Types, Config, FieldType, FieldStorage,
-                         resolve_types)
+from jsonclasses.types import Types
+from jsonclasses.field_definition import FieldStorage, FieldType
+from jsonclasses.types_resolver import TypesResolver
+from jsonclasses.config import Config
 from inflection import underscore, camelize
 from .utils import (ref_field_key, ref_field_keys, ref_db_field_key,
                     ref_db_field_keys)
@@ -20,12 +22,13 @@ class Decoder(Coder):
                     types: Types) -> Optional[list[Any]]:
         if value is None:
             return None
-        if types.fdesc.field_storage == FieldStorage.FOREIGN_KEY:
+        if types.definition.field_storage == FieldStorage.FOREIGN_KEY:
             return None
-        elif types.fdesc.field_storage == FieldStorage.LOCAL_KEY:
+        elif types.definition.field_storage == FieldStorage.LOCAL_KEY:
             return [str(item) for item in value]
         else:
-            item_types = resolve_types(types.fdesc.raw_item_types)
+            item_types = TypesResolver().resolve_types(
+                types.definition.raw_item_types)
             return ([self.decode_item(value=item, cls=cls, types=item_types)
                     for item in value])
 
@@ -35,14 +38,15 @@ class Decoder(Coder):
                     types: Types) -> Optional[dict[str, Any]]:
         if value is None:
             return None
-        config: Config = cls.config
-        if types.fdesc.field_storage == FieldStorage.FOREIGN_KEY:
+        config: Config = cls.definition.config
+        if types.definition.field_storage == FieldStorage.FOREIGN_KEY:
             return None
-        if types.fdesc.field_storage == FieldStorage.LOCAL_KEY:
+        if types.definition.field_storage == FieldStorage.LOCAL_KEY:
             return ({underscore(k) if config.camelize_db_keys else k: str(v)
                     for k, v in value.items()})
         else:
-            item_types = resolve_types(types.fdesc.raw_item_types)
+            item_types = TypesResolver().resolve_types(
+                types.definition.raw_item_types)
             return ({underscore(k) if config.camelize_db_keys else k:
                     self.decode_item(value=v, cls=cls, types=item_types)
                     for k, v in value.items()})
@@ -51,8 +55,8 @@ class Decoder(Coder):
                      value: dict[str, Any],
                      cls: type[T],
                      types: Types) -> dict[str, Any]:
-        config: Config = cls.config
-        shape_types = cast(dict[str, Any], types.fdesc.shape_types)
+        config: Config = cls.definition.config
+        shape_types = cast(dict[str, Any], types.definition.shape_types)
         retval = {}
         for k, item_types in shape_types.items():
             retval[k] = self.decode_item(
@@ -67,31 +71,31 @@ class Decoder(Coder):
                         cls: type[T],
                         types: Types) -> Any:
         from .pymongo_object import PymongoObject
-        if types.fdesc.field_storage == FieldStorage.FOREIGN_KEY:
+        if types.definition.field_storage == FieldStorage.FOREIGN_KEY:
             return None
-        elif types.fdesc.field_storage == FieldStorage.LOCAL_KEY:
+        elif types.definition.field_storage == FieldStorage.LOCAL_KEY:
             return str(value)
         else:
             return self.decode_root(
                 root=value,
-                cls=cast(type[PymongoObject], resolve_types(
-                    types.fdesc.instance_types,
-                    graph_sibling=cls
-                ).fdesc.instance_types)
+                cls=cast(type[PymongoObject], TypesResolver().resolve_types(
+                    types.definition.instance_types,
+                    config=cls.definition.config
+                ).definition.instance_types)
             )
 
     def decode_item(self, value: Any, cls: type[T], types: Types) -> Any:
         if value is None:
             return value
-        if types.fdesc.field_type == FieldType.DATE:
+        if types.definition.field_type == FieldType.DATE:
             return date.fromisoformat(value.isoformat()[:10])
-        elif types.fdesc.field_type == FieldType.LIST:
+        elif types.definition.field_type == FieldType.LIST:
             return self.decode_list(value=value, cls=cls, types=types)
-        elif types.fdesc.field_type == FieldType.DICT:
+        elif types.definition.field_type == FieldType.DICT:
             return self.decode_dict(value=value, cls=cls, types=types)
-        elif types.fdesc.field_type == FieldType.SHAPE:
+        elif types.definition.field_type == FieldType.SHAPE:
             return self.decode_shape(value=value, cls=cls, types=types)
-        elif types.fdesc.field_type == FieldType.INSTANCE:
+        elif types.definition.field_type == FieldType.INSTANCE:
             return self.decode_instance(value=value, cls=cls, types=types)
         else:
             return value
@@ -100,7 +104,7 @@ class Decoder(Coder):
                     root: dict[str, Any],
                     cls: type[T]) -> T:
         dest = cls()
-        for field in get_fields(cls):
+        for field in cls.definition.fields:
             if self.is_id_field(field):
                 setattr(dest, 'id', str(root.get('_id')))
             elif self.is_foreign_key_storage(field):
@@ -108,32 +112,32 @@ class Decoder(Coder):
             elif self.is_local_key_reference_field(field):
                 setattr(
                     dest,
-                    ref_field_key(field.field_name),
+                    ref_field_key(field.name),
                     self.decode_item(
                         value=root.get(ref_db_field_key(
-                            field.db_field_name, cls=cls)),
-                        types=field.field_types,
+                            field.db_name, cls=cls)),
+                        types=field.types,
                         cls=cls
                     )
                 )
             elif self.is_local_keys_reference_field(field):
                 setattr(
                     dest,
-                    ref_field_keys(field.field_name),
+                    ref_field_keys(field.name),
                     self.decode_item(
                         value=root.get(ref_db_field_keys(
-                            field.db_field_name, cls=cls)),
-                        types=field.field_types,
+                            field.db_name, cls=cls)),
+                        types=field.types,
                         cls=cls
                     )
                 )
             else:
                 setattr(
                     dest,
-                    field.field_name,
+                    field.name,
                     self.decode_item(
-                        value=root.get(field.db_field_name),
-                        types=field.field_types,
+                        value=root.get(field.db_name),
+                        types=field.types,
                         cls=cls
                     )
                 )

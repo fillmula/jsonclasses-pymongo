@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import (Union, TypeVar, Generator, Optional, Any, overload, cast,
                     TYPE_CHECKING)
 from bson import ObjectId
-from jsonclasses import ObjectNotFoundException
+from jsonclasses.exceptions import ObjectNotFoundException
 from inflection import camelize
 from .decoder import Decoder
 if TYPE_CHECKING:

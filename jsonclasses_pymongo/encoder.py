@@ -3,11 +3,11 @@ from typing import Any, NamedTuple, TypeVar, Union, cast, TYPE_CHECKING
 from datetime import datetime
 from inflection import camelize
 from bson.objectid import ObjectId
-from jsonclasses.fields import Field, get_fields
+from jsonclasses.jsonclass_field import JSONClassField
 from jsonclasses.field_definition import FieldStorage, FieldType
 from jsonclasses.keypath_utils import concat_keypath
 from jsonclasses.types_resolver import TypesResolver
-from jsonclasses.object_graph import ObjectGraph
+from jsonclasses.mark_graph import MarkGraph
 from jsonclasses.types import types
 from .coder import Coder
 from .utils import ref_db_field_key, ref_db_field_keys
@@ -82,7 +82,7 @@ class Encoder(Coder):
         value = cast(dict[str, Any], context.value)
         fd = context.types.fdesc
         shape_types = cast(dict[str, Any], fd.shape_types)
-        camelized = context.owner.__class__.config.camelize_db_keys
+        camelized = context.owner.__class__.definition.config.camelize_db_keys
         result = {}
         commands = []
         for key, item in value.items():
@@ -100,7 +100,7 @@ class Encoder(Coder):
 
     def _join_command(self,
                       this_instance: PymongoObject,
-                      this_field: Field,
+                      this_field: JSONClassField,
                       that_cls: type[PymongoObject],
                       that_id: ObjectId) -> UpsertOneCommand:
         this_cls = this_instance.__class__
@@ -110,9 +110,9 @@ class Encoder(Coder):
         that_field_name = ref_db_field_key(that_cls_name, that_cls)
         join_table_name = self.join_table_name(
             this_cls,
-            this_field.field_name,
+            this_field.name,
             that_cls,
-            cast(str, this_field.fdesc.foreign_key))
+            cast(str, this_field.definition.foreign_key))
         collection = connector._database.get_collection(join_table_name)
         this_id = ObjectId(this_instance._id)
         matcher = {
@@ -132,27 +132,27 @@ class Encoder(Coder):
         value = cast(PymongoObject, context.value)
         cls = value.__class__
         id = cast(Union[str, int], value._id)
-        if context.object_graph.getp(cls, id) is not None:
+        if context.mark_graph.getp(cls, id) is not None:
             return EncodingResult({'_id': ObjectId(id)}, commands=[])
-        context.object_graph.put(value)
+        context.mark_graph.put(value)
         instance_fd = context.types.fdesc
         write_instance = instance_fd.field_storage != FieldStorage.EMBEDDED
         if root:
             write_instance = True
         use_insert_command = False
-        fields_need_update: set[str] = value.modified_fields_p
+        fields_need_update: set[str] = value.persisted_modified_fields
         if value.is_new:
             use_insert_command = True
         result_set = {}
         matcher = {}
         commands = []
         result_addtoset = {}
-        for field in get_fields(value):
-            if field.fdesc.is_temp_field:
+        for field in value.__class__.definition.fields:
+            if field.definition.is_temp_field:
                 continue
-            fname = field.field_name
+            fname = field.name
             fvalue = getattr(value, fname)
-            ftypes = field.field_types
+            ftypes = field.types
             if self.is_id_field(field):
                 if use_insert_command:
                     result_set['_id'] = ObjectId(fvalue)
@@ -239,7 +239,7 @@ class Encoder(Coder):
                     keypath_parent=fname,
                     parent=value))
                 if use_insert_command or fname in fields_need_update:
-                    result_set[field.db_field_name] = item_result
+                    result_set[field.db_name] = item_result
                 commands.extend(item_commands)
         if write_instance:
             collection = value.__class__.collection()
@@ -291,5 +291,5 @@ class Encoder(Coder):
             owner=root,
             keypath_parent='',
             parent=root,
-            object_graph=ObjectGraph()), root=True)[1]
+            mark_graph=MarkGraph()), root=True)[1]
         return BatchCommand(commands=commands)

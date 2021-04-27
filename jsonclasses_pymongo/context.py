@@ -1,7 +1,8 @@
 """This module defines encoding and decoding context objects."""
 from __future__ import annotations
 from typing import NamedTuple, Any, Union, TYPE_CHECKING
-from jsonclasses import Types, ObjectGraph
+from jsonclasses.types import Types
+from jsonclasses.mark_graph import MarkGraph
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
 
@@ -18,7 +19,7 @@ class EncodingContext(NamedTuple):
     owner: PymongoObject
     keypath_parent: str
     parent: Union[list[Any], dict[str, Any], PymongoObject]
-    object_graph: ObjectGraph
+    mark_graph: MarkGraph
 
     def new(self, **kwargs):
         """Return a new encoding context by replacing provided values."""
@@ -36,5 +37,5 @@ class EncodingContext(NamedTuple):
                             if 'keypath_parent' in keys
                             else self.keypath_parent),
             parent=kwargs['parent'] if 'parent' in keys else self.parent,
-            object_graph=(kwargs['object_graph']
-                          if 'object_graph' in keys else self.object_graph))
+            mark_graph=(kwargs['mark_graph']
+                        if 'mark_graph' in keys else self.mark_graph))
