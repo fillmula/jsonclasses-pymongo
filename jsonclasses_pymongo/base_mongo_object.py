@@ -9,7 +9,6 @@ from inflection import camelize, pluralize, underscore
 from re import search
 from .encoder import Encoder
 from .query import IDQuery, ListQuery, SingleQuery, OptionalSingleQuery
-from .connector import connector
 from .utils import btype_from_ftype
 
 
@@ -21,11 +20,6 @@ class BaseMongoObject(ORMObject):
     timestamp fields. If you want to use standard fields, consider using
     `MongoObject`.
     """
-
-    @classmethod
-    def collection(cls: type[T]) -> Collection:
-        name = pluralize(cls.__name__).lower()
-        return connector.collection(name)
 
     @classmethod
     def __loaded__(cls: type[T], class_: type[T]) -> None:

@@ -3,11 +3,10 @@ from typing import Optional
 from datetime import datetime
 from jsonclasses import jsonclass, types
 from bson.objectid import ObjectId
-from .base_mongo_object import BaseMongoObject
 
 
 @jsonclass(abstract=True)
-class MongoObject(BaseMongoObject):
+class BaseObject:
     """MongoObject is a concrete subclass for defining your business models
     with MongoDB. A `MongoObject` class represents a MongoDB collection.
     Standard fields are defined on this class including `id`, `created_at`,

@@ -1,17 +1,18 @@
 """This module contains id query."""
 from __future__ import annotations
-from typing import (Union, TypeVar, Generator, Optional, Any, overload, cast,
-                    TYPE_CHECKING)
+from typing import (Union, TypeVar, Generator, Optional, Any, Generic,
+                    overload, cast, TYPE_CHECKING)
 from bson import ObjectId
 from jsonclasses.exceptions import ObjectNotFoundException
 from inflection import camelize
 from .decoder import Decoder
+from .connection import Connection
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
     T = TypeVar('T', bound=PymongoObject)
 
 
-class IDQuery():
+class IDQuery(Generic[T]):
 
     def __init__(self,
                  cls: type[T],
@@ -20,7 +21,8 @@ class IDQuery():
         self.id = ObjectId(id)
 
     def exec(self) -> T:
-        fetched_object = self.cls.collection().find_one({'_id': self.id})
+        collection = Connection.get_collection(self.cls)
+        fetched_object = collection.find_one({'_id': self.id})
         if fetched_object is not None:
             return Decoder().decode_root(fetched_object, self.cls)
         raise ObjectNotFoundException(
@@ -29,6 +31,9 @@ class IDQuery():
     def __await__(self) -> Generator[None, None, T]:
         yield
         return self.exec()
+
+    def optional(self) -> OptionalIDQuery:
+        return OptionalIDQuery(cls=self.cls, id=self.id)
 
 
 class OptionalIDQuery(IDQuery):
@@ -40,7 +45,7 @@ class OptionalIDQuery(IDQuery):
             return None
 
 
-class BaseQuery():
+class BaseQuery(Generic[T]):
 
     def __init__(self, cls: type[T]) -> None:
         self.cls = cls
@@ -50,7 +55,7 @@ class BaseQuery():
         self.skipping: Optional[int] = None
         self.limiting: Optional[int] = None
 
-    def exec(self) -> list[T]:
+    def _exec(self) -> list[T]:
         kwargs: dict[str, Any] = {}
         if self.filter is not None:
             kwargs['filter'] = self.filter
@@ -62,14 +67,14 @@ class BaseQuery():
             kwargs['skip'] = self.skipping
         if self.limiting is not None:
             kwargs['limit'] = self.limiting
-        cursor = self.cls.collection().find(**kwargs)
+        cursor = Connection.get_collection(self.cls).find(**kwargs)
         results = [doc for doc in cursor]
         coder = Decoder()
         return list(map(lambda doc: coder.decode_root(doc, self.cls), results))
 
     def __await__(self) -> Generator[None, None, list[T]]:
         yield
-        return self.exec()
+        return self._exec()
 
 
 class ListQuery(BaseQuery):
@@ -94,6 +99,9 @@ class ListQuery(BaseQuery):
         for key, value in d.items():
             retval[camelize(key, False)] = value
         return retval
+
+    def exec(self) -> list[T]:
+        return super()._exec()
 
     def where(self, filter: dict[str, Any]) -> ListQuery:
         self.filter = filter
@@ -157,7 +165,7 @@ class SingleQuery(BaseQuery):
         self.limiting = 1
 
     def exec(self) -> T:
-        results: list[T] = super().exec()
+        results: list[T] = super()._exec()
         if len(results) < 1:
             raise ObjectNotFoundException(
                 f'{self.cls.__name__}(filter={self.filter}, '
@@ -177,7 +185,7 @@ class OptionalSingleQuery(BaseQuery):
         self.limiting = 1
 
     def exec(self) -> Optional[T]:
-        results: list[T] = super().exec()
+        results: list[T] = super()._exec()
         if len(results) < 1:
             return None
         return results[0]
