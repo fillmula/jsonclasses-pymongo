@@ -282,6 +282,8 @@ class Encoder(Coder):
             return EncodingResult(
                 result=datetime.fromisoformat(context.value.isoformat()),
                 commands=[])
+        elif field_type == FieldType.ENUM:
+            return EncodingResult(result=context.value.value, commands=[])
         else:
             return EncodingResult(context.value, [])
 

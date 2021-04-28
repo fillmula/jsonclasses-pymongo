@@ -88,6 +88,8 @@ class Decoder(Coder):
             return value
         if types.definition.field_type == FieldType.DATE:
             return date.fromisoformat(value.isoformat()[:10])
+        elif types.definition.field_type == FieldType.ENUM:
+            return types.definition.enum_class(value)
         elif types.definition.field_type == FieldType.LIST:
             return self.decode_list(value=value, cls=cls, types=types)
         elif types.definition.field_type == FieldType.DICT:

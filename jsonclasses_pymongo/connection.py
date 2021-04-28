@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, ClassVar, Optional, TYPE_CHECKING
+from typing import Callable, ClassVar, Optional, TYPE_CHECKING, TypeVar
 from os import getcwd, path
 from pymongo.mongo_client import MongoClient
 from pymongo.database import Database
@@ -7,6 +7,7 @@ from pymongo.collection import Collection
 from inflection import parameterize, camelize
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
+    T = TypeVar('T', bound=PymongoObject, covariant=False)
 
 
 ConnectedCallback = Callable[[Collection], None]
@@ -107,7 +108,7 @@ class Connection:
         callback(self.collection(name))
 
     def collection_from(self: Connection,
-                        cls: type[PymongoObject]) -> Collection:
+                        cls: type[T]) -> Collection:
         coll_name = cls.dbconf.collection_name
         return self.collection(coll_name)
 
@@ -115,14 +116,14 @@ class Connection:
 
     @classmethod
     def get_collection(cls: type[Connection],
-                       pmcls: type[PymongoObject]) -> Collection:
+                       pmcls: type[T]) -> Collection:
         graph = pmcls.definition.config.class_graph.name
         connection = Connection(graph)
         return connection.collection_from(pmcls)
 
     @classmethod
     def from_class(cls: type[Connection],
-                   pmcls: type[PymongoObject]) -> Connection:
+                   pmcls: type[T]) -> Connection:
         return Connection(pmcls.definition.config.class_graph.name)
 
 
