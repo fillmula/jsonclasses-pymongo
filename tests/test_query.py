@@ -71,3 +71,15 @@ class TestQuery(TestCase):
         self.assertGreaterEqual(song0.created_at, song.created_at)
         self.assertGreaterEqual(song0.updated_at, song.updated_at)
         self.assertEqual(song0.deleted_at, song.deleted_at)
+
+    def test_query_object_with_id(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.id(str(song.id)).exec()
+        self.assertEqual(song.name, result.name)
+        self.assertEqual(song.year, result.year)
+        self.assertEqual(song.artist, result.artist)
+        self.assertEqual(song.id, result.id)
+        self.assertGreaterEqual(song.created_at, result.created_at)
+        self.assertGreaterEqual(song.updated_at, result.updated_at)
+        self.assertEqual(song.deleted_at, result.deleted_at)
