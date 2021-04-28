@@ -7,7 +7,7 @@ from jsonclasses.exceptions import ObjectNotFoundException
 from inflection import camelize
 from .decoder import Decoder
 from .connection import Connection
-T = TypeVar('T', bound='PymongoObject')
+T = TypeVar('T')
 
 
 class IDQuery(Generic[T]):

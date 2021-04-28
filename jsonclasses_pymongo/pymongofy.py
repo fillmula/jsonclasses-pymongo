@@ -84,12 +84,14 @@ def pymongofy(class_: type) -> PymongoObject:
     def callback(coll: Collection):
         info = coll.index_information()
         for field in class_.definition.fields:
-            name = field.db_field_name
-            index = field.fdesc.index
-            unique = field.fdesc.unique
-            required = field.fdesc.required
+            name = field.name
+            if class_.dbconf.camelize_db_keys:
+                name = camelize(field.name, False)
+            index = field.definition.index
+            unique = field.definition.unique
+            required = field.definition.required
             index_name = f'{name}_1'
-            ftype = field.fdesc.field_type
+            ftype = field.definition.field_type
             if unique:
                 if required:
                     coll.create_index(name, name=index_name, unique=True)

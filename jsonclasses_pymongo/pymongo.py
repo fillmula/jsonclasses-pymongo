@@ -47,7 +47,7 @@ def pymongo(
             raise ValueError('@pymongo should be used to decorate a class.')
         conf = DBConf(cls, cls.definition.config,
                       collection_name, camelize_db_keys)
-        setattr(cls, 'dfconf', conf)
+        cls.dbconf = conf
         return cast(type[PymongoObject], pymongofy(cls))
     else:
         def parametered_jsonclass(cls):
