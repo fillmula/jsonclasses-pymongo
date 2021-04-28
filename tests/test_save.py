@@ -9,7 +9,7 @@ from tests.classes.linked_author import LinkedAuthor
 from tests.classes.linked_post import LinkedPost
 
 
-class TestCreateSave(TestCase):
+class TestSave(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:

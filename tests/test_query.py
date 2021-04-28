@@ -1,189 +1,73 @@
-# from __future__ import annotations
-# from unittest import IsolatedAsyncioTestCase
-# from typing import Optional
-# from jsonclasses import jsonclass, ObjectNotFoundException
-# from jsonclasses_pymongo import MongoObject, connector
+from __future__ import annotations
+from datetime import datetime
+from unittest import TestCase
+from bson.objectid import ObjectId
+from jsonclasses_pymongo import Connection
+from tests.classes.simple_song import SimpleSong
+from tests.classes.simple_artist import SimpleArtist
+from tests.classes.linked_author import LinkedAuthor
+from tests.classes.linked_post import LinkedPost
 
 
-# @jsonclass
-# class Find(MongoObject):
-#     username: Optional[str]
-#     password: Optional[str]
+class TestQuery(TestCase):
 
+    @classmethod
+    def setUpClass(cls) -> None:
+        connection = Connection('simple')
+        connection.set_url('mongodb://localhost:27017/simple')
+        connection.connect()
+        connection = Connection('linked')
+        connection.set_url('mongodb://localhost:27017/linked')
+        connection.connect()
 
-# class TestMongoObjectQuery(IsolatedAsyncioTestCase):
+    @classmethod
+    def tearDownClass(cls) -> None:
+        connection = Connection('simple')
+        connection.disconnect()
+        connection = Connection('linked')
+        connection.disconnect()
 
-#     @classmethod
-#     def setUpClass(cls) -> None:
-#         connector.connect('mongodb://localhost:27017/jsonclasses')
+    def setUp(self) -> None:
+        collection = Connection.get_collection(SimpleSong)
+        collection.delete_many({})
+        collection = Connection.get_collection(SimpleArtist)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedAuthor)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedPost)
+        collection.delete_many({})
 
-#     async def test_find_by_id_returns_object(self):
-#         object = Find(username='John').save()
-#         id = object.id
-#         result = await Find.find_by_id(id)
-#         self.assertEqual(result.username, 'John')
-#         self.assertEqual(result.password, None)
+    def test_query_objects_from_database(self):
+        song0 = SimpleSong(name='Long', year=2020, artist='Thao')
+        song0.save()
+        song1 = SimpleSong(name='Long', year=2020, artist='Thao')
+        song1.save()
+        songs = SimpleSong.find().exec()
+        self.assertEqual(song0.name, songs[0].name)
+        self.assertEqual(song0.year, songs[0].year)
+        self.assertEqual(song0.artist, songs[0].artist)
+        self.assertEqual(song0.id, songs[0].id)
+        self.assertGreaterEqual(song0.created_at, songs[0].created_at)
+        self.assertGreaterEqual(song0.updated_at, songs[0].updated_at)
+        self.assertEqual(song0.deleted_at, songs[0].deleted_at)
+        self.assertEqual(song1.name, songs[1].name)
+        self.assertEqual(song1.year, songs[1].year)
+        self.assertEqual(song1.artist, songs[1].artist)
+        self.assertEqual(song1.id, songs[1].id)
+        self.assertGreaterEqual(song1.created_at, songs[1].created_at)
+        self.assertGreaterEqual(song1.updated_at, songs[1].updated_at)
+        self.assertEqual(song1.deleted_at, songs[1].deleted_at)
 
-#     async def test_find_by_id_raises_if_not_found(self):
-#         with self.assertRaisesRegex(
-#                 ObjectNotFoundException,
-#                 'Find\\(_id=1234567890abcd1234567890\\) not found\\.'):
-#             await Find.find_by_id('1234567890abcd1234567890')
-
-#     async def test_find_by_id_optional_returns_object(self):
-#         object = Find(username='John').save()
-#         id = object.id
-#         result = await Find.find_by(id=id)
-#         self.assertEqual(result.username, 'John')
-#         self.assertEqual(result.password, None)
-
-#     async def test_find_by_id_optional_returns_none_if_not_found(self):
-#         result = await Find.find_by(id='1234567890abcd1234567890')
-#         self.assertIs(result, None)
-
-#     async def test_find_without_arguments_returns_list(self):
-#         Find.delete()
-#         Find(username='a', password='b').save()
-#         Find(username='c', password='d').save()
-#         results = await Find.find()
-#         self.assertEqual(len(results), 2)
-#         self.assertEqual(results[0].username, 'a')
-#         self.assertEqual(results[0].password, 'b')
-#         self.assertEqual(results[1].username, 'c')
-#         self.assertEqual(results[1].password, 'd')
-
-#     async def test_find_with_arguments_returns_filtered_list(self):
-#         Find.delete()
-#         Find(username='a', password='b').save()
-#         Find(username='c', password='d').save()
-#         results = await Find.find(username='a')
-#         self.assertEqual(len(results), 1)
-#         self.assertEqual(results[0].username, 'a')
-#         self.assertEqual(results[0].password, 'b')
-
-#     async def test_order_asc_with_str(self):
-#         Find.delete()
-#         Find(username='a', password='b').save()
-#         Find(username='z', password='d').save()
-#         Find(username='q', password='d').save()
-#         Find(username='e', password='d').save()
-#         results = await Find.find().order('username')
-#         self.assertEqual(len(results), 4)
-#         self.assertEqual(results[0].username, 'a')
-#         self.assertEqual(results[1].username, 'e')
-#         self.assertEqual(results[2].username, 'q')
-#         self.assertEqual(results[3].username, 'z')
-
-#     async def test_order_desc_with_tuple(self):
-#         Find.delete()
-#         Find(username='a', password='b').save()
-#         Find(username='z', password='d').save()
-#         Find(username='q', password='d').save()
-#         Find(username='e', password='d').save()
-#         results = await Find.find().order(('username', -1))
-#         self.assertEqual(len(results), 4)
-#         self.assertEqual(results[0].username, 'z')
-#         self.assertEqual(results[1].username, 'q')
-#         self.assertEqual(results[2].username, 'e')
-#         self.assertEqual(results[3].username, 'a')
-
-#     async def test_order_asc_with_list_args(self):
-#         Find.delete()
-#         Find(username='a', password='b').save()
-#         Find(username='a', password='d').save()
-#         Find(username='a', password='z').save()
-#         Find(username='a', password='c').save()
-#         results = await Find.find().order([('username', 1), ('password', 1)])
-#         self.assertEqual(len(results), 4)
-#         self.assertEqual(results[0].password, 'b')
-#         self.assertEqual(results[1].password, 'c')
-#         self.assertEqual(results[2].password, 'd')
-#         self.assertEqual(results[3].password, 'z')
-
-#     async def test_project_only_fields(self):
-#         Find.delete()
-#         Find(username='a', password='o').save()
-#         Find(username='z', password='p').save()
-#         results = await Find.find().project(['username']).order('username')
-#         self.assertEqual(len(results), 2)
-#         self.assertEqual(results[0].password, None)
-#         self.assertEqual(results[0].username, 'a')
-#         self.assertEqual(results[1].password, None)
-#         self.assertEqual(results[1].username, 'z')
-
-#     async def test_skip_skips_results(self):
-#         Find.delete()
-#         Find(username='a', password='o').save()
-#         Find(username='z', password='p').save()
-#         results = await Find.find().order('username').skip(1)
-#         self.assertEqual(len(results), 1)
-#         self.assertEqual(results[0].username, 'z')
-#         self.assertEqual(results[0].password, 'p')
-
-#     async def test_limit_limits_results(self):
-#         Find.delete()
-#         Find(username='a', password='o').save()
-#         Find(username='b', password='o').save()
-#         Find(username='c', password='o').save()
-#         results = await Find.find().order('username').skip(1).limit(1)
-#         self.assertEqual(len(results), 1)
-#         self.assertEqual(results[0].username, 'b')
-#         self.assertEqual(results[0].password, 'o')
-
-#     async def test_find_one_returns_one_result(self):
-#         Find.delete()
-#         Find(username='a', password='o').save()
-#         Find(username='b', password='o').save()
-#         Find(username='c', password='o').save()
-#         result = await Find.find().order('username').first
-#         self.assertEqual(result.username, 'a')
-#         self.assertEqual(result.password, 'o')
-
-#     async def test_find_one_raises_if_no_results_found(self):
-#         Find.delete()
-#         Find(username='a', password='o').save()
-#         Find(username='b', password='o').save()
-#         Find(username='c', password='o').save()
-#         with self.assertRaisesRegex(
-#                 ObjectNotFoundException,
-#                 ("Find\\(filter={'username': 'z'}, sort=None, "
-#                  "projection=None, skipping=5\\) not found\\.")):
-#             await Find.find().where({'username': 'z'}).skip(5).first
-
-#     async def test_find_one_optional_returns_one_result(self):
-#         Find.delete()
-#         Find(username='a', password='o').save()
-#         Find(username='b', password='o').save()
-#         Find(username='c', password='o').save()
-#         result = await Find.find().order('username').first_or_none
-#         self.assertEqual(result.username, 'a')
-#         self.assertEqual(result.password, 'o')
-
-#     async def test_find_one_optional_returns_none_if_no_results_found(self):
-#         Find.delete()
-#         Find(username='a', password='o').save()
-#         Find(username='b', password='o').save()
-#         Find(username='c', password='o').save()
-#         result = (await Find.find().where({'username': 'z'}).skip(5)
-#                   .first_or_none)
-#         self.assertEqual(result, None)
-
-#     # def test_include_includes_many_to_many(self):
-#     #     @jsonclass
-#     #     class UestAuthor(MongoObject):
-#     #         name: str
-#     #         posts: List[UestPost] = types.listof(
-#     #             'UestPost').linkedthru('authors')
-
-#     #     @jsonclass
-#     #     class UestPost(MongoObject):
-#     #         title: str
-#     #         authors: List[UestAuthor] = types.listof(
-#     #             'UestAuthor').linkedthru('posts')
-#     #     author = UestAuthor(
-#     #         **{'name': 'Michael', 'posts': [{'title': 'PA'}, {'title': 'PB'}]})
-#     #     author.save()
-#     #     returned_author = UestAuthor.find_by_id(author.id).include('posts')
-#     #     self.assertEqual(len(returned_author.posts), 2)
-#     #     self.assertEqual(returned_author.posts[0].title, author.posts[0].title)
-#     #     self.assertEqual(returned_author.posts[1].title, author.posts[1].title)
+    def test_query_object_from_database(self):
+        song0 = SimpleSong(name='Long', year=2020, artist='Thao')
+        song0.save()
+        song1 = SimpleSong(name='Long', year=2020, artist='Thao')
+        song1.save()
+        song = SimpleSong.one().exec()
+        self.assertEqual(song0.name, song.name)
+        self.assertEqual(song0.year, song.year)
+        self.assertEqual(song0.artist, song.artist)
+        self.assertEqual(song0.id, song.id)
+        self.assertGreaterEqual(song0.created_at, song.created_at)
+        self.assertGreaterEqual(song0.updated_at, song.updated_at)
+        self.assertEqual(song0.deleted_at, song.deleted_at)
