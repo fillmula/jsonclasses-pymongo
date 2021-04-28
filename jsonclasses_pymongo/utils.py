@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Union, TYPE_CHECKING
 from inflection import camelize
-from jsonclasses.fields import FieldType
+from jsonclasses.field_definition import FieldType
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
 

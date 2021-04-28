@@ -1,11 +1,12 @@
 from __future__ import annotations
-from typing import Callable, ClassVar, Optional
+from typing import Callable, ClassVar, Optional, TYPE_CHECKING
 from os import getcwd, path
 from pymongo.mongo_client import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
 from inflection import parameterize, camelize
-from .pymongo_object import PymongoObject
+if TYPE_CHECKING:
+    from .pymongo_object import PymongoObject
 
 
 ConnectedCallback = Callable[[Collection], None]

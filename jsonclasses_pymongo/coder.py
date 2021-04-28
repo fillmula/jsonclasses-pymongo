@@ -50,12 +50,12 @@ class Coder():
                            field: JSONClassField,
                            sibling: type[PymongoObject]
                            ) -> type[PymongoObject]:
-        from .mongo_object import MongoObject
+        from .pymongo_object import PymongoObject
         fd = field.types.definition
         item_types = TypesResolver().resolve_types(fd.raw_item_types,
                                                    sibling.definition.config)
         item_fd = item_types.definition
-        return cast(type[MongoObject], item_fd.instance_types)
+        return cast(type[PymongoObject], item_fd.instance_types)
 
     def join_table_name(self,
                         cls_a: type[PymongoObject],

@@ -1,9 +1,25 @@
-# from __future__ import annotations
-# from unittest import IsolatedAsyncioTestCase
-# from typing import List
-# from jsonclasses import jsonclass, types
-# from jsonclasses_pymongo import MongoObject
+from __future__ import annotations
+from unittest import TestCase
+from tests.classes.simple_song import SimpleSong
+from jsonclasses_pymongo import Connection
 
+
+class TestSave(TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        connection = Connection('simple')
+        connection.set_url('mongodb://localhost:27017/simple')
+        connection.connect()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        connection = Connection('simple')
+        connection.disconnect()
+
+    def test_object_is_saved_into_database(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        print(song)
 
 # @jsonclass
 # class Product(MongoObject):

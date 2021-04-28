@@ -7,9 +7,7 @@ from jsonclasses.exceptions import ObjectNotFoundException
 from inflection import camelize
 from .decoder import Decoder
 from .connection import Connection
-if TYPE_CHECKING:
-    from .pymongo_object import PymongoObject
-    T = TypeVar('T', bound=PymongoObject)
+T = TypeVar('T', bound='PymongoObject')
 
 
 class IDQuery(Generic[T]):
@@ -84,6 +82,9 @@ class ListQuery(BaseQuery, Generic[T]):
                  cls: type[T],
                  filter: Optional[dict[str, Any]] = None) -> None:
         super().__init__(cls=cls)
+        if filter is not None and filter.get('id'):
+            filter['_id'] = ObjectId(filter['id'])
+            del filter['id']
         self.filter = self._update_cases(filter)
 
     def __call__(self, filter: Optional[dict[str, Any]] = None) -> ListQuery:

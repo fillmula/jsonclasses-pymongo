@@ -6,8 +6,7 @@ from typing import TypeVar, ClassVar, Any, Union
 from bson.objectid import ObjectId
 from jsonclasses.jsonclass_object import JSONClassObject
 from .dbconf import DBConf
-from .query import (ListQuery, IDQuery, SingleQuery, OptionalIDQuery,
-                    OptionalSingleQuery)
+from .query import ListQuery, IDQuery, SingleQuery
 
 
 T = TypeVar('T', bound='PymongoObject')
@@ -33,4 +32,12 @@ class PymongoObject(JSONClassObject):
 
     @classmethod
     def id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery[T]:
+        ...
+
+    @classmethod
+    def delete_by_id(cls: type[T], id: Union[str, ObjectId]) -> None:
+        ...
+
+    @classmethod
+    def delete_many(cls: type[T], *args, **kwargs) -> int:
         ...
