@@ -1,34 +1,49 @@
-# from __future__ import annotations
-# from typing import Optional
-# from unittest import IsolatedAsyncioTestCase
-# from jsonclasses import jsonclass, types, UniqueConstraintException
-# from jsonclasses_pymongo import MongoObject, connector
+from __future__ import annotations
+from typing import Optional
+from unittest import TestCase
+from jsonclasses.exceptions import UniqueConstraintException
+from jsonclasses_pymongo import Connection
+from tests.classes.simple_person import SimplePerson
+from tests.classes.simple_singer import SimpleSinger
 
 
-# class TestUniqueRecordSave(IsolatedAsyncioTestCase):
+class TestUniqueRecord(TestCase):
 
-#     @classmethod
-#     def setUpClass(cls) -> None:
-#         connector.connect('mongodb://localhost:27017/jsonclasses')
+    @classmethod
+    def setUpClass(cls) -> None:
+        connection = Connection('simple')
+        connection.set_url('mongodb://localhost:27017/simple')
+        connection.connect()
 
-#     async def test_saving_record_raises_if_voilate_unique_rule(self):
-#         @jsonclass(class_graph='this_is_quite_unique_1')
-#         class SpecialClass(MongoObject):
-#             name: str = types.str.unique.required
+    @classmethod
+    def tearDownClass(cls) -> None:
+        connection = Connection('simple')
+        connection.disconnect()
 
-#         SpecialClass.delete()
-#         a = SpecialClass(name='special')
-#         b = SpecialClass(name='special')
-#         a.save()
-#         self.assertRaises(UniqueConstraintException, b.save)
+    def setUp(self) -> None:
+        collection = Connection.get_collection(SimplePerson)
+        collection.delete_many({})
+        collection = Connection.get_collection(SimpleSinger)
+        collection.delete_many({})
 
-#     async def test_saving_record_do_not_raise_for_null(self):
-#         @jsonclass(class_graph='this_is_quite_unique_1')
-#         class SpecialClassTwo(MongoObject):
-#             nama: Optional[str] = types.str.unique
+    def test_save_raises_if_violate_unique_rule(self):
+        one = SimplePerson(name='Tsuan Tsiu')
+        one.save()
+        two = SimplePerson(name='Tsuan Tsiu')
+        self.assertRaisesRegex(
+            UniqueConstraintException,
+            "Value 'Tsuan Tsiu' at 'name' is not unique.",
+            two.save)
 
-#         SpecialClassTwo.delete()
-#         a = SpecialClassTwo(nama=None)
-#         b = SpecialClassTwo(nama=None)
-#         a.save()
-#         b.save()
+    def test_save_wont_raise_if_value_is_optional_and_is_null(self):
+        one = SimpleSinger(name=None)
+        one.save()
+        two = SimpleSinger(name=None)
+        two.save()
+        one = SimplePerson(name='Tsuan Tsiu')
+        one.save()
+        two = SimplePerson(name='Tsuan Tsiu')
+        self.assertRaisesRegex(
+            UniqueConstraintException,
+            "Value 'Tsuan Tsiu' at 'name' is not unique.",
+            two.save)

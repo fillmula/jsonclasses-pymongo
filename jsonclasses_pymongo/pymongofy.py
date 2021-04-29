@@ -58,7 +58,7 @@ def _database_write(self: T) -> None:
         if self.__class__.dbconf.camelize_db_keys:
             pt_key = underscore(db_key)
             json_key = pt_key
-        if self.__class__.config.camelize_json_keys:
+        if self.__class__.definition.config.camelize_json_keys:
             json_key = camelize(pt_key, False)
         raise UniqueConstraintException(
                 getattr(self, pt_key), json_key) from None
