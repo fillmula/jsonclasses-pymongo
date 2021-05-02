@@ -5,7 +5,6 @@ from typing import (Iterator, Union, TypeVar, Generator, Optional, Any,
 from bson import ObjectId
 from jsonclasses.exceptions import ObjectNotFoundException
 from inflection import camelize
-from pymongo import cursor
 from pymongo.cursor import Cursor
 from .decoder import Decoder
 from .connection import Connection
@@ -216,7 +215,7 @@ class QueryIterator(Generic[T]):
         return self
 
     def __next__(self) -> T:
-        value = cursor.__next__()
+        value = self.cursor.__next__()
         return Decoder().decode_root(value, self.cls)
 
 

@@ -6,12 +6,12 @@ from jsonclasses.jsonclass_field import JSONClassField
 from pymongo.errors import DuplicateKeyError
 from inflection import camelize, underscore
 from pymongo.collection import Collection
-from jsonclasses.field_definition import FieldStorage
+from jsonclasses.field_definition import FieldStorage, FieldType
 from jsonclasses.exceptions import UniqueConstraintException
 from jsonclasses.types_resolver import TypesResolver
 from jsonclasses.exceptions import DeletionDeniedException
 from .pymongo_object import PymongoObject
-from .query import ExistQuery, ListQuery, SingleQuery, IDQuery
+from .query import ExistQuery, IterateQuery, ListQuery, SingleQuery, IDQuery
 from .encoder import Encoder
 from .connection import Connection
 from .utils import btype_from_ftype, ref_db_field_key
@@ -37,21 +37,8 @@ def exist(cls: type[T], **kwargs: Any) -> ExistQuery[T]:
     return ExistQuery(cls=cls, filter=kwargs)
 
 
-# def delete_by_id(cls: type[T], id: str) -> None:
-#     collection = Connection.get_collection(cls)
-#     deletion_result = collection.delete_one({'_id': ObjectId(id)})
-#     if deletion_result.deleted_count < 1:
-#         raise ObjectNotFoundException(
-#             f'{cls.__name__} with id \'{id}\' is not found.')
-#     else:
-#         return None
-
-
-# def delete_many(cls: type[T], *args, **kwargs) -> int:
-#     if len(args) == 0:
-#         args = ({},)
-#     collection = Connection.get_collection(cls)
-#     return collection.delete_many(*args, **kwargs).deleted_count
+def iterate(cls: type[T], **kwargs: Any) -> IterateQuery[T]:
+    return IterateQuery(cls=cls, filter=kwargs)
 
 
 def _database_write(self: T) -> None:
@@ -120,8 +107,12 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
     for field in self.__class__.definition.nullify_fields:
         if field.definition.field_storage == FieldStorage.FOREIGN_KEY:
             r = TypesResolver()
-            t = r.resolve_types(field.definition.instance_types,
-                                self.__class__.definition.config)
+            if field.definition.field_type == FieldType.LIST:
+                t = r.resolve_types(field.definition.raw_item_types,
+                                    self.__class__.definition.config)
+            else:
+                t = r.resolve_types(field.definition.instance_types,
+                                    self.__class__.definition.config)
             types = t
             oc = cast(type[PymongoObject], types.definition.instance_types)
             f = cast(JSONClassField, field.foreign_field)
@@ -188,6 +179,7 @@ def pymongofy(class_: type) -> PymongoObject:
     class_.one = classmethod(one)
     class_.id = classmethod(pymongo_id)
     class_.exist = classmethod(exist)
+    class_.iterate = classmethod(iterate)
     # protected methods
     class_._database_write = _database_write
     class_._orm_delete = _orm_delete

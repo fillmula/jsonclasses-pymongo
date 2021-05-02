@@ -2,11 +2,13 @@
 jsonclass object should confirm to.
 """
 from __future__ import annotations
-from typing import TypeVar, ClassVar, Any, Union
+from typing import TypeVar, ClassVar, Any, Union, TYPE_CHECKING
 from bson.objectid import ObjectId
 from jsonclasses.jsonclass_object import JSONClassObject
-from .dbconf import DBConf
-from .query import ListQuery, IDQuery, SingleQuery, ExistQuery, IterateQuery
+if TYPE_CHECKING:
+    from .dbconf import DBConf
+    from .query import (ListQuery, IDQuery, SingleQuery, ExistQuery,
+                        IterateQuery)
 
 
 T = TypeVar('T', bound='PymongoObject')
