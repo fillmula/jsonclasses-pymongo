@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Optional, TypeVar, cast, TYPE_CHECKING
+from typing import Any, Generic, Optional, TypeVar, cast, TYPE_CHECKING
 from datetime import date
 from jsonclasses.types import Types
 from jsonclasses.field_definition import FieldStorage, FieldType

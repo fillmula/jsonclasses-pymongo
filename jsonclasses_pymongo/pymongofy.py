@@ -2,16 +2,20 @@ from __future__ import annotations
 from typing import TypeVar, Any, Union, cast
 from re import search
 from bson.objectid import ObjectId
+from jsonclasses.jsonclass_field import JSONClassField
 from pymongo.errors import DuplicateKeyError
 from inflection import camelize, underscore
 from pymongo.collection import Collection
-from jsonclasses.exceptions import (UniqueConstraintException,
-                                    ObjectNotFoundException)
+from jsonclasses.field_definition import FieldStorage
+from jsonclasses.exceptions import UniqueConstraintException
+from jsonclasses.types_resolver import TypesResolver
+from jsonclasses.exceptions import DeletionDeniedException
 from .pymongo_object import PymongoObject
-from .query import ListQuery, SingleQuery, IDQuery
+from .query import ExistQuery, ListQuery, SingleQuery, IDQuery
 from .encoder import Encoder
 from .connection import Connection
-from .utils import btype_from_ftype
+from .utils import btype_from_ftype, ref_db_field_key
+from .coder import Coder
 
 
 T = TypeVar('T', bound=PymongoObject)
@@ -29,21 +33,25 @@ def pymongo_id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery[T]:
     return IDQuery(cls=cls, id=id)
 
 
-def delete_by_id(cls: type[T], id: str) -> None:
-    collection = Connection.get_collection(cls)
-    deletion_result = collection.delete_one({'_id': ObjectId(id)})
-    if deletion_result.deleted_count < 1:
-        raise ObjectNotFoundException(
-            f'{cls.__name__} with id \'{id}\' is not found.')
-    else:
-        return None
+def exist(cls: type[T], **kwargs: Any) -> ExistQuery[T]:
+    return ExistQuery(cls=cls, filter=kwargs)
 
 
-def delete_many(cls: type[T], *args, **kwargs) -> int:
-    if len(args) == 0:
-        args = ({},)
-    collection = Connection.get_collection(cls)
-    return collection.delete_many(*args, **kwargs).deleted_count
+# def delete_by_id(cls: type[T], id: str) -> None:
+#     collection = Connection.get_collection(cls)
+#     deletion_result = collection.delete_one({'_id': ObjectId(id)})
+#     if deletion_result.deleted_count < 1:
+#         raise ObjectNotFoundException(
+#             f'{cls.__name__} with id \'{id}\' is not found.')
+#     else:
+#         return None
+
+
+# def delete_many(cls: type[T], *args, **kwargs) -> int:
+#     if len(args) == 0:
+#         args = ({},)
+#     collection = Connection.get_collection(cls)
+#     return collection.delete_many(*args, **kwargs).deleted_count
 
 
 def _database_write(self: T) -> None:
@@ -64,6 +72,54 @@ def _database_write(self: T) -> None:
                 getattr(self, pt_key), json_key) from None
 
 
+def _orm_delete(self: T, no_raise: bool = False) -> None:
+    # deny test
+    for field in self.__class__.definition.deny_fields:
+        if field.definition.field_storage == FieldStorage.LOCAL_KEY:
+            key = self.__class__.definition.config.key_transformer(field)
+            if getattr(self, key) is not None:
+                if no_raise:
+                    return
+                else:
+                    raise DeletionDeniedException()
+        elif field.definition.field_storage == FieldStorage.FOREIGN_KEY:
+            r = TypesResolver()
+            t = r.resolve_types(field.definition.instance_types,
+                                self.__class__.definition.config)
+            types = t
+            oc = cast(type[PymongoObject], types.definition.instance_types)
+            f = cast(JSONClassField, field.foreign_field)
+            if field.definition.use_join_table:
+                jtname = Coder().join_table_name(
+                    self.__class__,
+                    field.name,
+                    oc,
+                    f.name)
+                coll = Connection.from_class(self.__class__).collection(jtname)
+                key = ref_db_field_key(self.__class__.__name__, self.__class__)
+                e = coll.count_documents({key: ObjectId(self._id)}, limit=1)
+                exist = e > 0
+                if exist:
+                    if no_raise:
+                        return
+                    else:
+                        raise DeletionDeniedException()
+            else:
+                key = oc.definition.config.key_transformer(f)
+                exist = oc.exist(**{key: ObjectId(self._id)}).exec()
+                if exist:
+                    if no_raise:
+                        return
+                    else:
+                        raise DeletionDeniedException()
+    # delete chain
+    #for field in
+
+
+def _orm_restore(self: T) -> None:
+    pass
+
+
 def pymongofy(class_: type) -> PymongoObject:
     # do not install methods for subclasses
     if hasattr(class_, '__is_pymongo__'):
@@ -74,10 +130,11 @@ def pymongofy(class_: type) -> PymongoObject:
     class_.find = classmethod(find)
     class_.one = classmethod(one)
     class_.id = classmethod(pymongo_id)
-    class_.delete_many = classmethod(delete_many)
-    class_.delete_by_id = classmethod(delete_by_id)
+    class_.exist = classmethod(exist)
     # protected methods
     class_._database_write = _database_write
+    class_._orm_delete = _orm_delete
+    class_._orm_restore = _orm_restore
     connection = Connection.from_class(class_)
     if class_.definition.config.abstract:
         return class_

@@ -1,13 +1,14 @@
 """This module contains id query."""
 from __future__ import annotations
 from typing import (Union, TypeVar, Generator, Optional, Any, Generic,
-                    overload, cast, TYPE_CHECKING)
+                    overload, cast)
 from bson import ObjectId
 from jsonclasses.exceptions import ObjectNotFoundException
 from inflection import camelize
 from .decoder import Decoder
 from .connection import Connection
-T = TypeVar('T')
+from .pymongo_object import PymongoObject
+T = TypeVar('T', bound=PymongoObject)
 
 
 class IDQuery(Generic[T]):
@@ -183,3 +184,21 @@ class OptionalSingleQuery(SingleQuery, Generic[T]):
         if len(results) < 1:
             return None
         return results[0]
+
+
+class ExistQuery(Generic[T]):
+
+    def __init__(self,
+                 cls: type[T],
+                 filter: Optional[dict[str, Any]] = None) -> None:
+        self.cls = cls
+        self.filter = filter or {}
+
+    def exec(self) -> bool:
+        result = Connection.get_collection(self.cls).count_documents(
+                self.filter, limit=1)
+        return False if result == 0 else True
+
+    def __await__(self) -> Generator[None, None, bool]:
+        yield
+        return self.exec()
