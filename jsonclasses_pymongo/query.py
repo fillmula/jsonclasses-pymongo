@@ -12,6 +12,23 @@ from .pymongo_object import PymongoObject
 T = TypeVar('T', bound=PymongoObject)
 
 
+def _update_cases(filter: Optional[dict[str, Any]],
+                  camelize_db_keys: bool) -> dict[str, Any]:
+    if filter is None:
+        return {}
+    if filter.get('id'):
+        filter['_id'] = ObjectId(filter['id'])
+        del filter['id']
+    if not camelize_db_keys:
+        return filter
+    if filter is None:
+        return None
+    retval: dict[str, Any] = {}
+    for key, value in filter.items():
+        retval[camelize(key, False)] = value
+    return retval
+
+
 class IDQuery(Generic[T]):
 
     def __init__(self,
@@ -84,25 +101,11 @@ class ListQuery(BaseQuery, Generic[T]):
                  cls: type[T],
                  filter: Optional[dict[str, Any]] = None) -> None:
         super().__init__(cls=cls)
-        if filter is not None and filter.get('id'):
-            filter['_id'] = ObjectId(filter['id'])
-            del filter['id']
-        self.filter = self._update_cases(filter)
+        self.filter = _update_cases(filter, cls.dbconf.camelize_db_keys)
 
     def __call__(self, filter: Optional[dict[str, Any]] = None) -> ListQuery:
-        self.filter = self._update_cases(filter)
+        self.filter = _update_cases(filter, self.cls.dbconf.camelize_db_keys)
         return self
-
-    def _update_cases(self,
-                      d: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
-        if not self.cls.dbconf.camelize_db_keys:
-            return d
-        if d is None:
-            return None
-        retval: dict[str, Any] = {}
-        for key, value in d.items():
-            retval[camelize(key, False)] = value
-        return retval
 
     def exec(self) -> list[T]:
         return super()._exec()
@@ -193,7 +196,7 @@ class ExistQuery(Generic[T]):
                  cls: type[T],
                  filter: Optional[dict[str, Any]] = None) -> None:
         self.cls = cls
-        self.filter = filter or {}
+        self.filter = _update_cases(filter, cls.dbconf.camelize_db_keys)
 
     def exec(self) -> bool:
         result = Connection.get_collection(self.cls).count_documents(
@@ -225,7 +228,7 @@ class IterateQuery(Generic[T]):
                  cls: type[T],
                  filter: Optional[dict[str, Any]] = None) -> None:
         self.cls = cls
-        self.filter = filter or {}
+        self.filter = _update_cases(filter, cls.dbconf.camelize_db_keys)
 
     def exec(self) -> Iterator[T]:
         coll = Connection.from_class(self.cls).get_collection(self.cls)
