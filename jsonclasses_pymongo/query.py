@@ -1,10 +1,12 @@
 """This module contains id query."""
 from __future__ import annotations
-from typing import (Union, TypeVar, Generator, Optional, Any, Generic,
-                    overload, cast)
+from typing import (Iterator, Union, TypeVar, Generator, Optional, Any,
+                    Generic, overload, cast)
 from bson import ObjectId
 from jsonclasses.exceptions import ObjectNotFoundException
 from inflection import camelize
+from pymongo import cursor
+from pymongo.cursor import Cursor
 from .decoder import Decoder
 from .connection import Connection
 from .pymongo_object import PymongoObject
@@ -202,3 +204,31 @@ class ExistQuery(Generic[T]):
     def __await__(self) -> Generator[None, None, bool]:
         yield
         return self.exec()
+
+
+class QueryIterator(Generic[T]):
+
+    def __init__(self, cls: type[T], cursor: Cursor):
+        self.cls = cls
+        self.cursor = cursor
+
+    def __iter__(self):
+        return self
+
+    def __next__(self) -> T:
+        value = cursor.__next__()
+        return Decoder().decode_root(value, self.cls)
+
+
+class IterateQuery(Generic[T]):
+
+    def __init__(self,
+                 cls: type[T],
+                 filter: Optional[dict[str, Any]] = None) -> None:
+        self.cls = cls
+        self.filter = filter or {}
+
+    def exec(self) -> Iterator[T]:
+        coll = Connection.from_class(self.cls).get_collection(self.cls)
+        cursor = coll.find(self.filter)
+        return QueryIterator(cls=self.cls, cursor=cursor)

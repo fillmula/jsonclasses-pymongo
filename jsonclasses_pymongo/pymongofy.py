@@ -112,8 +112,65 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                         return
                     else:
                         raise DeletionDeniedException()
-    # delete chain
-    #for field in
+
+    collection = Connection.get_collection(self.__class__)
+    collection.delete_one({'_id': ObjectId(self._id)})
+
+    # delete chain - nullify
+    for field in self.__class__.definition.nullify_fields:
+        if field.definition.field_storage == FieldStorage.FOREIGN_KEY:
+            r = TypesResolver()
+            t = r.resolve_types(field.definition.instance_types,
+                                self.__class__.definition.config)
+            types = t
+            oc = cast(type[PymongoObject], types.definition.instance_types)
+            f = cast(JSONClassField, field.foreign_field)
+            if field.definition.use_join_table:
+                jtname = Coder().join_table_name(
+                    self.__class__,
+                    field.name,
+                    oc,
+                    f.name)
+                coll = Connection.from_class(self.__class__).collection(jtname)
+                key = ref_db_field_key(self.__class__.__name__, self.__class__)
+                coll.delete_many({key: ObjectId(self._id)})
+            else:
+                key = oc.definition.config.key_transformer(f)
+                for o in oc.iterate(**{key: ObjectId(self._id)}).exec():
+                    setattr(o, f.name, None)
+                    o.save(skip_validation=True)
+
+    # delete chain - cascade
+    for field in self.__class__.definition.cascade_fields:
+        r = TypesResolver()
+        t = r.resolve_types(field.definition.instance_types,
+                            self.__class__.definition.config)
+        types = t
+        oc = cast(type[PymongoObject], types.definition.instance_types)
+        f = cast(JSONClassField, field.foreign_field)
+        if field.definition.field_storage == FieldStorage.LOCAL_KEY:
+            key = self.__class__.definition.config.key_transformer(field)
+            if getattr(self, key) is not None:
+                oc.id(getattr(self, key)).exec()._orm_delete(no_raise=True)
+        elif field.definition.field_storage == FieldStorage.FOREIGN_KEY:
+            if field.definition.use_join_table:
+                jtname = Coder().join_table_name(
+                    self.__class__,
+                    field.name,
+                    oc,
+                    f.name)
+                coll = Connection.from_class(self.__class__).collection(jtname)
+                key = ref_db_field_key(self.__class__.__name__, self.__class__)
+                other_key = ref_db_field_key(oc.__name__, oc)
+                for rel in coll.find({key: ObjectId(self._id)}):
+                    other_id = rel[other_key]
+                    oc.id(other_id).exec()._orm_delete(no_raise=True)
+            else:
+                key = oc.definition.config.key_transformer(f)
+                for o in oc.iterate(**{key: ObjectId(self._id)}).exec():
+                    o._orm_delete(no_raise=True)
+
+    setattr(self, '_is_deleted', True)
 
 
 def _orm_restore(self: T) -> None:

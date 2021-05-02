@@ -6,7 +6,7 @@ from typing import TypeVar, ClassVar, Any, Union
 from bson.objectid import ObjectId
 from jsonclasses.jsonclass_object import JSONClassObject
 from .dbconf import DBConf
-from .query import ListQuery, IDQuery, SingleQuery, ExistQuery
+from .query import ListQuery, IDQuery, SingleQuery, ExistQuery, IterateQuery
 
 
 T = TypeVar('T', bound='PymongoObject')
@@ -36,4 +36,14 @@ class PymongoObject(JSONClassObject):
 
     @classmethod
     def exist(cls: type[T], **kwargs: Any) -> ExistQuery[T]:
+        ...
+
+    @classmethod
+    def iterate(cls: type[T], **kwargs: Any) -> IterateQuery[T]:
+        ...
+
+    def _orm_delete(self: T, no_raise: bool = False) -> None:
+        ...
+
+    def _orm_restore(self: T) -> None:
         ...
