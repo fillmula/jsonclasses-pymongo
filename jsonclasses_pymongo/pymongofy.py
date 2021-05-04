@@ -128,7 +128,6 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
             else:
                 key = oc.definition.config.key_transformer(f)
                 for o in oc.iterate(**{key: ObjectId(self._id)}).exec():
-                    print('work')
                     setattr(o, f.name, None)
                     setattr(o, key, None)
                     o.save(skip_validation=True)
