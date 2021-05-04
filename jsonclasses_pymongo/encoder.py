@@ -121,7 +121,7 @@ class Encoder(Coder):
             that_field_name: that_id
         }
         return UpsertOneCommand(collection=collection,
-                                object=matcher,
+                                object={'$set': matcher},
                                 matcher=matcher)
 
     def encode_instance(self,
@@ -264,6 +264,8 @@ class Encoder(Coder):
         setattr(value, '_is_modified', False)
         setattr(value, '_modified_fields', set())
         setattr(value, '_previous_values', {})
+        if result_set == {}:
+            result_set = {'_id': ObjectId(value._id)}
         return EncodingResult(result_set, commands)
 
     def encode_item(self, context: EncodingContext) -> EncodingResult:
