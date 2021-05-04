@@ -41,6 +41,10 @@ class TestDelete(TestCase):
         collection.delete_many({})
         collection = Connection.get_collection(LinkedProfile)
         collection.delete_many({})
+        collection = Connection.get_collection(LinkedStudent)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedCourse)
+        collection.delete_many({})
         collection = Connection('linked').collection('linkedcoursesstudents'
                                                      'linkedstudentscourses')
         collection.delete_many({})
@@ -94,6 +98,20 @@ class TestDelete(TestCase):
         course1.delete()
         self.assertEqual(collection.count_documents({}), 2)
 
+    def test_1f_1l_cascade_delete(self):
+        pass
+
+    def test_1l_1f_cascade_delete(self):
+        pass
+
+    def test_1_many_cascade_delete(self):
+        pass
+
+    def test_many_1_cascade_delete(self):
+        pass
+
+    def test_many_many_cascade_delete(self):
+        pass
 
     # def test_1f_1l_can_be_nullified(self):
     #     post = LinkedPost(title='P', content='C')
