@@ -1,16 +1,21 @@
 from __future__ import annotations
 from unittest import TestCase
+from jsonclasses.exceptions import DeletionDeniedException
 from jsonclasses_pymongo import Connection
 from tests.classes.simple_song import SimpleSong
 from tests.classes.simple_artist import SimpleArtist
 from tests.classes.linked_author import LinkedAuthor
 from tests.classes.linked_post import LinkedPost
-from tests.classes.linked_profile_user import LinkedProfile, LinkedUser
+from tests.classes.linked_profile_user import (LinkedProfile, LinkedUser,
+                                               LinkedCProfile, LinkedDUser,
+                                               LinkedDProfile, LinkedCUser)
 from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
 from tests.classes.linked_order import (LinkedOrder, LinkedBuyer, LinkedCOrder,
                                         LinkedCBuyer)
 from tests.classes.linked_account import LinkedAccount, LinkedBalance
 from tests.classes.linked_bomb import LinkedSoldier, LinkedBomb
+from tests.classes.linked_notebook import (LinkedNote, LinkedNotebook,
+                                           LinkedRNote, LinkedRNotebook)
 
 
 class TestDelete(TestCase):
@@ -70,6 +75,22 @@ class TestDelete(TestCase):
         collection.delete_many({})
         collection = Connection('linked').collection('linkedbombssoldiers'
                                                      'linkedsoldiersbombs')
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedCProfile)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedDUser)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedDProfile)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedCUser)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedNote)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedNotebook)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedRNote)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedRNotebook)
         collection.delete_many({})
 
     def test_object_can_be_removed_from_database(self):
@@ -197,28 +218,114 @@ class TestDelete(TestCase):
         self.assertEqual(collection.count_documents({}), 0)
 
     def test_1l_1f_denies_deletion(self):
-        pass
+        user = LinkedDUser(name='crazy')
+        profile = LinkedCProfile(name='six')
+        user.profile = profile
+        user.save()
+        collection = Connection.get_collection(LinkedDUser)
+        self.assertEqual(collection.count_documents({}), 1)
+        collection = Connection.get_collection(LinkedCProfile)
+        self.assertEqual(collection.count_documents({}), 1)
+        self.assertRaises(DeletionDeniedException, user.delete)
+        collection = Connection.get_collection(LinkedDUser)
+        self.assertEqual(collection.count_documents({}), 1)
+        collection = Connection.get_collection(LinkedCProfile)
+        self.assertEqual(collection.count_documents({}), 1)
 
     def test_1l_1f_allows_deletion(self):
-        pass
+        user = LinkedDUser(name='crazy')
+        user.save()
+        collection = Connection.get_collection(LinkedDUser)
+        self.assertEqual(collection.count_documents({}), 1)
+        user.delete()
+        collection = Connection.get_collection(LinkedDUser)
+        self.assertEqual(collection.count_documents({}), 0)
 
     def test_1f_1l_denies_deletion(self):
-        pass
+        user = LinkedCUser(name='crazy')
+        profile = LinkedDProfile(name='six')
+        user.profile = profile
+        user.save()
+        collection = Connection.get_collection(LinkedCUser)
+        self.assertEqual(collection.count_documents({}), 1)
+        collection = Connection.get_collection(LinkedDProfile)
+        self.assertEqual(collection.count_documents({}), 1)
+        self.assertRaises(DeletionDeniedException, profile.delete)
+        collection = Connection.get_collection(LinkedCUser)
+        self.assertEqual(collection.count_documents({}), 1)
+        collection = Connection.get_collection(LinkedDProfile)
+        self.assertEqual(collection.count_documents({}), 1)
 
     def test1f_1l_allows_deletion(self):
-        pass
+        profile = LinkedDProfile(name='crazy')
+        profile.save()
+        collection = Connection.get_collection(LinkedDProfile)
+        self.assertEqual(collection.count_documents({}), 1)
+        profile.delete()
+        collection = Connection.get_collection(LinkedDProfile)
+        self.assertEqual(collection.count_documents({}), 0)
 
     def test_1_many_denies_deletion(self):
-        pass
+        notebook = LinkedNotebook(name='N',
+                                  notes=[{'name': 'A'}, {'name': 'B'}])
+        notebook.save()
+        collection = Connection.get_collection(LinkedNotebook)
+        self.assertEqual(collection.count_documents({}), 1)
+        collection = Connection.get_collection(LinkedNote)
+        self.assertEqual(collection.count_documents({}), 2)
+        self.assertRaises(DeletionDeniedException, notebook.delete)
+        collection = Connection.get_collection(LinkedNotebook)
+        self.assertEqual(collection.count_documents({}), 1)
+        collection = Connection.get_collection(LinkedNote)
+        self.assertEqual(collection.count_documents({}), 2)
 
     def test_1_many_allows_deletion(self):
-        pass
+        notebook = LinkedNotebook(name='N', notes=[])
+        notebook.save()
+        collection = Connection.get_collection(LinkedNotebook)
+        self.assertEqual(collection.count_documents({}), 1)
+        notebook.delete()
+        collection = Connection.get_collection(LinkedNotebook)
+        self.assertEqual(collection.count_documents({}), 0)
 
     def test_many_1_denies_deletion(self):
-        pass
+        notebook = LinkedRNotebook(name='N',
+                                  notes=[{'name': 'A'}, {'name': 'B'}])
+        notebook.save()
+        collection = Connection.get_collection(LinkedRNotebook)
+        self.assertEqual(collection.count_documents({}), 1)
+        collection = Connection.get_collection(LinkedRNote)
+        self.assertEqual(collection.count_documents({}), 2)
+        self.assertRaises(DeletionDeniedException, notebook.notes[0].delete)
+        collection = Connection.get_collection(LinkedRNotebook)
+        self.assertEqual(collection.count_documents({}), 1)
+        collection = Connection.get_collection(LinkedRNote)
+        self.assertEqual(collection.count_documents({}), 2)
 
     def test_many_1_allows_deletion(self):
-        pass
+        note = LinkedRNote(name='N')
+        note.save()
+        collection = Connection.get_collection(LinkedRNote)
+        self.assertEqual(collection.count_documents({}), 1)
+        note.delete()
+        collection = Connection.get_collection(LinkedRNote)
+        self.assertEqual(collection.count_documents({}), 0)
+
+    def test_many_1_reverse_deny_has_nullify_effect(self):
+        notebook = LinkedRNotebook(name='N',
+                                   notes=[{'name': 'A'}, {'name': 'B'}])
+        notebook.save()
+        collection = Connection.get_collection(LinkedRNotebook)
+        self.assertEqual(collection.count_documents({}), 1)
+        collection = Connection.get_collection(LinkedRNote)
+        self.assertEqual(collection.count_documents({}), 2)
+        notebook.delete()
+        collection = Connection.get_collection(LinkedRNotebook)
+        self.assertEqual(collection.count_documents({}), 0)
+        collection = Connection.get_collection(LinkedRNote)
+        self.assertEqual(collection.count_documents({}), 2)
+        for item in collection.find({}):
+            self.assertEqual(item['notebookId'], None)
 
     def test_many_many_denies_deletion(self):
         pass

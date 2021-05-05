@@ -64,15 +64,19 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
     for field in self.__class__.definition.deny_fields:
         if field.definition.field_storage == FieldStorage.LOCAL_KEY:
             key = self.__class__.definition.config.key_transformer(field)
-            if getattr(self, key) is not None:
+            if hasattr(self, key) and getattr(self, key) is not None:
                 if no_raise:
                     return
                 else:
                     raise DeletionDeniedException()
         elif field.definition.field_storage == FieldStorage.FOREIGN_KEY:
             r = TypesResolver()
-            t = r.resolve_types(field.definition.instance_types,
-                                self.__class__.definition.config)
+            if field.definition.field_type == FieldType.LIST:
+                t = r.resolve_types(field.definition.raw_item_types,
+                                    self.__class__.definition.config)
+            else:
+                t = r.resolve_types(field.definition.instance_types,
+                                    self.__class__.definition.config)
             types = t
             oc = cast(type[PymongoObject], types.definition.instance_types)
             f = cast(JSONClassField, field.foreign_field)

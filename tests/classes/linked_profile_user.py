@@ -15,3 +15,33 @@ class LinkedProfile(BaseObject):
 class LinkedUser(BaseObject):
     name: str
     profile: LinkedProfile = types.instanceof('LinkedProfile').linkedby('user')
+
+
+@pymongo
+@jsonclass(class_graph='linked')
+class LinkedDProfile(BaseObject):
+    name: str
+    user: LinkedCUser = types.instanceof('LinkedCUser').linkto.deny
+
+
+@pymongo
+@jsonclass(class_graph='linked')
+class LinkedCUser(BaseObject):
+    name: str
+    profile: LinkedDProfile = types.instanceof('LinkedDProfile') \
+                                   .linkedby('user').cascade
+
+
+@pymongo
+@jsonclass(class_graph='linked')
+class LinkedCProfile(BaseObject):
+    name: str
+    user: LinkedDUser = types.instanceof('LinkedDUser').linkto.cascade
+
+
+@pymongo
+@jsonclass(class_graph='linked')
+class LinkedDUser(BaseObject):
+    name: str
+    profile: LinkedCProfile = types.instanceof('LinkedCProfile') \
+                                   .linkedby('user').deny
