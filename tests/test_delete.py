@@ -16,6 +16,7 @@ from tests.classes.linked_account import LinkedAccount, LinkedBalance
 from tests.classes.linked_bomb import LinkedSoldier, LinkedBomb
 from tests.classes.linked_notebook import (LinkedNote, LinkedNotebook,
                                            LinkedRNote, LinkedRNotebook)
+from tests.classes.linked_share import LinkedCompany, LinkedOwner
 
 
 class TestDelete(TestCase):
@@ -91,6 +92,13 @@ class TestDelete(TestCase):
         collection = Connection.get_collection(LinkedRNote)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedRNotebook)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedCompany)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedOwner)
+        collection.delete_many({})
+        collection = Connection('linked').collection('linkedcompaniesowners'
+                                                     'linkedownerscompanies')
         collection.delete_many({})
 
     def test_object_can_be_removed_from_database(self):
@@ -328,7 +336,51 @@ class TestDelete(TestCase):
             self.assertEqual(item['notebookId'], None)
 
     def test_many_many_denies_deletion(self):
-        pass
+        c1 = LinkedCompany(name='C1')
+        c2 = LinkedCompany(name='C2')
+        o1 = LinkedOwner(name='O1')
+        o2 = LinkedOwner(name='O2')
+        c1.owners = [o1, o2]
+        c2.owners = [o1, o2]
+        o1.save()
+        collection = Connection.get_collection(LinkedCompany)
+        self.assertEqual(collection.count_documents({}), 2)
+        collection = Connection.get_collection(LinkedOwner)
+        self.assertEqual(collection.count_documents({}), 2)
+        collection = Connection('linked').collection('linkedcompaniesowners'
+                                                     'linkedownerscompanies')
+        self.assertEqual(collection.count_documents({}), 4)
+        self.assertRaises(DeletionDeniedException, o1.delete)
+        collection = Connection.get_collection(LinkedCompany)
+        self.assertEqual(collection.count_documents({}), 2)
+        collection = Connection.get_collection(LinkedOwner)
+        self.assertEqual(collection.count_documents({}), 2)
+        collection = Connection('linked').collection('linkedcompaniesowners'
+                                                     'linkedownerscompanies')
+        self.assertEqual(collection.count_documents({}), 4)
 
     def test_many_many_allows_deletion(self):
-        pass
+        owner = LinkedOwner(name='OK')
+        owner.save()
+        collection = Connection.get_collection(LinkedOwner)
+        self.assertEqual(collection.count_documents({}), 1)
+        owner.delete()
+        collection = Connection.get_collection(LinkedOwner)
+        self.assertEqual(collection.count_documents({}), 0)
+
+    def test_many_many_cascade_deny_triggers_partial_deletion(self):
+        c1 = LinkedCompany(name='C1')
+        c2 = LinkedCompany(name='C2')
+        o1 = LinkedOwner(name='O1')
+        o2 = LinkedOwner(name='O2')
+        c1.owners = [o1, o2]
+        c2.owners = [o1, o2]
+        c1.save()
+        c1.delete()
+        collection = Connection.get_collection(LinkedCompany)
+        self.assertEqual(collection.count_documents({}), 1)
+        collection = Connection.get_collection(LinkedOwner)
+        self.assertEqual(collection.count_documents({}), 2)
+        collection = Connection('linked').collection('linkedcompaniesowners'
+                                                     'linkedownerscompanies')
+        self.assertEqual(collection.count_documents({}), 2)
