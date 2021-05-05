@@ -166,6 +166,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                     item = oc.id(other_id).optional.exec()
                     if item is not None:
                         item._orm_delete(no_raise=True)
+                coll.delete_many({key: ObjectId(self._id)})
             else:
                 key = oc.definition.config.key_transformer(f)
                 for o in oc.iterate(**{key: ObjectId(self._id)}).exec():
