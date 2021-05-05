@@ -10,6 +10,7 @@ from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
 from tests.classes.linked_order import (LinkedOrder, LinkedBuyer, LinkedCOrder,
                                         LinkedCBuyer)
 from tests.classes.linked_account import LinkedAccount, LinkedBalance
+from tests.classes.linked_bomb import LinkedSoldier, LinkedBomb
 
 
 class TestDelete(TestCase):
@@ -62,6 +63,13 @@ class TestDelete(TestCase):
         collection = Connection.get_collection(LinkedAccount)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedBalance)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedBomb)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedSoldier)
+        collection.delete_many({})
+        collection = Connection('linked').collection('linkedbombssoldiers'
+                                                     'linkedsoldiersbombs')
         collection.delete_many({})
 
     def test_object_can_be_removed_from_database(self):
@@ -164,15 +172,26 @@ class TestDelete(TestCase):
         self.assertEqual(collection.count_documents({}), 0)
 
     def test_many_many_cascade_delete(self):
-        pass
-
-    # def test_1f_1l_can_be_nullified(self):
-    #     post = LinkedPost(title='P', content='C')
-    #     author = LinkedAuthor(name='A')
-    #     post.author = author
-    #     post.save()
-    #     collection = Connection.get_collection(LinkedPost)
-    #     self.assertEqual(collection.count_documents({}), 1)
-    #     collection = Connection.get_collection(LinkedAuthor)
-    #     self.assertEqual(collection.count_documents({}), 1)
-    #     post.delete()
+        soldier1 = LinkedSoldier(name='S1')
+        soldier2 = LinkedSoldier(name='S2')
+        bomb1 = LinkedBomb(name='B1')
+        bomb2 = LinkedBomb(name='B2')
+        soldier1.bombs = [bomb1, bomb2]
+        soldier2.bombs = [bomb1, bomb2]
+        soldier1.save()
+        soldier2.save()
+        collection = Connection.get_collection(LinkedSoldier)
+        self.assertEqual(collection.count_documents({}), 2)
+        collection = Connection.get_collection(LinkedBomb)
+        self.assertEqual(collection.count_documents({}), 2)
+        collection = Connection('linked').collection('linkedbombssoldiers'
+                                                     'linkedsoldiersbombs')
+        self.assertEqual(collection.count_documents({}), 4)
+        soldier1.delete()
+        collection = Connection.get_collection(LinkedSoldier)
+        self.assertEqual(collection.count_documents({}), 0)
+        collection = Connection.get_collection(LinkedBomb)
+        self.assertEqual(collection.count_documents({}), 0)
+        collection = Connection('linked').collection('linkedbombssoldiers'
+                                                     'linkedsoldiersbombs')
+        self.assertEqual(collection.count_documents({}), 0)

@@ -163,7 +163,9 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                 other_key = ref_db_field_key(oc.__name__, oc)
                 for rel in coll.find({key: ObjectId(self._id)}):
                     other_id = rel[other_key]
-                    oc.id(other_id).exec()._orm_delete(no_raise=True)
+                    item = oc.id(other_id).optional.exec()
+                    if item is not None:
+                        item._orm_delete(no_raise=True)
             else:
                 key = oc.definition.config.key_transformer(f)
                 for o in oc.iterate(**{key: ObjectId(self._id)}).exec():
