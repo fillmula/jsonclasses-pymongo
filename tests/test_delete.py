@@ -195,3 +195,33 @@ class TestDelete(TestCase):
         collection = Connection('linked').collection('linkedbombssoldiers'
                                                      'linkedsoldiersbombs')
         self.assertEqual(collection.count_documents({}), 0)
+
+    def test_1l_1f_denies_deletion(self):
+        pass
+
+    def test_1l_1f_allows_deletion(self):
+        pass
+
+    def test_1f_1l_denies_deletion(self):
+        pass
+
+    def test1f_1l_allows_deletion(self):
+        pass
+
+    def test_1_many_denies_deletion(self):
+        pass
+
+    def test_1_many_allows_deletion(self):
+        pass
+
+    def test_many_1_denies_deletion(self):
+        pass
+
+    def test_many_1_allows_deletion(self):
+        pass
+
+    def test_many_many_denies_deletion(self):
+        pass
+
+    def test_many_many_allows_deletion(self):
+        pass
