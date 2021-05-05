@@ -1,6 +1,5 @@
 from __future__ import annotations
 from unittest import TestCase
-
 from jsonclasses_pymongo import Connection
 from tests.classes.simple_song import SimpleSong
 from tests.classes.simple_artist import SimpleArtist
@@ -8,6 +7,8 @@ from tests.classes.linked_author import LinkedAuthor
 from tests.classes.linked_post import LinkedPost
 from tests.classes.linked_profile_user import LinkedProfile, LinkedUser
 from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
+from tests.classes.linked_order import (LinkedOrder, LinkedBuyer, LinkedCOrder,
+                                        LinkedCBuyer)
 
 
 class TestDelete(TestCase):
@@ -47,6 +48,15 @@ class TestDelete(TestCase):
         collection.delete_many({})
         collection = Connection('linked').collection('linkedcoursesstudents'
                                                      'linkedstudentscourses')
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedOrder)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedBuyer)
+        collection.delete_many({})
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedCOrder)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedCBuyer)
         collection.delete_many({})
 
     def test_object_can_be_removed_from_database(self):
@@ -105,10 +115,28 @@ class TestDelete(TestCase):
         pass
 
     def test_1_many_cascade_delete(self):
-        pass
+        buyer = LinkedBuyer(name='B')
+        order1 = LinkedOrder(name='O1')
+        order2 = LinkedOrder(name='O2')
+        buyer.orders = [order1, order2]
+        buyer.save()
+        collection = Connection.get_collection(LinkedOrder)
+        self.assertEqual(collection.count_documents({}), 2)
+        buyer.delete()
+        self.assertEqual(collection.count_documents({}), 0)
 
     def test_many_1_cascade_delete(self):
-        pass
+        buyer = LinkedCBuyer(name='B')
+        order1 = LinkedCOrder(name='O1')
+        order2 = LinkedCOrder(name='O2')
+        buyer.orders = [order1, order2]
+        buyer.save()
+        collection = Connection.get_collection(LinkedCOrder)
+        self.assertEqual(collection.count_documents({}), 2)
+        order1.delete()
+        self.assertEqual(collection.count_documents({}), 0)
+        collection = Connection.get_collection(LinkedCBuyer)
+        self.assertEqual(collection.count_documents({}), 0)
 
     def test_many_many_cascade_delete(self):
         pass

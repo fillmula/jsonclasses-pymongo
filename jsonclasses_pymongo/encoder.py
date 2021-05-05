@@ -10,7 +10,7 @@ from jsonclasses.types_resolver import TypesResolver
 from jsonclasses.mark_graph import MarkGraph
 from jsonclasses.types import types
 from .coder import Coder
-from .utils import ref_db_field_key, ref_db_field_keys
+from .utils import ref_db_field_key, ref_db_field_keys, ref_field_key
 from .context import EncodingContext
 from .command import (Command, InsertOneCommand, UpdateOneCommand,
                       UpsertOneCommand, BatchCommand)
@@ -197,6 +197,7 @@ class Encoder(Coder):
                     if use_insert_command or fname in fields_need_update:
                         result_set[ref_db_field_key(fname, cls)] = None
                     continue
+                setattr(value, ref_field_key(fname), str(fvalue._id))
                 item_result, item_commands = self.encode_instance(context.new(
                     value=fvalue,
                     types=ftypes,

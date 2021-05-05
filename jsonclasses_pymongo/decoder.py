@@ -107,7 +107,8 @@ class Decoder(Coder):
         dest = cls()
         for field in cls.definition.fields:
             if self.is_id_field(field):
-                setattr(dest, 'id', str(root.get('_id')))
+                setattr(dest, cls.definition.primary_field.name,
+                        str(root.get('_id')))
             elif self.is_foreign_key_storage(field):
                 pass
             elif self.is_local_key_reference_field(field):

@@ -135,15 +135,22 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
     # delete chain - cascade
     for field in self.__class__.definition.cascade_fields:
         r = TypesResolver()
-        t = r.resolve_types(field.definition.instance_types,
-                            self.__class__.definition.config)
+        if field.definition.field_type == FieldType.LIST:
+            t = r.resolve_types(field.definition.raw_item_types,
+                                self.__class__.definition.config)
+        else:
+            t = r.resolve_types(field.definition.instance_types,
+                                self.__class__.definition.config)
+        types = t
         types = t
         oc = cast(type[PymongoObject], types.definition.instance_types)
         f = cast(JSONClassField, field.foreign_field)
         if field.definition.field_storage == FieldStorage.LOCAL_KEY:
             key = self.__class__.definition.config.key_transformer(field)
             if getattr(self, key) is not None:
-                oc.id(getattr(self, key)).exec()._orm_delete(no_raise=True)
+                item = oc.id(getattr(self, key)).optional.exec()
+                if item is not None:
+                    item._orm_delete(no_raise=True)
         elif field.definition.field_storage == FieldStorage.FOREIGN_KEY:
             if field.definition.use_join_table:
                 jtname = Coder().join_table_name(
