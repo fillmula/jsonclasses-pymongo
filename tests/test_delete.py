@@ -9,6 +9,7 @@ from tests.classes.linked_profile_user import LinkedProfile, LinkedUser
 from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
 from tests.classes.linked_order import (LinkedOrder, LinkedBuyer, LinkedCOrder,
                                         LinkedCBuyer)
+from tests.classes.linked_account import LinkedAccount, LinkedBalance
 
 
 class TestDelete(TestCase):
@@ -57,6 +58,10 @@ class TestDelete(TestCase):
         collection = Connection.get_collection(LinkedCOrder)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedCBuyer)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedAccount)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedBalance)
         collection.delete_many({})
 
     def test_object_can_be_removed_from_database(self):
@@ -109,10 +114,30 @@ class TestDelete(TestCase):
         self.assertEqual(collection.count_documents({}), 2)
 
     def test_1f_1l_cascade_delete(self):
-        pass
+        account = LinkedAccount(name='A', balance=LinkedBalance(name='B'))
+        account.save()
+        collection = Connection.get_collection(LinkedAccount)
+        self.assertEqual(collection.count_documents({}), 1)
+        collection = Connection.get_collection(LinkedBalance)
+        self.assertEqual(collection.count_documents({}), 1)
+        account.delete()
+        collection = Connection.get_collection(LinkedAccount)
+        self.assertEqual(collection.count_documents({}), 0)
+        collection = Connection.get_collection(LinkedBalance)
+        self.assertEqual(collection.count_documents({}), 0)
 
     def test_1l_1f_cascade_delete(self):
-        pass
+        balance = LinkedBalance(name='A', account=LinkedAccount(name='B'))
+        balance.save()
+        collection = Connection.get_collection(LinkedAccount)
+        self.assertEqual(collection.count_documents({}), 1)
+        collection = Connection.get_collection(LinkedBalance)
+        self.assertEqual(collection.count_documents({}), 1)
+        balance.delete()
+        collection = Connection.get_collection(LinkedAccount)
+        self.assertEqual(collection.count_documents({}), 0)
+        collection = Connection.get_collection(LinkedBalance)
+        self.assertEqual(collection.count_documents({}), 0)
 
     def test_1_many_cascade_delete(self):
         buyer = LinkedBuyer(name='B')
