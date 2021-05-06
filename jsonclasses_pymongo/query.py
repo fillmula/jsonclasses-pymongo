@@ -90,10 +90,6 @@ class BaseQuery(Generic[T]):
         coder = Decoder()
         return list(map(lambda doc: coder.decode_root(doc, self.cls), results))
 
-    def __await__(self) -> Generator[None, None, list[T]]:
-        yield
-        return self._exec()
-
 
 class ListQuery(BaseQuery, Generic[T]):
 
@@ -156,6 +152,10 @@ class ListQuery(BaseQuery, Generic[T]):
     def first(self) -> SingleQuery[T]:
         return SingleQuery(self)
 
+    def __await__(self) -> Generator[None, None, list[T]]:
+        yield
+        return self._exec()
+
 
 class SingleQuery(BaseQuery, Generic[T]):
 
@@ -176,6 +176,10 @@ class SingleQuery(BaseQuery, Generic[T]):
                 f'skipping={self.skipping}) not found.')
         return results[0]
 
+    def __await__(self) -> Generator[None, None, T]:
+        yield
+        return self.exec()
+
     @property
     def optional(self) -> OptionalSingleQuery[T]:
         return OptionalSingleQuery(self)
@@ -188,6 +192,10 @@ class OptionalSingleQuery(SingleQuery, Generic[T]):
         if len(results) < 1:
             return None
         return results[0]
+
+    def __await__(self) -> Generator[None, None, Optional[T]]:
+        yield
+        return self.exec()
 
 
 class ExistQuery(Generic[T]):
