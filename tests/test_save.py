@@ -199,6 +199,29 @@ class TestSave(TestCase):
         for item in collection.find({}):
             self.assertEqual(item['authorId'], ObjectId(a2.id))
 
+    def test_local_key_from_param_is_saved(self):
+        a1 = LinkedAuthor(name='A1')
+        a1.save()
+        post = LinkedPost(title='P1', content='P2', authorId=a1.id)
+        post.save()
+        collection = Connection.get_collection(LinkedPost)
+        for item in collection.find({}):
+            self.assertEqual(item['authorId'], ObjectId(a1.id))
+
+    def test_local_key_from_set_is_altered_and_saved(self):
+        a1 = LinkedAuthor(name='A1')
+        a1.save()
+        post = LinkedPost(title='P1', content='P2', authorId=a1.id)
+        post.save()
+        collection = Connection.get_collection(LinkedPost)
+        for item in collection.find({}):
+            self.assertEqual(item['authorId'], ObjectId(a1.id))
+        a2 = LinkedAuthor(name='A2')
+        post.set(authorId=a2.id)
+        post.save()
+        for item in collection.find({}):
+            self.assertEqual(item['authorId'], ObjectId(a2.id))
+
 # @jsonclass
 # class Product(MongoObject):
 #     name: str
