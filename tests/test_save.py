@@ -7,6 +7,7 @@ from tests.classes.simple_song import SimpleSong
 from tests.classes.simple_artist import SimpleArtist
 from tests.classes.linked_author import LinkedAuthor
 from tests.classes.linked_post import LinkedPost
+from tests.classes.linked_profile_user import LinkedProfile, LinkedUser
 
 
 class TestSave(TestCase):
@@ -35,6 +36,10 @@ class TestSave(TestCase):
         collection = Connection.get_collection(LinkedAuthor)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedPost)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedProfile)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedUser)
         collection.delete_many({})
 
     def test_object_is_saved_into_database(self):
@@ -221,6 +226,42 @@ class TestSave(TestCase):
         post.save()
         for item in collection.find({}):
             self.assertEqual(item['authorId'], ObjectId(a2.id))
+
+    def test_1l_1f_object_unlink_is_saved(self):
+        profile = LinkedProfile(name='p')
+        user = LinkedUser(name='u')
+        profile.user = user
+        profile.save()
+        profile.user = None
+        profile.save()
+        self.assertEqual(profile.is_modified, False)
+        self.assertEqual(profile.modified_fields, ())
+        self.assertEqual(user.is_modified, False)
+        self.assertEqual(user.modified_fields, ())
+        collection = Connection.get_collection(LinkedProfile)
+        for item in collection.find({}):
+            self.assertEqual(item['userId'], None)
+
+    def test_1f_1l_object_unlink_is_saved(self):
+        user = LinkedUser(name='u')
+        profile = LinkedProfile(name='p')
+        user.profile = profile
+        user.save()
+        user.profile = None
+        user.save()
+        self.assertEqual(profile.is_modified, False)
+        self.assertEqual(profile.modified_fields, ())
+        self.assertEqual(user.is_modified, False)
+        self.assertEqual(user.modified_fields, ())
+        collection = Connection.get_collection(LinkedProfile)
+        for item in collection.find({}):
+            self.assertEqual(item['userId'], None)
+
+    def test_1_many_unlink_is_saved(self):
+        pass
+
+    def test_many_1_unlink_is_saved(self):
+        pass
 
 # @jsonclass
 # class Product(MongoObject):
