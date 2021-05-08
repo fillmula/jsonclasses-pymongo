@@ -194,10 +194,15 @@ class Encoder(Coder):
                     commands.append(join_command)
             elif self.is_local_key_reference_field(field):
                 if fvalue is None:
-                    if use_insert_command or fname in fields_need_update:
-                        result_set[ref_db_field_key(fname, cls)] = None
+                    tsfm = value.__class__.definition.config.key_transformer
+                    if getattr(value, tsfm(field)) is not None:
+                        if use_insert_command or fname in fields_need_update:
+                            result_set[ref_db_field_key(fname, cls)] = \
+                                ObjectId(getattr(value, tsfm(field)))
+                    else:
+                        if use_insert_command or fname in fields_need_update:
+                            result_set[ref_db_field_key(fname, cls)] = None
                     continue
-                setattr(value, ref_field_key(fname), str(fvalue._id))
                 item_result, item_commands = self.encode_instance(context.new(
                     value=fvalue,
                     types=ftypes,
@@ -209,6 +214,8 @@ class Encoder(Coder):
                 if use_insert_command or fname in fields_need_update:
                     fname_ref = ref_db_field_key(fname, cls)
                     result_set[fname_ref] = item_result['_id']
+                    setattr(value, ref_field_key(fname),
+                                   str(item_result['_id']))
                 commands.extend(item_commands)
             elif self.is_local_keys_reference_field(field):
                 if fvalue is None:
