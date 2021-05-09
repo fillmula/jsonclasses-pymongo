@@ -8,6 +8,7 @@ from tests.classes.simple_artist import SimpleArtist
 from tests.classes.linked_author import LinkedAuthor
 from tests.classes.linked_post import LinkedPost
 from tests.classes.linked_profile_user import LinkedProfile, LinkedUser
+from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
 
 
 class TestSave(TestCase):
@@ -40,6 +41,14 @@ class TestSave(TestCase):
         collection = Connection.get_collection(LinkedProfile)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedUser)
+        collection.delete_many({})
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedStudent)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedCourse)
+        collection.delete_many({})
+        collection = Connection('linked').collection('linkedcoursesstudents'
+                                                     'linkedstudentscourses')
         collection.delete_many({})
 
     def test_object_is_saved_into_database(self):
@@ -234,8 +243,10 @@ class TestSave(TestCase):
         profile.save()
         profile.user = None
         profile.save()
+        self.assertEqual(profile.is_new, False)
         self.assertEqual(profile.is_modified, False)
         self.assertEqual(profile.modified_fields, ())
+        self.assertEqual(user.is_new, False)
         self.assertEqual(user.is_modified, False)
         self.assertEqual(user.modified_fields, ())
         collection = Connection.get_collection(LinkedProfile)
@@ -249,8 +260,10 @@ class TestSave(TestCase):
         user.save()
         user.profile = None
         user.save()
+        self.assertEqual(profile.is_new, False)
         self.assertEqual(profile.is_modified, False)
         self.assertEqual(profile.modified_fields, ())
+        self.assertEqual(user.is_new, False)
         self.assertEqual(user.is_modified, False)
         self.assertEqual(user.modified_fields, ())
         collection = Connection.get_collection(LinkedProfile)
@@ -258,18 +271,49 @@ class TestSave(TestCase):
             self.assertEqual(item['userId'], None)
 
     def test_1_many_unlink_is_saved(self):
-        pass
+        author = LinkedAuthor(name='A')
+        post = LinkedPost(title='T', content='C')
+        author.posts.append(post)
+        author.save()
+        author.posts.remove(post)
+        author.save()
+        self.assertEqual(author.is_new, False)
+        self.assertEqual(author.is_modified, False)
+        self.assertEqual(author.modified_fields, ())
+        self.assertEqual(post.is_new, False)
+        self.assertEqual(post.is_modified, False)
+        self.assertEqual(post.modified_fields, ())
+        collection = Connection.get_collection(LinkedPost)
+        for item in collection.find({}):
+            self.assertEqual(item['authorId'], None)
 
     def test_many_1_unlink_is_saved(self):
-        pass
+        author = LinkedAuthor(name='A')
+        post = LinkedPost(title='T', content='C')
+        post.author = author
+        post.save()
+        post.author_id = None
+        post.save()
+        self.assertEqual(author.is_new, False)
+        self.assertEqual(author.is_modified, False)
+        self.assertEqual(author.modified_fields, ())
+        self.assertEqual(post.is_new, False)
+        self.assertEqual(post.is_modified, False)
+        self.assertEqual(post.modified_fields, ())
+        collection = Connection.get_collection(LinkedPost)
+        for item in collection.find({}):
+            self.assertEqual(item['authorId'], None)
 
-# @jsonclass
-# class Product(MongoObject):
-#     name: str
-#     customers: List[Customer] = types.listof('Customer').linkedthru('products')
-
-
-# @jsonclass
-# class Customer(MongoObject):
-#     name: str
-#     products: List[Product] = types.listof('Product').linkedthru('customers')
+    def test_many_many_unlink_is_saved(self):
+        course1 = LinkedCourse(name='C1')
+        course2 = LinkedCourse(name='C2')
+        student1 = LinkedStudent(name='S1')
+        student2 = LinkedStudent(name='S2')
+        course1.students = [student1, student2]
+        course2.students = [student1, student2]
+        course1.save()
+        course1.students.remove(student1)
+        course1.save()
+        collname = 'linkedcoursesstudentslinkedstudentscourses'
+        collection = Connection('linked').collection(collname)
+        self.assertEqual(collection.count_documents({}), 3)

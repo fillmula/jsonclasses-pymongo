@@ -13,7 +13,7 @@ from .coder import Coder
 from .utils import ref_db_field_key, ref_db_field_keys, ref_field_key
 from .context import EncodingContext
 from .command import (Command, InsertOneCommand, UpdateOneCommand,
-                      UpsertOneCommand, BatchCommand)
+                      UpsertOneCommand, DeleteOneCommand, BatchCommand)
 from .connection import Connection
 
 if TYPE_CHECKING:
@@ -124,6 +124,30 @@ class Encoder(Coder):
                                 object={'$set': matcher},
                                 matcher=matcher)
 
+    def _unlink_command(self,
+                        this_instance: PymongoObject,
+                        this_field: JSONClassField,
+                        that_cls: type[PymongoObject],
+                        that_id: ObjectId) -> DeleteOneCommand:
+        this_cls = this_instance.__class__
+        connection = Connection.from_class(this_instance.__class__)
+        this_cls_name = this_cls.__name__
+        that_cls_name = that_cls.__name__
+        this_field_name = ref_db_field_key(this_cls_name, this_cls)
+        that_field_name = ref_db_field_key(that_cls_name, that_cls)
+        join_table_name = self.join_table_name(
+            this_cls,
+            this_field.name,
+            that_cls,
+            cast(str, this_field.definition.foreign_key))
+        collection = connection.collection(join_table_name)
+        this_id = ObjectId(this_instance._id)
+        matcher = {
+            this_field_name: this_id,
+            that_field_name: that_id
+        }
+        return DeleteOneCommand(collection=collection, matcher=matcher)
+
     def encode_instance(self,
                         context: EncodingContext,
                         root: bool = False) -> EncodingResult:
@@ -186,12 +210,21 @@ class Encoder(Coder):
                 if not self.is_join_table_field(field):
                     continue
                 for list_item in item_result:
-                    join_command = self._join_command(
-                        value,
-                        field,
-                        self.list_instance_type(field, cls),
-                        list_item['_id'])
-                    commands.append(join_command)
+                    if list_item.get('_id'):
+                        join_command = self._join_command(
+                            value,
+                            field,
+                            self.list_instance_type(field, cls),
+                            list_item['_id'])
+                        commands.append(join_command)
+                for item in value.unlinked_objects[field.name]:
+                    if item._id is not None:
+                        unlink_command = self._unlink_command(
+                            value,
+                            field,
+                            self.list_instance_type(field, cls),
+                            ObjectId(item._id))
+                        commands.append(unlink_command)
             elif self.is_local_key_reference_field(field):
                 if fvalue is None:
                     tsfm = value.__class__.definition.config.key_transformer

@@ -10,4 +10,5 @@ if TYPE_CHECKING:
 @jsonclass(class_graph='linked')
 class LinkedAuthor(BaseObject):
     name: str
-    posts: list[LinkedPost] = types.listof('LinkedPost').linkedby('author')
+    posts: list[LinkedPost] = types.nonnull.listof('LinkedPost') \
+                                   .linkedby('author')
