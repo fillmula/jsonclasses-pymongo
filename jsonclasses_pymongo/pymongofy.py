@@ -26,7 +26,7 @@ def find(cls: type[T], **kwargs: Any) -> ListQuery[T]:
 
 
 def one(cls: type[T], **kwargs: Any) -> SingleQuery[T]:
-    return ListQuery(cls=cls, filter=kwargs).first
+    return SingleQuery(cls=cls, filter=kwargs)
 
 
 def pymongo_id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery[T]:

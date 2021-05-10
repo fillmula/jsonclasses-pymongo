@@ -1,136 +1,251 @@
-"""This module contains id query."""
+"""This module contains queries."""
 from __future__ import annotations
+from jsonclasses_pymongo.utils import ref_db_field_key
 from typing import (Iterator, Union, TypeVar, Generator, Optional, Any,
-                    Generic, overload, cast)
+                    Generic, NamedTuple, cast)
 from bson import ObjectId
 from jsonclasses.exceptions import ObjectNotFoundException
 from inflection import camelize
+from jsonclasses.field_definition import FieldStorage, FieldType
+from jsonclasses.types_resolver import TypesResolver
 from pymongo.cursor import Cursor
 from .decoder import Decoder
 from .connection import Connection
 from .pymongo_object import PymongoObject
 T = TypeVar('T', bound=PymongoObject)
+U = TypeVar('U', bound='BaseQuery')
+V = TypeVar('V', bound='BaseListQuery')
 
 
-
-class IDQuery(Generic[T]):
-
-    def __init__(self,
-                 cls: type[T],
-                 id: Union[str, ObjectId]) -> None:
-        self.cls = cls
-        self.id = ObjectId(id)
-
-    def exec(self) -> T:
-        collection = Connection.get_collection(self.cls)
-        fetched_object = collection.find_one({'_id': self.id})
-        if fetched_object is not None:
-            return Decoder().decode_root(fetched_object, self.cls)
-        raise ObjectNotFoundException(
-            f'{self.cls.__name__}(_id={self.id}) not found.')
-
-    def __await__(self) -> Generator[None, None, T]:
-        yield
-        return self.exec()
-
-    @property
-    def optional(self) -> OptionalIDQuery:
-        return OptionalIDQuery(cls=self.cls, id=self.id)
-
-
-class OptionalIDQuery(IDQuery):
-
-    def exec(self) -> Optional[T]:
-        try:
-            return super().exec()
-        except ObjectNotFoundException:
-            return None
+class Subquery(NamedTuple):
+    name: str
+    query: Optional[BaseQuery]
 
 
 class BaseQuery(Generic[T]):
+    """Base query is the base class of queries.
+    """
 
-    def __init__(self, cls: type[T]) -> None:
-        self.cls = cls
-        self.filter: Optional[dict[str, Any]] = None
-        self.sort: Optional[list[tuple[str, int]]] = None
-        self.projection: Optional[Union[list[str], dict[str, Any]]] = None
-        self.skipping: Optional[int] = None
-        self.limiting: Optional[int] = None
+    def __init__(self: U, cls: type[T]) -> None:
+        self._cls = cls
+        self.subqueries: list[Subquery] = []
 
-    def _exec(self) -> list[T]:
-        kwargs: dict[str, Any] = {}
-        if self.filter is not None:
-            kwargs['filter'] = self.filter
-        if self.sort is not None:
-            kwargs['sort'] = self.sort
-        if self.projection is not None:
-            kwargs['projection'] = self.projection
-        if self.skipping is not None:
-            kwargs['skip'] = self.skipping
-        if self.limiting is not None:
-            kwargs['limit'] = self.limiting
-        cursor = Connection.get_collection(self.cls).find(**kwargs)
-        results = [doc for doc in cursor]
-        coder = Decoder()
-        return list(map(lambda doc: coder.decode_root(doc, self.cls), results))
+    def include(self: U, name: str, query: Optional[BaseQuery] = None) -> U:
+        self.subqueries.append(Subquery(name, query))
+        return self
+
+    def _build_aggregate_pipeline(self: U) -> list[dict[str, Any]]:
+        cls = cast(type[PymongoObject], self._cls)
+        result: list[dict[str, Any]] = []
+        for subquery in self.subqueries:
+            fname = subquery.name
+            field = cls.definition.field_named(fname)
+            tr = TypesResolver()
+            types = tr.resolve_types(field.definition.instance_types)
+            it = cast(type[PymongoObject], types.definition.instance_types)
+            if field.definition.field_storage == FieldStorage.LOCAL_KEY:
+                key = ref_db_field_key(fname, cls)
+                if subquery.query is None:
+                    result.append({
+                        '$lookup': {
+                            'from': it.dbconf.collection_name,
+                            'localField': key,
+                            'foreignField': '_id',
+                            'as': fname
+                        }
+                    })
+                else:
+                    subpipeline = subquery.query._build_aggregate_pipeline()
+                    subpipeline.insert(0, {
+                        '$match': {
+                            '$expr': {
+                                '$and': [{'$eq': {'$_id': '$$'+key}}]
+                            }
+                        }
+                    })
+                    result.append({
+                        '$lookup': {
+                            'from': it.dbconf.collection_name,
+                            'as': fname,
+                            'let': {key: '$' + key},
+                            'pipeline': subpipeline
+                        }
+                    })
+                result.append({
+                    '$unwind': '$' + fname
+                })
+            elif field.definition.field_storage == FieldStorage.FOREIGN_KEY:
+                if field.definition.field_type == FieldType.INSTANCE:
+                    fk = cast(str, field.definition.foreign_key)
+                    if subquery.query is None:
+                        result.append({
+                            '$lookup': {
+                                'from': it.dbconf.collection_name,
+                                'localField': '_id',
+                                'foreignField': ref_db_field_key(fk, it),
+                                'as': fname
+                            }
+                        })
+                    else:
+                        fk = cast(str, field.definition.foreign_key)
+                        key = ref_db_field_key(fk, it)
+                        subp = subquery.query._build_aggregate_pipeline()
+                        subp.insert(0, {
+                            '$match': {
+                                '$expr': {
+                                    '$and': [{'$eq': {'$'+key: '$$'+key}}]
+                                }
+                            }
+                        })
+                        result.append({
+                            '$lookup': {
+                                'from': it.dbconf.collection_name,
+                                'as': fname,
+                                'let': {key: '$_id'},
+                                'pipeline': subp
+                            }
+                        })
+                    result.append({
+                        '$unwind': '$' + fname
+                    })
+                elif field.definition.field_type == FieldType.LIST:
+                    if field.definition.use_join_table:
+                        pass
+                    else:
+                        if subquery.query is not None:
+                            subpipeline = subquery.query \
+                                                  ._build_aggregate_pipeline()
+                        else:
+                            subpipeline = []
+                        has_match = False
+                        matcher = None
+                        for item in subpipeline:
+                            if item.get('$match'):
+                                has_match = True
+                                matcher = item.get('$match')
+                                break
+                        fk = cast(str, field.definition.foreign_key)
+                        key = ref_db_field_key(fk, it)
+                        item = {
+                            '$lookup': {
+                                'from': it.dbconf.collection_name,
+                                'as': fname,
+                                'let': {key: '$_id'},
+                                'pipeline': subpipeline
+                            }
+                        }
+                        if matcher is None:
+                            matcher = {}
+                        if not matcher.get('$expr'):
+                            matcher['$expr'] = {}
+                        if not matcher['$expr'].get('$and'):
+                            matcher['$expr']['$and'] = []
+                        matcher['$expr']['$and'].append({
+                            '$eq': ['$' + key, '$$' + key]
+                        })
+                        if not has_match:
+                            subpipeline.insert(0, matcher)
+                        result.append(item)
+        return result
 
 
-class ListQuery(BaseQuery, Generic[T]):
+class BaseListQuery(BaseQuery[T]):
+    """Base list query is the base class of list queries.
+    """
 
-    def __init__(self,
+    def __init__(self: V,
                  cls: type[T],
                  filter: Optional[dict[str, Any]] = None) -> None:
-        super().__init__(cls=cls)
-        self.filter = _update_cases(filter, cls.dbconf.camelize_db_keys)
+        super().__init__(cls)
+        self._match: Optional[dict[str, Any]] = None
+        self._sort: Optional[list[tuple[str, int]]] = None
+        self._skip: Optional[int] = None
+        self._limit: Optional[int] = None
+        self._use_pick: bool = False
+        self._pick: Optional[dict[str, Any]] = None
+        self._use_omit: bool = False
+        self._omit: Optional[dict[str, Any]] = None
+        if filter is not None:
+            self._set_matcher(filter)
 
-    def __call__(self, filter: Optional[dict[str, Any]] = None) -> ListQuery:
-        self.filter = _update_cases(filter, self.cls.dbconf.camelize_db_keys)
+    def _set_matcher(self: V, matcher: dict[str, Any]) -> None:
+        cls = cast(PymongoObject, self._cls)
+        if cls.definition.primary_field is not None:
+            pf_name: Optional[str] = cls.definition.primary_field.name
+        else:
+            pf_name = None
+        cls.definition._camelized_reference_names
+        result: dict[str, Any] = {}
+        for key, value in matcher.items():
+            if key == pf_name:
+                new_value = ObjectId(value)
+            elif key in cls.definition._camelized_reference_names:
+                new_value = ObjectId(value)
+            elif key in cls.definition._reference_names:
+                new_value = ObjectId(value)
+            else:
+                new_value = value
+            if cls.dbconf.camelize_db_keys:
+                result[camelize(key, False)] = new_value
+        self._match = result
+
+    def order(self: V, field: str, sort: Optional[int] = None) -> V:
+        if self._sort is None:
+            self._sort = []
+        self._sort.append((field, sort or 1))
         return self
+
+    def skip(self: V, n: int) -> V:
+        self._skip = n
+        return self
+
+    def limit(self: V, n: int) -> V:
+        self._limit = n
+        return self
+
+    def _build_aggregate_pipeline(self: V) -> list[dict[str, Any]]:
+        lookups = super()._build_aggregate_pipeline()
+        result: list[dict[str, Any]] = []
+        if self._match is not None:
+            result.append({'$match': self._match})
+        if self._sort is not None:
+            result.append({'$sort': self._sort})
+        if self._limit is not None:
+            result.append({'$limit': self._limit})
+        if self._skip is not None:
+            result.append({'$skip': self._skip})
+        result.extend(lookups)
+        return result
+
+    def _exec(self: V) -> list[T]:
+        pipeline = self._build_aggregate_pipeline()
+        collection = Connection.get_collection(self._cls)
+        cursor = collection.aggregate(pipeline)
+        results = [result for result in cursor]
+        return [Decoder().decode_root(result, self._cls) for result in results]
+
+
+class ListQuery(BaseListQuery[T]):
+    """Query a list of objects.
+    """
 
     def exec(self) -> list[T]:
-        return super()._exec()
-
-
-    @overload
-    def project(self, projection: list[str]) -> ListQuery: ...
-
-    @overload
-    def project(self, projection: dict[str, Any]) -> ListQuery: ...
-
-    def project(self, projection: Any) -> ListQuery:
-        self.projection = projection
-        return self
-
-    def skip(self, skipping: int) -> ListQuery:
-        self.skipping = skipping
-        return self
-
-    def limit(self, limiting: int) -> ListQuery:
-        self.limiting = limiting
-        return self
+        return self._exec()
 
     def __await__(self) -> Generator[None, None, list[T]]:
         yield
-        return self._exec()
+        return self.exec()
 
 
-class SingleQuery(BaseQuery, Generic[T]):
-
-    def __init__(self, query: BaseQuery) -> None:
-        super().__init__(cls=query.cls)
-        self.filter = query.filter
-        self.sort = query.sort
-        self.projection = query.projection
-        self.skipping = query.skipping
-        self.limiting = 1
+class SingleQuery(BaseListQuery[T]):
+    """Queries only one object from the query.
+    """
 
     def exec(self) -> T:
-        results: list[T] = super()._exec()
-        if len(results) < 1:
-            raise ObjectNotFoundException(
-                f'{self.cls.__name__}(filter={self.filter}, '
-                f'sort={self.sort}, projection={self.projection}, '
-                f'skipping={self.skipping}) not found.')
+        self._limit = 1
+        results = self._exec()
+        if len(results) == 0:
+            raise ObjectNotFoundException('object is not found')
         return results[0]
 
     def __await__(self) -> Generator[None, None, T]:
@@ -138,15 +253,28 @@ class SingleQuery(BaseQuery, Generic[T]):
         return self.exec()
 
     @property
-    def optional(self) -> OptionalSingleQuery[T]:
-        return OptionalSingleQuery(self)
+    def optional(self) -> OptionalSingleQuery:
+        query = OptionalSingleQuery(cls=self._cls)
+        query.subqueries = self.subqueries
+        query._match = self._match
+        query._sort = self._sort
+        query._skip = self._skip
+        query._limit = self._limit
+        query._use_pick = self._use_pick
+        query._pick = self._pick
+        query._use_omit = self._use_omit
+        query._omit = self._omit
+        return query
 
 
-class OptionalSingleQuery(SingleQuery, Generic[T]):
+class OptionalSingleQuery(BaseListQuery[T]):
+    """Queries only one object from the query. Returns None if not found.
+    """
 
     def exec(self) -> Optional[T]:
-        results: list[T] = super()._exec()
-        if len(results) < 1:
+        self._limit = 1
+        results = self._exec()
+        if len(results) == 0:
             return None
         return results[0]
 
@@ -155,17 +283,71 @@ class OptionalSingleQuery(SingleQuery, Generic[T]):
         return self.exec()
 
 
-class ExistQuery(Generic[T]):
+class BaseIDQuery(BaseQuery[T]):
+    """Query collection from object id.
+    """
 
-    def __init__(self,
-                 cls: type[T],
-                 filter: Optional[dict[str, Any]] = None) -> None:
-        self.cls = cls
-        self.filter = _update_cases(filter, cls.dbconf.camelize_db_keys)
+    def __init__(self: U, cls: type[T], id: Union[str, ObjectId]) -> None:
+        super().__init__(cls)
+        self._id = id
+
+    def _build_aggregate_pipeline(self: BaseIDQuery) -> list[dict[str, Any]]:
+        lookups = super()._build_aggregate_pipeline()
+        result: list[dict[str, Any]] = []
+        result.append({'$match': {'_id': ObjectId(self._id)}})
+        result.extend(lookups)
+        return result
+
+    def _exec(self) -> Optional[T]:
+        pipeline = self._build_aggregate_pipeline()
+        collection = Connection.get_collection(self._cls)
+        cursor = collection.aggregate(pipeline)
+        results = [result for result in cursor]
+        if len(results) == 0:
+            return None
+        return Decoder().decode_root(results[0], self._cls)
+
+
+class IDQuery(BaseIDQuery[T]):
+    """Query collection from object id. Raises ObjectNotFoundException if not
+    found.
+    """
+
+    def exec(self) -> T:
+        result = self._exec()
+        if result is not None:
+            return result
+        raise ObjectNotFoundException(
+            f'{self._cls.__name__}(_id={self._id}) not found.')
+
+    def __await__(self) -> Generator[None, None, T]:
+        yield
+        return self.exec()
+
+    @property
+    def optional(self) -> OptionalIDQuery:
+        new_query = OptionalIDQuery(cls=self._cls, id=self._id)
+        new_query.subqueries = self.subqueries
+        return new_query
+
+
+class OptionalIDQuery(BaseIDQuery[T]):
+    """Query collection from object id. Returns None if not found.
+    """
+
+    def exec(self) -> Optional[T]:
+        return self._exec()
+
+    def __await__(self) -> Generator[None, None, Optional[T]]:
+        yield
+        return self.exec()
+
+
+class ExistQuery(BaseListQuery[T]):
 
     def exec(self) -> bool:
-        result = Connection.get_collection(self.cls).count_documents(
-                self.filter, limit=1)
+        collection = Connection.get_collection(self._cls)
+        result = collection.count_documents(self._match or {}, limit=1)
         return False if result == 0 else True
 
     def __await__(self) -> Generator[None, None, bool]:
@@ -187,15 +369,10 @@ class QueryIterator(Generic[T]):
         return Decoder().decode_root(value, self.cls)
 
 
-class IterateQuery(Generic[T]):
-
-    def __init__(self,
-                 cls: type[T],
-                 filter: Optional[dict[str, Any]] = None) -> None:
-        self.cls = cls
-        self.filter = _update_cases(filter, cls.dbconf.camelize_db_keys)
+class IterateQuery(BaseListQuery[T]):
 
     def exec(self) -> Iterator[T]:
-        coll = Connection.from_class(self.cls).get_collection(self.cls)
-        cursor = coll.find(self.filter)
-        return QueryIterator(cls=self.cls, cursor=cursor)
+        pipeline = self._build_aggregate_pipeline()
+        collection = Connection.get_collection(self._cls)
+        cursor = collection.aggregate(pipeline)
+        return QueryIterator(cls=self._cls, cursor=cursor)
