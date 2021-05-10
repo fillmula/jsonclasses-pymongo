@@ -12,22 +12,6 @@ from .pymongo_object import PymongoObject
 T = TypeVar('T', bound=PymongoObject)
 
 
-def _update_cases(filter: Optional[dict[str, Any]],
-                  camelize_db_keys: bool) -> dict[str, Any]:
-    if filter is None:
-        return {}
-    if filter.get('id'):
-        filter['_id'] = ObjectId(filter['id'])
-        del filter['id']
-    if not camelize_db_keys:
-        return filter
-    if filter is None:
-        return None
-    retval: dict[str, Any] = {}
-    for key, value in filter.items():
-        retval[camelize(key, False)] = value
-    return retval
-
 
 class IDQuery(Generic[T]):
 
@@ -106,29 +90,6 @@ class ListQuery(BaseQuery, Generic[T]):
     def exec(self) -> list[T]:
         return super()._exec()
 
-    def where(self, filter: dict[str, Any]) -> ListQuery:
-        self.filter = filter
-        return self
-
-    @overload
-    def order(self, sort: str) -> ListQuery: ...
-
-    @overload
-    def order(self, sort: tuple[str, int]) -> ListQuery: ...
-
-    @overload
-    def order(self, sort: list[tuple[str, int]]) -> ListQuery: ...
-
-    def order(self, sort: Any) -> ListQuery:
-        if isinstance(sort, str):
-            self.sort = [(sort, 1)]
-        elif isinstance(sort, tuple):
-            self.sort = [cast(tuple[str, int], sort)]
-        elif isinstance(sort, list):
-            self.sort = sort
-        else:
-            self.sort = None
-        return self
 
     @overload
     def project(self, projection: list[str]) -> ListQuery: ...
@@ -147,10 +108,6 @@ class ListQuery(BaseQuery, Generic[T]):
     def limit(self, limiting: int) -> ListQuery:
         self.limiting = limiting
         return self
-
-    @property
-    def first(self) -> SingleQuery[T]:
-        return SingleQuery(self)
 
     def __await__(self) -> Generator[None, None, list[T]]:
         yield
