@@ -31,7 +31,9 @@ class Decoder(Coder):
         else:
             item_types = TypesResolver().resolve_types(
                 types.definition.raw_item_types)
-            return ([self.decode_item(value=item, cls=cls, types=item_types,
+            new_cls = item_types.definition.instance_types
+            return ([self.decode_item(value=item, cls=new_cls,
+                                      types=item_types,
                                       graph=graph)
                     for item in value])
 
@@ -111,45 +113,72 @@ class Decoder(Coder):
                         cls: type[T],
                         types: Types,
                         graph: MarkGraph) -> Any:
-        from .pymongo_object import PymongoObject
         dest = cls()
         for field in cls.definition.fields:
+            if cls.dbconf.camelize_db_keys:
+                key = camelize(field.name, False)
+            else:
+                key = field.name
             if self.is_id_field(field):
                 setattr(dest, field.name, str(value.get('_id')))
             elif self.is_foreign_key_storage(field):
-                pass
+                if value.get(key) is not None:
+                    if isinstance(value.get(key), list):
+                        t = TypesResolver().resolve_types(
+                            field.definition.raw_item_types,
+                            cls.definition.config)
+                        new_cls = t.definition.instance_types
+                        setattr(dest, field.name,
+                                self.decode_list(
+                                    value[key], new_cls, field.types, graph))
+                    else:
+                        t = TypesResolver().resolve_types(
+                            field.definition.instance_types,
+                            cls.definition.config)
+                        new_cls = t.definition.instance_types
+                        setattr(dest, field.name,
+                                self.decode_instance(
+                                    cast(dict[str, Any], value.get(key)),
+                                    new_cls, field.types, graph))
             elif self.is_local_key_reference_field(field):
-                pass
-                setattr(
-                    dest,
-                    ref_field_key(field.name),
-                    self.decode_item(
-                        value=value.get(ref_db_field_key(
-                            field.name, cls=cls)),
-                        types=field.types,
-                        cls=cls,
-                        graph=graph))
+                if value.get(key) is not None:
+                    t = TypesResolver().resolve_types(
+                        field.definition.instance_types,
+                        cls.definition.config)
+                    new_cls = t.definition.instance_types
+                    inst = self.decode_item(
+                        value=value.get(key), types=field.types, cls=new_cls,
+                        graph=graph)
+                    setattr(dest, field.name, inst)
+                ref_id = value.get(ref_db_field_key(field.name, cls=cls))
+                setattr(dest, ref_field_key(field.name), str(ref_id))
             elif self.is_local_keys_reference_field(field):
-                setattr(
-                    dest,
-                    ref_field_keys(field.name),
-                    self.decode_item(
-                        value=value.get(ref_db_field_keys(
-                            field.name, cls=cls)),
-                        types=field.types,
-                        cls=cls,
-                        graph=graph))
+                if value.get(key) is not None:
+                    t = TypesResolver().resolve_types(
+                        field.definition.raw_item_types,
+                        cls.definition.config)
+                    new_cls = t.definition.instance_types
+                    setattr(dest, field.name,
+                            self.decode_list(
+                                value[key], new_cls, field.types, graph))
+
+                saved_keys = value.get(ref_db_field_keys(field.name, cls))
+                setattr(dest, ref_field_keys(field.name),
+                        [str(k) for k in saved_keys])
+            elif self.is_instance_field(field):
+                t = TypesResolver().resolve_types(
+                    field.definition.instance_types,
+                    cls.definition.config)
+                new_cls = t.definition.instance_types
+                setattr(dest, field.name, self.decode_item(
+                    value=value.get(key), types=field.types, cls=new_cls,
+                    graph=graph))
             else:
                 setattr(
                     dest,
                     field.name,
-                    self.decode_item(
-                        value=value.get(camelize(field.name, False) if
-                                       cls.dbconf.camelize_db_keys else
-                                       field.name),
-                        types=field.types,
-                        cls=cls,
-                        graph=graph))
+                    self.decode_item(value=value.get(key), types=field.types,
+                                     cls=cls, graph=graph))
         setattr(dest, '_is_new', False)
         setattr(dest, '_is_modified', False)
         setattr(dest, '_modified_fields', set())
