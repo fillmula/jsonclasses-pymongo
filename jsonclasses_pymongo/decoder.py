@@ -24,18 +24,13 @@ class Decoder(Coder):
                     graph: MarkGraph) -> Optional[list[Any]]:
         if value is None:
             return None
-        if types.definition.field_storage == FieldStorage.FOREIGN_KEY:
-            return None
-        elif types.definition.field_storage == FieldStorage.LOCAL_KEY:
-            return [str(item) for item in value]
-        else:
-            item_types = TypesResolver().resolve_types(
-                types.definition.raw_item_types)
-            new_cls = item_types.definition.instance_types
-            return ([self.decode_item(value=item, cls=new_cls,
-                                      types=item_types,
-                                      graph=graph)
-                    for item in value])
+        item_types = TypesResolver().resolve_types(
+            types.definition.raw_item_types, cls.definition.config)
+        new_cls = item_types.definition.instance_types
+        return ([self.decode_item(value=item, cls=new_cls,
+                                  types=item_types,
+                                  graph=graph)
+                for item in value])
 
     def decode_dict(self,
                     value: dict[str, Any],

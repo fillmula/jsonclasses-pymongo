@@ -96,8 +96,7 @@ class TestSave(TestCase):
         self.assertEqual(results[1].id, profile2.id)
         self.assertEqual(results[1].user.id, user2.id)
 
-
-    def test_1_many_ref_lookup_example(self):
+    def test_1_many_ref_lookup_fetches_linked_objects(self):
         author = LinkedAuthor(name='Kai Nang Piang Tshung')
         post1 = LinkedPost(title='P1', content='A')
         post2 = LinkedPost(title='P2', content='A')
@@ -116,29 +115,39 @@ class TestSave(TestCase):
         post6 = LinkedPost(title='B3', content='B')
         author.posts = [post1, post2, post3, post4, post5, post6]
         author.save()
+        results = LinkedAuthor.find() \
+                              .include('posts',
+                                       LinkedPost.find(title={'$regex': 'B'}))\
+                              .exec()
+        self.assertEqual(len(results), 2)
+        self.assertEqual(len(results[0].posts), 3)
+        self.assertEqual(len(results[1].posts), 3)
+        self.assertEqual(results[0].posts[0].title, 'B1')
+        self.assertEqual(results[0].posts[1].title, 'B2')
+        self.assertEqual(results[0].posts[2].title, 'B3')
+        self.assertEqual(results[1].posts[0].title, 'B1')
+        self.assertEqual(results[1].posts[1].title, 'B2')
+        self.assertEqual(results[1].posts[2].title, 'B3')
 
-        collection = Connection.get_collection(LinkedAuthor)
-        cursor = collection.aggregate([
-            {
-                '$lookup': {
-                    'from': "linkedposts",
-                    'as': "posts",
-                    'let': {'authorId': '$_id'},
-                    'pipeline': [
-                        {
-                            '$match': {
-                                '$expr': {
-                                    '$and': [
-                                        {'$eq': ['$authorId', '$$authorId']}
-                                    ]
-                                },
-                                'title': {'$regex': 'P'}
-                            }
-                        }
-                    ]
-                }
-            }
-        ])
-        for item in cursor:
-            #print(item)
-            pass
+    def test_many_1_ref_lookup_fetches_linked_object(self):
+        author = LinkedAuthor(name='A1')
+        post1 = LinkedPost(title='P1', content='A')
+        post2 = LinkedPost(title='P2', content='A')
+        post3 = LinkedPost(title='P3', content='A')
+        post4 = LinkedPost(title='B1', content='A')
+        post5 = LinkedPost(title='B2', content='A')
+        post6 = LinkedPost(title='B3', content='A')
+        author.posts = [post1, post2, post3, post4, post5, post6]
+        author.save()
+        author = LinkedAuthor(name='A2')
+        post1 = LinkedPost(title='P1', content='B')
+        post2 = LinkedPost(title='P2', content='B')
+        post3 = LinkedPost(title='P3', content='B')
+        post4 = LinkedPost(title='B1', content='B')
+        post5 = LinkedPost(title='B2', content='B')
+        post6 = LinkedPost(title='B3', content='B')
+        author.posts = [post1, post2, post3, post4, post5, post6]
+        author.save()
+        results = LinkedPost.find(title='P1').include('author').exec()
+        self.assertEqual(results[0].author.name, 'A1')
+        self.assertEqual(results[1].author.name, 'A2')
