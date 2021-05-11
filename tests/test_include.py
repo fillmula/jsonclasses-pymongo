@@ -59,28 +59,8 @@ class TestSave(TestCase):
         profile = LinkedProfile(name='Great City Tooa')
         user.profile = profile
         user.save()
-        collection = Connection.get_collection(LinkedUser)
-        cursor = collection.aggregate([
-            {
-                '$match': {
-                    'name': 'Teo Yeo'
-                }
-            },
-            {
-                '$lookup': {
-                    'from': "linkedprofiles",
-                    'localField': "_id",
-                    'foreignField': "userId",
-                    'as': "profile"
-                }
-            },
-            {
-                '$unwind': '$profile'
-            }
-        ])
-        for item in cursor:
-            #print(item)
-            pass
+        user = LinkedUser.id(user.id).include('profile').exec()
+        print(user)
 
 
     def test_1_many_ref_lookup_example(self):

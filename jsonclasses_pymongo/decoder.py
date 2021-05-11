@@ -4,6 +4,7 @@ from datetime import date
 from jsonclasses.types import Types
 from jsonclasses.field_definition import FieldStorage, FieldType
 from jsonclasses.types_resolver import TypesResolver
+from jsonclasses.mark_graph import MarkGraph
 from inflection import underscore, camelize
 from .utils import (ref_field_key, ref_field_keys, ref_db_field_key,
                     ref_db_field_keys)
@@ -19,7 +20,8 @@ class Decoder(Coder):
     def decode_list(self,
                     value: list[Any],
                     cls: type[T],
-                    types: Types) -> Optional[list[Any]]:
+                    types: Types,
+                    graph: MarkGraph) -> Optional[list[Any]]:
         if value is None:
             return None
         if types.definition.field_storage == FieldStorage.FOREIGN_KEY:
@@ -29,13 +31,15 @@ class Decoder(Coder):
         else:
             item_types = TypesResolver().resolve_types(
                 types.definition.raw_item_types)
-            return ([self.decode_item(value=item, cls=cls, types=item_types)
+            return ([self.decode_item(value=item, cls=cls, types=item_types,
+                                      graph=graph)
                     for item in value])
 
     def decode_dict(self,
                     value: dict[str, Any],
                     cls: type[T],
-                    types: Types) -> Optional[dict[str, Any]]:
+                    types: Types,
+                    graph: MarkGraph) -> Optional[dict[str, Any]]:
         if value is None:
             return None
         config: DBConf = cls.dbconf
@@ -48,13 +52,15 @@ class Decoder(Coder):
             item_types = TypesResolver().resolve_types(
                 types.definition.raw_item_types)
             return ({underscore(k) if config.camelize_db_keys else k:
-                    self.decode_item(value=v, cls=cls, types=item_types)
+                    self.decode_item(value=v, cls=cls, types=item_types,
+                                     graph=graph)
                     for k, v in value.items()})
 
     def decode_shape(self,
                      value: dict[str, Any],
                      cls: type[T],
-                     types: Types) -> dict[str, Any]:
+                     types: Types,
+                     graph: MarkGraph) -> dict[str, Any]:
         config: DBConf = cls.dbconf
         shape_types = cast(dict[str, Any], types.definition.shape_types)
         retval = {}
@@ -63,84 +69,95 @@ class Decoder(Coder):
                 value=value[(camelize(k, False)
                              if config.camelize_db_keys else k)],
                 cls=cls,
-                types=item_types)
+                types=item_types,
+                graph=graph)
         return retval
 
-    def decode_instance(self,
-                        value: dict[str, Any],
-                        cls: type[T],
-                        types: Types) -> Any:
-        from .pymongo_object import PymongoObject
-        if types.definition.field_storage == FieldStorage.FOREIGN_KEY:
-            return None
-        elif types.definition.field_storage == FieldStorage.LOCAL_KEY:
-            return str(value)
-        else:
-            return self.decode_root(
-                root=value,
-                cls=cast(type[PymongoObject], TypesResolver().resolve_types(
-                    types.definition.instance_types,
-                    config=cls.definition.config
-                ).definition.instance_types))
-
-    def decode_item(self, value: Any, cls: type[T], types: Types) -> Any:
+    def decode_item(self,
+                    value: Any,
+                    cls: type[T],
+                    types: Types,
+                    graph: MarkGraph) -> Any:
         if value is None:
             return value
         if types.definition.field_type == FieldType.DATE:
             return date.fromisoformat(value.isoformat()[:10])
         elif types.definition.field_type == FieldType.ENUM:
-            return types.definition.enum_class(value)
+            if isinstance(types.definition.enum_class, str):
+                t = TypesResolver().resolve_types(types.definition.enum_class,
+                                                  cls.definition.config)
+                enum_cls = cast(type, t.definition.enum_class)
+                return enum_cls(value)
+            else:
+                enum_cls = cast(type, types.definition.enum_class)
+                return enum_cls(value)
         elif types.definition.field_type == FieldType.LIST:
-            return self.decode_list(value=value, cls=cls, types=types)
+            return self.decode_list(value=value, cls=cls, types=types,
+                                    graph=graph)
         elif types.definition.field_type == FieldType.DICT:
-            return self.decode_dict(value=value, cls=cls, types=types)
+            return self.decode_dict(value=value, cls=cls, types=types,
+                                    graph=graph)
         elif types.definition.field_type == FieldType.SHAPE:
-            return self.decode_shape(value=value, cls=cls, types=types)
+            return self.decode_shape(value=value, cls=cls, types=types,
+                                     graph=graph)
         elif types.definition.field_type == FieldType.INSTANCE:
-            return self.decode_instance(value=value, cls=cls, types=types)
+            return self.decode_instance(value=value, cls=cls, types=types,
+                                        graph=graph)
         else:
             return value
 
-    def decode_root(self,
-                    root: dict[str, Any],
-                    cls: type[T]) -> T:
+    def decode_instance(self,
+                        value: dict[str, Any],
+                        cls: type[T],
+                        types: Types,
+                        graph: MarkGraph) -> Any:
+        from .pymongo_object import PymongoObject
         dest = cls()
         for field in cls.definition.fields:
             if self.is_id_field(field):
-                setattr(dest, cls.definition.primary_field.name,
-                        str(root.get('_id')))
+                setattr(dest, field.name, str(value.get('_id')))
             elif self.is_foreign_key_storage(field):
                 pass
             elif self.is_local_key_reference_field(field):
+                pass
                 setattr(
                     dest,
                     ref_field_key(field.name),
                     self.decode_item(
-                        value=root.get(ref_db_field_key(
+                        value=value.get(ref_db_field_key(
                             field.name, cls=cls)),
                         types=field.types,
-                        cls=cls))
+                        cls=cls,
+                        graph=graph))
             elif self.is_local_keys_reference_field(field):
                 setattr(
                     dest,
                     ref_field_keys(field.name),
                     self.decode_item(
-                        value=root.get(ref_db_field_keys(
+                        value=value.get(ref_db_field_keys(
                             field.name, cls=cls)),
                         types=field.types,
-                        cls=cls))
+                        cls=cls,
+                        graph=graph))
             else:
                 setattr(
                     dest,
                     field.name,
                     self.decode_item(
-                        value=root.get(camelize(field.name, False) if
+                        value=value.get(camelize(field.name, False) if
                                        cls.dbconf.camelize_db_keys else
                                        field.name),
                         types=field.types,
-                        cls=cls))
+                        cls=cls,
+                        graph=graph))
         setattr(dest, '_is_new', False)
         setattr(dest, '_is_modified', False)
         setattr(dest, '_modified_fields', set())
         setattr(dest, '_previous_values', {})
         return dest
+
+    def decode_root(self,
+                    root: dict[str, Any],
+                    cls: type[T]) -> T:
+        types = Types().instanceof(cls)
+        return self.decode_instance(root, cls, types, MarkGraph())

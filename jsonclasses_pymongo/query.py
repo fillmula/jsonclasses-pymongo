@@ -41,7 +41,8 @@ class BaseQuery(Generic[T]):
             fname = subquery.name
             field = cls.definition.field_named(fname)
             tr = TypesResolver()
-            types = tr.resolve_types(field.definition.instance_types)
+            types = tr.resolve_types(field.definition.instance_types,
+                                     cls.definition.config)
             it = cast(type[PymongoObject], types.definition.instance_types)
             if field.definition.field_storage == FieldStorage.LOCAL_KEY:
                 key = ref_db_field_key(fname, cls)
@@ -376,3 +377,17 @@ class IterateQuery(BaseListQuery[T]):
         collection = Connection.get_collection(self._cls)
         cursor = collection.aggregate(pipeline)
         return QueryIterator(cls=self._cls, cursor=cursor)
+
+    def __await__(self) -> Generator[None, None, Iterator[T]]:
+        yield
+        return self.exec()
+
+
+# class CountQuery(BaseListQuery[T]):
+
+#     def exec(self) -> int:
+#         pass
+
+#     def __await__(self) -> Generator[None, None, int]:
+#         yield
+#         return self.exec()
