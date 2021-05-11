@@ -166,7 +166,23 @@ class TestSave(TestCase):
         self.assertEqual(results[1].author.name, 'A2')
 
     def test_many_many_ref_lookup_fetches_linked_objects(self):
-        pass
+        student1 = LinkedStudent(name='S1')
+        student2 = LinkedStudent(name='S2')
+        course1 = LinkedCourse(name='C1')
+        course2 = LinkedCourse(name='C2')
+        student1.courses = [course1, course2]
+        student2.courses = [course1, course2]
+        student1.save()
+        students = LinkedStudent.find().include('courses').exec()
+        self.assertEqual(len(students), 2)
+        self.assertEqual(len(students[0].courses), 2)
+        self.assertEqual(len(students[1].courses), 2)
+        self.assertEqual(students[0].id, student2.id)
+        self.assertEqual(students[1].id, student1.id)
+        self.assertEqual(students[0].courses[0].id, course2.id)
+        self.assertEqual(students[0].courses[1].id, course1.id)
+        self.assertEqual(students[1].courses[0].id, course2.id)
+        self.assertEqual(students[1].courses[1].id, course1.id)
 
     def test_1_1_ref_can_be_chained(self):
         u = ChainedUser(name='U', address={'name': 'A'}, profile={'name': 'P'})

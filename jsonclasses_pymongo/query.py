@@ -9,6 +9,7 @@ from inflection import camelize
 from jsonclasses.field_definition import FieldStorage, FieldType
 from jsonclasses.types_resolver import TypesResolver
 from pymongo.cursor import Cursor
+from .coder import Coder
 from .decoder import Decoder
 from .connection import Connection
 from .pymongo_object import PymongoObject
@@ -114,21 +115,63 @@ class BaseQuery(Generic[T]):
                         '$unwind': '$' + fname
                     })
                 elif field.definition.field_type == FieldType.LIST:
-                    if field.definition.use_join_table:
-                        pass
+                    if subquery.query is not None:
+                        subpipeline = subquery.query \
+                                                ._build_aggregate_pipeline()
                     else:
-                        if subquery.query is not None:
-                            subpipeline = subquery.query \
-                                                  ._build_aggregate_pipeline()
-                        else:
-                            subpipeline = []
-                        has_match = False
-                        matcher = None
-                        for item in subpipeline:
-                            if item.get('$match'):
-                                has_match = True
-                                matcher = item.get('$match')
-                                break
+                        subpipeline = []
+                    has_match = False
+                    matcher = None
+                    for item in subpipeline:
+                        if item.get('$match'):
+                            has_match = True
+                            matcher = item.get('$match')
+                            break
+                    if field.definition.use_join_table:
+                        coder = Coder()
+                        jt_name = coder.join_table_name(cls, field.name,
+                                                        it, field.foreign_field.name)
+                        this_key = ref_db_field_key(cls.__name__, cls)
+                        that_key = ref_db_field_key(it.__name__, it)
+                        pipeline: list[Any] = []
+                        if matcher is None:
+                            matcher = {}
+                        if not matcher.get('$expr'):
+                            matcher['$expr'] = {}
+                        if not matcher['$expr'].get('$and'):
+                            matcher['$expr']['$and'] = []
+                        matcher['$expr']['$and'].append({
+                            '$eq': ['$_id', '$$' + that_key]
+                        })
+                        if not has_match:
+                            subpipeline.insert(0, {'$match': matcher})
+                        outer_lookup = {'$lookup': {
+                            'from': jt_name,
+                            'as': field.name,
+                            'let': {this_key: '$_id'},
+                            'pipeline': pipeline
+                        }}
+                        match = {'$match': {
+                            '$expr': {
+                                '$and': [
+                                    {'$eq': ['$'+this_key, '$$'+this_key]}
+                                ]
+                            }
+                        }}
+                        lookup = {'$lookup': {
+                            'from': it.dbconf.collection_name,
+                            'as': field.name,
+                            'let': {that_key: '$'+that_key},
+                            'pipeline': subpipeline
+                        }}
+                        replace = {
+                            '$replaceRoot': {'newRoot': {'$arrayElemAt': ['$'+field.name, 0]}}
+                        }
+                        pipeline.append(match)
+                        pipeline.append(lookup)
+                        pipeline.append(replace)
+                        result.append(outer_lookup)
+                    else:
                         fk = cast(str, field.definition.foreign_key)
                         key = ref_db_field_key(fk, it)
                         item = {
@@ -149,7 +192,7 @@ class BaseQuery(Generic[T]):
                             '$eq': ['$' + key, '$$' + key]
                         })
                         if not has_match:
-                            subpipeline.insert(0, matcher)
+                            subpipeline.insert(0, {'$match': matcher})
                         result.append(item)
         return result
 
