@@ -7,7 +7,7 @@ from bson.objectid import ObjectId
 from jsonclasses.jsonclass_object import JSONClassObject
 if TYPE_CHECKING:
     from .dbconf import DBConf
-    from .query import (ListQuery, IDQuery, SingleQuery, ExistQuery,
+    from .query import (BaseQuery, ListQuery, IDQuery, SingleQuery, ExistQuery,
                         IterateQuery)
 
 
@@ -34,6 +34,10 @@ class PymongoObject(JSONClassObject):
 
     @classmethod
     def id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery[T]:
+        ...
+
+    @classmethod
+    def linked(cls: type[T]) -> BaseQuery[T]:
         ...
 
     @classmethod

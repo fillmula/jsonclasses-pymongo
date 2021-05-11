@@ -11,7 +11,7 @@ from jsonclasses.exceptions import UniqueConstraintException
 from jsonclasses.types_resolver import TypesResolver
 from jsonclasses.exceptions import DeletionDeniedException
 from .pymongo_object import PymongoObject
-from .query import ExistQuery, IterateQuery, ListQuery, SingleQuery, IDQuery
+from .query import BaseQuery, ExistQuery, IterateQuery, ListQuery, SingleQuery, IDQuery
 from .encoder import Encoder
 from .connection import Connection
 from .utils import btype_from_ftype, ref_db_field_key
@@ -31,6 +31,10 @@ def one(cls: type[T], **kwargs: Any) -> SingleQuery[T]:
 
 def pymongo_id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery[T]:
     return IDQuery(cls=cls, id=id)
+
+
+def linked(cls: type[T]) -> BaseQuery[T]:
+    return BaseQuery(cls=cls)
 
 
 def exist(cls: type[T], **kwargs: Any) -> ExistQuery[T]:
@@ -193,6 +197,7 @@ def pymongofy(class_: type) -> PymongoObject:
     class_.find = classmethod(find)
     class_.one = classmethod(one)
     class_.id = classmethod(pymongo_id)
+    class_.linked = classmethod(linked)
     class_.exist = classmethod(exist)
     class_.iterate = classmethod(iterate)
     # protected methods

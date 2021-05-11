@@ -7,6 +7,8 @@ from tests.classes.linked_author import LinkedAuthor
 from tests.classes.linked_post import LinkedPost
 from tests.classes.linked_profile_user import LinkedProfile, LinkedUser
 from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
+from tests.classes.chained_user import (ChainedAddress, ChainedProfile,
+                                        ChainedUser)
 
 
 class TestSave(TestCase):
@@ -19,12 +21,17 @@ class TestSave(TestCase):
         connection = Connection('linked')
         connection.set_url('mongodb://localhost:27017/linked')
         connection.connect()
+        connection = Connection('chained')
+        connection.set_url('mongodb://localhost:27017/chained')
+        connection.connect()
 
     @classmethod
     def tearDownClass(cls) -> None:
         connection = Connection('simple')
         connection.disconnect()
         connection = Connection('linked')
+        connection.disconnect()
+        connection = Connection('chained')
         connection.disconnect()
 
     def setUp(self) -> None:
@@ -46,6 +53,12 @@ class TestSave(TestCase):
         collection.delete_many({})
         collection = Connection('linked').collection('linkedcoursesstudents'
                                                      'linkedstudentscourses')
+        collection.delete_many({})
+        collection = Connection.get_collection(ChainedUser)
+        collection.delete_many({})
+        collection = Connection.get_collection(ChainedProfile)
+        collection.delete_many({})
+        collection = Connection.get_collection(ChainedAddress)
         collection.delete_many({})
 
     def test_1f_1l_ref_lookup_fetches_linked_object(self):
@@ -151,3 +164,15 @@ class TestSave(TestCase):
         results = LinkedPost.find(title='P1').include('author').exec()
         self.assertEqual(results[0].author.name, 'A1')
         self.assertEqual(results[1].author.name, 'A2')
+
+    def test_many_many_ref_lookup_fetches_linked_objects(self):
+        pass
+
+    def test_1_1_ref_can_be_chained(self):
+        u = ChainedUser(name='U', address={'name': 'A'}, profile={'name': 'P'})
+        u.save()
+        p = ChainedProfile.id(u.profile.id).include(
+            'user', ChainedUser.linked().include('address')).exec()
+        self.assertEqual(p.id, u.profile.id)
+        self.assertEqual(p.user.id, u.id)
+        self.assertEqual(p.user.address.id, u.address.id)

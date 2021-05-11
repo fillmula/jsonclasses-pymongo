@@ -64,7 +64,7 @@ class BaseQuery(Generic[T]):
                     subpipeline.insert(0, {
                         '$match': {
                             '$expr': {
-                                '$and': [{'$eq': {'$_id': '$$'+key}}]
+                                '$and': [{'$eq': ['$_id', '$$'+key]}]
                             }
                         }
                     })
@@ -98,7 +98,7 @@ class BaseQuery(Generic[T]):
                         subp.insert(0, {
                             '$match': {
                                 '$expr': {
-                                    '$and': [{'$eq': {'$'+key: '$$'+key}}]
+                                    '$and': [{'$eq': ['$'+key, '$$'+key]}]
                                 }
                             }
                         })
