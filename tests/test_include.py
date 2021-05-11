@@ -1,7 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
 from unittest import TestCase
-from bson.objectid import ObjectId
 from jsonclasses_pymongo import Connection
 from tests.classes.simple_song import SimpleSong
 from tests.classes.simple_artist import SimpleArtist
@@ -50,17 +48,53 @@ class TestSave(TestCase):
                                                      'linkedstudentscourses')
         collection.delete_many({})
 
-    def test_1_1_ref_lookup_example(self):
+    def test_1f_1l_ref_lookup_fetches_linked_object(self):
         user = LinkedUser(name='Teo Yeo')
         profile = LinkedProfile(name='Great City')
         user.profile = profile
         user.save()
-        user = LinkedUser(name='Phou Neng')
-        profile = LinkedProfile(name='Great City Tooa')
+        user = LinkedUser.id(user.id).include('profile').exec()
+        self.assertEqual(user.profile.id, profile.id)
+        self.assertEqual(user.profile.name, profile.name)
+
+    def test_1l_1f_ref_lookup_fetches_linked_object(self):
+        user = LinkedUser(name='Teo Yeo')
+        profile = LinkedProfile(name='Great City')
         user.profile = profile
         user.save()
-        user = LinkedUser.id(user.id).include('profile').exec()
-        print(user)
+        profile = LinkedProfile.id(profile.id).include('user').exec()
+        self.assertEqual(profile.user.id, user.id)
+        self.assertEqual(profile.user.name, user.name)
+
+    def test_1f_1l_find_lookup_fetches_linked_object(self):
+        user1 = LinkedUser(name='Phou Neng')
+        profile1 = LinkedProfile(name='Great City, Too')
+        user1.profile = profile1
+        user1.save()
+        user2 = LinkedUser(name='Teo Yeo')
+        profile2 = LinkedProfile(name='Great City')
+        user2.profile = profile2
+        user2.save()
+        results = LinkedUser.find().include('profile').exec()
+        self.assertEqual(results[0].id, user1.id)
+        self.assertEqual(results[0].profile.id, profile1.id)
+        self.assertEqual(results[1].id, user2.id)
+        self.assertEqual(results[1].profile.id, profile2.id)
+
+    def test_1l_1f_find_lookup_fetches_linked_object(self):
+        user1 = LinkedUser(name='Phou Neng')
+        profile1 = LinkedProfile(name='Great City, Too')
+        user1.profile = profile1
+        user1.save()
+        user2 = LinkedUser(name='Teo Yeo')
+        profile2 = LinkedProfile(name='Great City')
+        user2.profile = profile2
+        user2.save()
+        results = LinkedProfile.find().include('user').exec()
+        self.assertEqual(results[0].id, profile1.id)
+        self.assertEqual(results[0].user.id, user1.id)
+        self.assertEqual(results[1].id, profile2.id)
+        self.assertEqual(results[1].user.id, user2.id)
 
 
     def test_1_many_ref_lookup_example(self):
