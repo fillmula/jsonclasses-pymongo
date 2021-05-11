@@ -164,11 +164,15 @@ class BaseQuery(Generic[T]):
                             'let': {that_key: '$'+that_key},
                             'pipeline': subpipeline
                         }}
+                        unwind = {
+                            '$unwind': '$' + field.name
+                        }
                         replace = {
-                            '$replaceRoot': {'newRoot': {'$arrayElemAt': ['$'+field.name, 0]}}
+                            '$replaceRoot': {'newRoot': '$'+field.name}
                         }
                         pipeline.append(match)
                         pipeline.append(lookup)
+                        pipeline.append(unwind)
                         pipeline.append(replace)
                         result.append(outer_lookup)
                     else:
