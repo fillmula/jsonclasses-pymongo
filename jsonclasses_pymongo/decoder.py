@@ -183,10 +183,6 @@ class Decoder(Coder):
                         self.decode_item(value=value.get(key),
                                          types=field.types,
                                          cls=cls, graph=graph))
-        setattr(dest, '_is_new', False)
-        setattr(dest, '_is_modified', False)
-        setattr(dest, '_modified_fields', set())
-        setattr(dest, '_previous_values', {})
         return dest
 
     def decode_root(self,
@@ -194,4 +190,25 @@ class Decoder(Coder):
                     cls: type[T],
                     graph: MarkGraph = MarkGraph()) -> T:
         types = Types().instanceof(cls)
-        return self.decode_instance(root, cls, types, graph)
+        decoded = self.decode_instance(root, cls, types, graph)
+        self.apply_initial_status(decoded)
+        return decoded
+
+    def apply_initial_status(self, root: T,
+                             graph: MarkGraph = MarkGraph()) -> None:
+        if graph.get(root) is not None:
+            return
+        graph.put(root)
+        for field in root.__class__.definition.fields:
+            if self.is_instance_field(field):
+                if getattr(root, field.name) is not None:
+                    self.apply_initial_status(getattr(root, field.name), graph)
+            elif self.is_list_instance_field(field, root.__class__):
+                if getattr(root, field.name) is not None:
+                    for item in getattr(root, field.name):
+                        self.apply_initial_status(item, graph)
+        # root._mark_unmodified()
+        setattr(root, '_is_new', False)
+        # setattr(root, '_is_modified', False)
+        # setattr(root, '_modified_fields', set())
+        # setattr(root, '_previous_values', {})

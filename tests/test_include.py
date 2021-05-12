@@ -233,3 +233,95 @@ class TestSave(TestCase):
         s1 = students[0]
         s2 = students[1]
         self.assertIs(s1.courses[0], s2.courses[0])
+
+    def test_fetched_objects_are_unmodified_1f_1l(self):
+        user = LinkedUser(name='Bo Hang')
+        profile = LinkedProfile(name='Ko Leng')
+        user.profile = profile
+        user.save()
+        profile = LinkedProfile.id(profile.id).include('user').exec()
+        self.assertEqual(profile.is_new, False)
+        self.assertEqual(profile.is_modified, False)
+        self.assertEqual(profile.modified_fields, ())
+        self.assertEqual(profile.user.is_new, False)
+        self.assertEqual(profile.user.is_modified, False)
+        self.assertEqual(profile.user.modified_fields, ())
+
+    def test_fetched_objects_are_unmodified_1l_1f(self):
+        user = LinkedUser(name='Bo Hang')
+        profile = LinkedProfile(name='Ko Leng')
+        user.profile = profile
+        user.save()
+        user = LinkedUser.id(user.id).include('profile').exec()
+        self.assertEqual(user.is_new, False)
+        self.assertEqual(user.is_modified, False)
+        self.assertEqual(user.modified_fields, ())
+        self.assertEqual(user.profile.is_new, False)
+        self.assertEqual(user.profile.is_modified, False)
+        self.assertEqual(user.profile.modified_fields, ())
+
+    def test_fetched_objects_are_unmodified_1_many(self):
+        author = LinkedAuthor(name='Me')
+        post1 = LinkedPost(title='P1', content='A')
+        post2 = LinkedPost(title='P2', content='A')
+        author.posts = [post1, post2]
+        author.save()
+        authors = LinkedAuthor.find().include('posts').exec()
+        a = authors[0]
+        p1 = a.posts[0]
+        p2 = a.posts[1]
+        self.assertEqual(a.is_new, False)
+        self.assertEqual(a.is_modified, False)
+        self.assertEqual(a.modified_fields, ())
+        self.assertEqual(p1.is_new, False)
+        self.assertEqual(p1.is_modified, False)
+        self.assertEqual(p1.modified_fields, ())
+        self.assertEqual(p2.is_new, False)
+        self.assertEqual(p2.is_modified, False)
+        self.assertEqual(p2.modified_fields, ())
+
+    def test_fetched_objects_are_unmodified_many_1(self):
+        author = LinkedAuthor(name='Me')
+        post1 = LinkedPost(title='P1', content='A')
+        post2 = LinkedPost(title='P2', content='A')
+        author.posts = [post1, post2]
+        author.save()
+        posts = LinkedPost.find().include('author').exec()
+        self.assertEqual(posts[0].is_new, False)
+        self.assertEqual(posts[0].is_modified, False)
+        self.assertEqual(posts[0].modified_fields, ())
+        self.assertEqual(posts[1].is_new, False)
+        self.assertEqual(posts[1].is_modified, False)
+        self.assertEqual(posts[1].modified_fields, ())
+        self.assertEqual(posts[0].author.is_new, False)
+        self.assertEqual(posts[0].author.is_modified, False)
+        self.assertEqual(posts[0].author.modified_fields, ())
+        self.assertEqual(posts[0].author, posts[1].author)
+
+    def test_fetched_objects_are_unmodified_many_many(self):
+        student1 = LinkedStudent(name='S1')
+        student2 = LinkedStudent(name='S2')
+        course1 = LinkedCourse(name='C1')
+        course2 = LinkedCourse(name='C2')
+        student1.courses = [course1, course2]
+        student2.courses = [course1, course2]
+        student1.save()
+        students = LinkedStudent.find().include('courses').exec()
+        self.assertEqual(students[0].is_new, False)
+        self.assertEqual(students[0].is_modified, False)
+        self.assertEqual(students[0].modified_fields, ())
+        self.assertEqual(students[1].is_new, False)
+        self.assertEqual(students[1].is_modified, False)
+        self.assertEqual(students[1].modified_fields, ())
+        self.assertEqual(students[0].courses[0].is_new, False)
+        self.assertEqual(students[0].courses[0].is_modified, False)
+        self.assertEqual(students[0].courses[0].modified_fields, ())
+        self.assertEqual(students[0].courses[1].is_new, False)
+        self.assertEqual(students[0].courses[1].is_modified, False)
+        self.assertEqual(students[0].courses[1].modified_fields, ())
+        self.assertEqual(students[1].courses[0].is_new, False)
+        self.assertEqual(students[1].courses[0].is_modified, False)
+        self.assertEqual(students[1].courses[0].modified_fields, ())
+        self.assertEqual(students[1].courses[1].is_new, False)
+        self.assertEqual(students[1].courses[1].is_modified, False)
+        self.assertEqual(students[1].courses[1].modified_fields, ())

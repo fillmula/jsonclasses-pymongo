@@ -20,6 +20,17 @@ class Coder():
     def is_list_field(self, field: JSONClassField) -> bool:
         return field.definition.field_type == FieldType.LIST
 
+    def is_list_instance_field(self, field: JSONClassField,
+                                     cls: type[PymongoObject]) -> bool:
+        if not self.is_list_field(field):
+            return False
+        t = TypesResolver().resolve_types(field.definition.raw_item_types,
+                                          cls.definition.config)
+        if t.definition.instance_types is not None:
+            return True
+        return False
+
+
     def is_foreign_key_storage(self, field: JSONClassField) -> bool:
         field_storage = field.definition.field_storage
         return field_storage == FieldStorage.FOREIGN_KEY
