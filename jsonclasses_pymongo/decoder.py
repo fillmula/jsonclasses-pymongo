@@ -200,11 +200,7 @@ class Decoder(Coder):
                 if getattr(root, field.name) is not None:
                     for item in getattr(root, field.name):
                         self.apply_initial_status(item, graph)
-        # root._mark_unmodified()
-        setattr(root, '_is_new', False)
-        # setattr(root, '_is_modified', False)
-        # setattr(root, '_modified_fields', set())
-        # setattr(root, '_previous_values', {})
+        root._mark_unmodified()
 
     def decode_root(self,
                     root: dict[str, Any],
