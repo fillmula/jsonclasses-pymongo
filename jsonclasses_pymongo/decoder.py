@@ -185,17 +185,10 @@ class Decoder(Coder):
                                          cls=cls, graph=graph))
         return dest
 
-    def decode_root(self,
-                    root: dict[str, Any],
-                    cls: type[T],
-                    graph: MarkGraph = MarkGraph()) -> T:
-        types = Types().instanceof(cls)
-        decoded = self.decode_instance(root, cls, types, graph)
-        self.apply_initial_status(decoded)
-        return decoded
-
     def apply_initial_status(self, root: T,
-                             graph: MarkGraph = MarkGraph()) -> None:
+                             graph: Optional[MarkGraph] = None) -> None:
+        if graph is None:
+            graph = MarkGraph()
         if graph.get(root) is not None:
             return
         graph.put(root)
@@ -212,3 +205,29 @@ class Decoder(Coder):
         # setattr(root, '_is_modified', False)
         # setattr(root, '_modified_fields', set())
         # setattr(root, '_previous_values', {})
+
+    def decode_root(self,
+                    root: dict[str, Any],
+                    cls: type[T],
+                    graph: Optional[MarkGraph] = None) -> T:
+        if graph is None:
+            graph = MarkGraph()
+        types = Types().instanceof(cls)
+        decoded = self.decode_instance(root, cls, types, graph)
+        self.apply_initial_status(decoded)
+        return decoded
+
+    def decode_root_list(self,
+                         root_list: list[dict[str, Any]],
+                         cls: type[T],
+                         graph: Optional[MarkGraph] = None) -> list[T]:
+        if graph is None:
+            graph = MarkGraph()
+        types = Types().instanceof(cls)
+        results: list[T] = []
+        for root in root_list:
+            decoded = self.decode_instance(root, cls, types, graph)
+            results.append(decoded)
+        for result in results:
+            self.apply_initial_status(result)
+        return results

@@ -275,9 +275,7 @@ class BaseListQuery(BaseQuery[T]):
         collection = Connection.get_collection(self._cls)
         cursor = collection.aggregate(pipeline)
         results = [result for result in cursor]
-        graph = MarkGraph()
-        return [Decoder().decode_root(result, self._cls,
-                                      graph) for result in results]
+        return Decoder().decode_root_list(results, self._cls)
 
 
 class ListQuery(BaseListQuery[T]):
@@ -360,8 +358,7 @@ class BaseIDQuery(BaseQuery[T]):
         results = [result for result in cursor]
         if len(results) == 0:
             return None
-        graph = MarkGraph()
-        return Decoder().decode_root(results[0], self._cls, graph)
+        return Decoder().decode_root(results[0], self._cls)
 
 
 class IDQuery(BaseIDQuery[T]):
