@@ -231,11 +231,11 @@ class BaseListQuery(BaseQuery[T]):
         result: dict[str, Any] = {}
         for key, value in matcher.items():
             if key == pf_name:
-                new_value = ObjectId(value)
+                new_value = ObjectId(value) if value is not None else None
             elif key in cls.definition._camelized_reference_names:
-                new_value = ObjectId(value)
+                new_value = ObjectId(value) if value is not None else None
             elif key in cls.definition._reference_names:
-                new_value = ObjectId(value)
+                new_value = ObjectId(value) if value is not None else None
             else:
                 new_value = value
             if cls.dbconf.camelize_db_keys:
