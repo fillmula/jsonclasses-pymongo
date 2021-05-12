@@ -1,18 +1,19 @@
 """This module contains queries."""
 from __future__ import annotations
-from jsonclasses_pymongo.utils import ref_db_field_key
 from typing import (Iterator, Union, TypeVar, Generator, Optional, Any,
                     Generic, NamedTuple, cast)
 from bson import ObjectId
-from jsonclasses.exceptions import ObjectNotFoundException
 from inflection import camelize
+from pymongo.cursor import Cursor
 from jsonclasses.field_definition import FieldStorage, FieldType
 from jsonclasses.types_resolver import TypesResolver
-from pymongo.cursor import Cursor
+from jsonclasses.mark_graph import MarkGraph
+from jsonclasses.exceptions import ObjectNotFoundException
 from .coder import Coder
 from .decoder import Decoder
 from .connection import Connection
 from .pymongo_object import PymongoObject
+from .utils import ref_db_field_key
 T = TypeVar('T', bound=PymongoObject)
 U = TypeVar('U', bound='BaseQuery')
 V = TypeVar('V', bound='BaseListQuery')
@@ -274,7 +275,9 @@ class BaseListQuery(BaseQuery[T]):
         collection = Connection.get_collection(self._cls)
         cursor = collection.aggregate(pipeline)
         results = [result for result in cursor]
-        return [Decoder().decode_root(result, self._cls) for result in results]
+        graph = MarkGraph()
+        return [Decoder().decode_root(result, self._cls,
+                                      graph) for result in results]
 
 
 class ListQuery(BaseListQuery[T]):
@@ -357,7 +360,8 @@ class BaseIDQuery(BaseQuery[T]):
         results = [result for result in cursor]
         if len(results) == 0:
             return None
-        return Decoder().decode_root(results[0], self._cls)
+        graph = MarkGraph()
+        return Decoder().decode_root(results[0], self._cls, graph)
 
 
 class IDQuery(BaseIDQuery[T]):
@@ -412,13 +416,14 @@ class QueryIterator(Generic[T]):
     def __init__(self, cls: type[T], cursor: Cursor):
         self.cls = cls
         self.cursor = cursor
+        self.graph = MarkGraph()
 
     def __iter__(self):
         return self
 
     def __next__(self) -> T:
         value = self.cursor.__next__()
-        return Decoder().decode_root(value, self.cls)
+        return Decoder().decode_root(value, self.cls, self.graph)
 
 
 class IterateQuery(BaseListQuery[T]):

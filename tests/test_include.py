@@ -207,3 +207,29 @@ class TestSave(TestCase):
         self.assertEqual(p.id, u.profile.id)
         self.assertEqual(p.user.id, u.id)
         self.assertEqual(p.user.address.id, u.address.id)
+
+    def test_1_many_ref_uses_unique_objects(self):
+        post1 = LinkedPost(title='P1', content='A')
+        post2 = LinkedPost(title='P2', content='A')
+        author = LinkedAuthor(name='A1', posts=[post1, post2])
+        author.save()
+        posts = LinkedPost.find().include('author').exec()
+        p1 = posts[0]
+        p2 = posts[1]
+        self.assertIs(p1.author, p2.author)
+        p1.author.name = 'New Name'
+        p1.save()
+        self.assertEqual(p2.author.name, 'New Name')
+
+    def test_many_many_ref_uses_unique_objects(self):
+        student1 = LinkedStudent(name='S1')
+        student2 = LinkedStudent(name='S2')
+        course1 = LinkedCourse(name='C1')
+        course2 = LinkedCourse(name='C2')
+        student1.courses = [course1, course2]
+        student2.courses = [course1, course2]
+        student1.save()
+        students = LinkedStudent.find().include('courses', LinkedCourse.find(name='C1')).exec()
+        s1 = students[0]
+        s2 = students[1]
+        self.assertIs(s1.courses[0], s2.courses[0])

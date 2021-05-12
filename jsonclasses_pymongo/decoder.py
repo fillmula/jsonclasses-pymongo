@@ -108,14 +108,21 @@ class Decoder(Coder):
                         cls: type[T],
                         types: Types,
                         graph: MarkGraph) -> Any:
-        dest = cls()
+        inst_id = str(value.get('_id'))
+        dest = graph.getp(cls, inst_id)
+        exist = True
+        if dest is None:
+            dest = cls()
+            exist = False
         for field in cls.definition.fields:
             if cls.dbconf.camelize_db_keys:
                 key = camelize(field.name, False)
             else:
                 key = field.name
             if self.is_id_field(field):
-                setattr(dest, field.name, str(value.get('_id')))
+                if not exist:
+                    setattr(dest, field.name, inst_id)
+                    graph.put(dest)
             elif self.is_foreign_key_storage(field):
                 if value.get(key) is not None:
                     if isinstance(value.get(key), list):
@@ -169,11 +176,13 @@ class Decoder(Coder):
                     value=value.get(key), types=field.types, cls=new_cls,
                     graph=graph))
             else:
-                setattr(
-                    dest,
-                    field.name,
-                    self.decode_item(value=value.get(key), types=field.types,
-                                     cls=cls, graph=graph))
+                if not exist:
+                    setattr(
+                        dest,
+                        field.name,
+                        self.decode_item(value=value.get(key),
+                                         types=field.types,
+                                         cls=cls, graph=graph))
         setattr(dest, '_is_new', False)
         setattr(dest, '_is_modified', False)
         setattr(dest, '_modified_fields', set())
@@ -182,6 +191,7 @@ class Decoder(Coder):
 
     def decode_root(self,
                     root: dict[str, Any],
-                    cls: type[T]) -> T:
+                    cls: type[T],
+                    graph: MarkGraph = MarkGraph()) -> T:
         types = Types().instanceof(cls)
-        return self.decode_instance(root, cls, types, MarkGraph())
+        return self.decode_instance(root, cls, types, graph)
