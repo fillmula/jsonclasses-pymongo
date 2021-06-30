@@ -8,6 +8,9 @@ from jsonclasses import jsonclass, types
 from jsonclasses_pymongo import BaseObject, pymongo
 from jsonclasses_pymongo.encoder import Encoder
 from jsonclasses_pymongo.command import InsertOneCommand
+from tests.classes.linked_account import LinkedAccount, LinkedBalance
+from tests.classes.linked_author import LinkedAuthor
+from tests.classes.linked_post import LinkedPost
 
 
 class TestEncoder(TestCase):
@@ -377,3 +380,24 @@ class TestEncoder(TestCase):
         batch_command = Encoder().encode_root(instance_a)
         commands = batch_command.commands
         self.assertEqual(len(commands), 7)
+
+    def test_encode_new_object_correctly_with_existing_objects_1f_1l(self):
+        account = LinkedAccount(name='Account')
+        balance = LinkedBalance(name='Balance')
+        account.save()
+        balance.account = account
+        balance.save()
+
+    def test_encode_new_object_correctly_with_existing_objects_1l_1f(self):
+        account = LinkedAccount(name='Account')
+        balance = LinkedBalance(name='Balance')
+        balance.save()
+        account.balance = balance
+        account.save()
+
+    def test_encode_new_object_correctly_with_existing_objects_1_many(self):
+        author = LinkedAuthor(name='A')
+        post = LinkedPost(title='P', content='P')
+        author.save()
+        post.author = author
+        post.save()
