@@ -179,9 +179,8 @@ class Encoder(Coder):
             fvalue = getattr(value, fname)
             ftypes = field.types
             if self.is_id_field(field):
-                if use_insert_command:
-                    result_set['_id'] = ObjectId(fvalue)
-                else:
+                result_set['_id'] = ObjectId(fvalue)
+                if not use_insert_command:
                     matcher['_id'] = ObjectId(fvalue)
             elif self.is_foreign_key_reference_field(field):
                 if fvalue is None:
@@ -305,8 +304,6 @@ class Encoder(Coder):
         setattr(value, '_is_modified', False)
         setattr(value, '_modified_fields', set())
         setattr(value, '_previous_values', {})
-        if result_set == {}:
-            result_set = {'_id': ObjectId(value._id)}
         return EncodingResult(result_set, commands)
 
     def encode_item(self, context: EncodingContext) -> EncodingResult:
