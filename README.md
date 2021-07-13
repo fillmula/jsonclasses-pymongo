@@ -19,4 +19,4 @@ Read on bla bla bla.
 
 ## License
 
-[MIT License](https://github.com/WiosoftCrafts/jsonclasses-pymongo/blob/master/LICENSE)
+[MIT License](https://github.com/fillmula/jsonclasses-pymongo/blob/master/LICENSE)
