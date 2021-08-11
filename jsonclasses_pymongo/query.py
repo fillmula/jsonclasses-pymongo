@@ -263,10 +263,10 @@ class BaseListQuery(BaseQuery[T]):
             result.append({'$match': self._match})
         if self._sort is not None:
             result.append({'$sort': self._sort})
-        if self._limit is not None:
-            result.append({'$limit': self._limit})
         if self._skip is not None:
             result.append({'$skip': self._skip})
+        if self._limit is not None:
+            result.append({'$limit': self._limit})
         result.extend(lookups)
         return result
 
