@@ -262,7 +262,7 @@ class BaseListQuery(BaseQuery[T]):
         if self._match is not None:
             result.append({'$match': self._match})
         if self._sort is not None:
-            result.append({'$sort': self._sort})
+            result.append({'$sort': dict(self._sort)})
         if self._skip is not None:
             result.append({'$skip': self._skip})
         if self._limit is not None:
