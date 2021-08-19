@@ -5,8 +5,8 @@ from typing import (Iterator, Union, TypeVar, Generator, Optional, Any,
 from bson import ObjectId
 from inflection import camelize
 from pymongo.cursor import Cursor
-from jsonclasses.field_definition import FieldStorage, FieldType
-from jsonclasses.types_resolver import TypesResolver
+from jsonclasses.fdef import FieldStorage, FieldType
+from jsonclasses.rtypes import rtypes
 from jsonclasses.mark_graph import MarkGraph
 from jsonclasses.exceptions import ObjectNotFoundException
 from .coder import Coder
@@ -41,16 +41,13 @@ class BaseQuery(Generic[T]):
         result: list[dict[str, Any]] = []
         for subquery in self.subqueries:
             fname = subquery.name
-            field = cls.definition.field_named(fname)
-            tr = TypesResolver()
-            if field.definition.field_type == FieldType.LIST:
-                types = tr.resolve_types(field.definition.raw_item_types,
-                                         cls.definition.config)
+            field = cls.cdef.field_named(fname)
+            if field.fdef.field_type == FieldType.LIST:
+                types = rtypes(field.fdef.raw_item_types, cls.cdef.config)
             else:
-                types = tr.resolve_types(field.definition.instance_types,
-                                         cls.definition.config)
-            it = cast(type[PymongoObject], types.definition.instance_types)
-            if field.definition.field_storage == FieldStorage.LOCAL_KEY:
+                types = rtypes(field.fdef.raw_inst_types, cls.cdef.config)
+            it = cast(type[PymongoObject], types.fdef.raw_inst_types)
+            if field.fdef.field_storage == FieldStorage.LOCAL_KEY:
                 key = ref_db_field_key(fname, cls)
                 if subquery.query is None:
                     result.append({
@@ -81,9 +78,9 @@ class BaseQuery(Generic[T]):
                 result.append({
                     '$unwind': '$' + fname
                 })
-            elif field.definition.field_storage == FieldStorage.FOREIGN_KEY:
-                if field.definition.field_type == FieldType.INSTANCE:
-                    fk = cast(str, field.definition.foreign_key)
+            elif field.fdef.field_storage == FieldStorage.FOREIGN_KEY:
+                if field.fdef.field_type == FieldType.INSTANCE:
+                    fk = cast(str, field.fdef.foreign_key)
                     if subquery.query is None:
                         result.append({
                             '$lookup': {
@@ -94,7 +91,7 @@ class BaseQuery(Generic[T]):
                             }
                         })
                     else:
-                        fk = cast(str, field.definition.foreign_key)
+                        fk = cast(str, field.fdef.foreign_key)
                         key = ref_db_field_key(fk, it)
                         subp = subquery.query._build_aggregate_pipeline()
                         subp.insert(0, {
@@ -115,7 +112,7 @@ class BaseQuery(Generic[T]):
                     result.append({
                         '$unwind': '$' + fname
                     })
-                elif field.definition.field_type == FieldType.LIST:
+                elif field.fdef.field_type == FieldType.LIST:
                     if subquery.query is not None:
                         subpipeline = subquery.query \
                                                 ._build_aggregate_pipeline()
@@ -128,7 +125,7 @@ class BaseQuery(Generic[T]):
                             has_match = True
                             matcher = item.get('$match')
                             break
-                    if field.definition.use_join_table:
+                    if field.fdef.use_join_table:
                         coder = Coder()
                         jt_name = coder.join_table_name(cls, field.name,
                                                         it, field.foreign_field.name)
@@ -177,7 +174,7 @@ class BaseQuery(Generic[T]):
                         pipeline.append(replace)
                         result.append(outer_lookup)
                     else:
-                        fk = cast(str, field.definition.foreign_key)
+                        fk = cast(str, field.fdef.foreign_key)
                         key = ref_db_field_key(fk, it)
                         item = {
                             '$lookup': {
@@ -223,18 +220,18 @@ class BaseListQuery(BaseQuery[T]):
 
     def _set_matcher(self: V, matcher: dict[str, Any]) -> None:
         cls = cast(PymongoObject, self._cls)
-        if cls.definition.primary_field is not None:
-            pf_name: Optional[str] = cls.definition.primary_field.name
+        if cls.cdef.primary_field is not None:
+            pf_name: Optional[str] = cls.cdef.primary_field.name
         else:
             pf_name = None
-        cls.definition._camelized_reference_names
+        cls.cdef._camelized_reference_names
         result: dict[str, Any] = {}
         for key, value in matcher.items():
             if key == pf_name:
                 new_value = ObjectId(value) if value is not None else None
-            elif key in cls.definition._camelized_reference_names:
+            elif key in cls.cdef._camelized_reference_names:
                 new_value = ObjectId(value) if value is not None else None
-            elif key in cls.definition._reference_names:
+            elif key in cls.cdef._reference_names:
                 new_value = ObjectId(value) if value is not None else None
             else:
                 new_value = value

@@ -3,10 +3,10 @@ from typing import Any, NamedTuple, TypeVar, Union, cast, TYPE_CHECKING
 from datetime import datetime
 from inflection import camelize
 from bson.objectid import ObjectId
-from jsonclasses.jsonclass_field import JSONClassField
-from jsonclasses.field_definition import FieldStorage, FieldType
-from jsonclasses.keypath_utils import concat_keypath
-from jsonclasses.types_resolver import TypesResolver
+from jsonclasses.jfield import JField
+from jsonclasses.fdef import FieldStorage, FieldType
+from jsonclasses.keypath import concat_keypath
+from jsonclasses.rtypes import rtypes
 from jsonclasses.mark_graph import MarkGraph
 from jsonclasses.types import types
 from .coder import Coder
@@ -34,9 +34,9 @@ class Encoder(Coder):
         if context.value is None:
             return EncodingResult(result=None, commands=[])
         value = cast(list[Any], context.value)
-        fd = context.types.definition
-        item_types = TypesResolver().resolve_types(
-            fd.raw_item_types, context.root.__class__.definition.config)
+        fd = context.types.fdef
+        item_types = rtypes(
+            fd.raw_item_types, context.root.__class__.cdef.config)
         if fd.field_storage == FieldStorage.FOREIGN_KEY:
             item_types = item_types.linkedby(cast(str, fd.foreign_key))
         if fd.field_storage == FieldStorage.LOCAL_KEY:
@@ -59,8 +59,8 @@ class Encoder(Coder):
         if context.value is None:
             return EncodingResult(result=None, commands=[])
         value = cast(dict[str, Any], context.value)
-        fd = context.types.definition
-        item_types = TypesResolver().resolve_types(fd.raw_item_types)
+        fd = context.types.fdef
+        item_types = rtypes(fd.raw_item_types)
         camelized = context.owner.__class__.dbconf.camelize_db_keys
         result = {}
         commands = []
@@ -80,13 +80,13 @@ class Encoder(Coder):
         if context.value is None:
             return EncodingResult(result=None, commands=[])
         value = cast(dict[str, Any], context.value)
-        fd = context.types.definition
-        shape_types = cast(dict[str, Any], fd.shape_types)
+        fd = context.types.fdef
+        shape_types = cast(dict[str, Any], fd.raw_shape_types)
         camelized = context.owner.__class__.dbconf.camelize_db_keys
         result = {}
         commands = []
         for key, item in value.items():
-            item_types = TypesResolver().resolve_types(shape_types[key])
+            item_types = rtypes(shape_types[key])
             item_result, item_commands = self.encode_item(context.new(
                 value=item,
                 types=item_types,
@@ -100,7 +100,7 @@ class Encoder(Coder):
 
     def _join_command(self,
                       this_instance: PymongoObject,
-                      this_field: JSONClassField,
+                      this_field: JField,
                       that_cls: type[PymongoObject],
                       that_id: ObjectId) -> UpsertOneCommand:
         this_cls = this_instance.__class__
@@ -113,7 +113,7 @@ class Encoder(Coder):
             this_cls,
             this_field.name,
             that_cls,
-            cast(str, this_field.definition.foreign_key))
+            cast(str, this_field.fdef.foreign_key))
         collection = connection.collection(join_table_name)
         this_id = ObjectId(this_instance._id)
         matcher = {
@@ -126,7 +126,7 @@ class Encoder(Coder):
 
     def _unlink_command(self,
                         this_instance: PymongoObject,
-                        this_field: JSONClassField,
+                        this_field: JField,
                         that_cls: type[PymongoObject],
                         that_id: ObjectId) -> DeleteOneCommand:
         this_cls = this_instance.__class__
@@ -139,7 +139,7 @@ class Encoder(Coder):
             this_cls,
             this_field.name,
             that_cls,
-            cast(str, this_field.definition.foreign_key))
+            cast(str, this_field.fdef.foreign_key))
         collection = connection.collection(join_table_name)
         this_id = ObjectId(this_instance._id)
         matcher = {
@@ -160,7 +160,7 @@ class Encoder(Coder):
         if context.mark_graph.getp(cls, id) is not None:
             return EncodingResult({'_id': ObjectId(id)}, commands=[])
         context.mark_graph.put(value)
-        instance_fd = context.types.definition
+        instance_fd = context.types.fdef
         write_instance = instance_fd.field_storage != FieldStorage.EMBEDDED
         if root:
             write_instance = True
@@ -172,8 +172,8 @@ class Encoder(Coder):
         matcher = {}
         commands = []
         result_addtoset = {}
-        for field in value.__class__.definition.fields:
-            if field.definition.is_temp_field:
+        for field in value.__class__.cdef.fields:
+            if field.fdef.is_temp_field:
                 continue
             fname = field.name
             fvalue = getattr(value, fname)
@@ -226,7 +226,7 @@ class Encoder(Coder):
                         commands.append(unlink_command)
             elif self.is_local_key_reference_field(field):
                 if fvalue is None:
-                    tsfm = value.__class__.definition.config.key_transformer
+                    tsfm = value.__class__.cdef.config.key_transformer
                     if getattr(value, tsfm(field)) is not None:
                         if use_insert_command or fname in fields_need_update:
                             result_set[ref_db_field_key(fname, cls)] = \
@@ -309,7 +309,7 @@ class Encoder(Coder):
     def encode_item(self, context: EncodingContext) -> EncodingResult:
         if context.value is None:
             return EncodingResult(result=None, commands=[])
-        field_type = context.types.definition.field_type
+        field_type = context.types.fdef.field_type
         if field_type == FieldType.LIST:
             return self.encode_list(context)
         elif field_type == FieldType.DICT:

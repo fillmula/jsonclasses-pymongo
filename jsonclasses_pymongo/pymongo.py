@@ -2,7 +2,7 @@
 This module contains `jsonclass`, the decorator for JSON Classes.
 """
 from typing import Optional, Union, Callable, overload, cast
-from jsonclasses.jsonclass_object import JSONClassObject
+from jsonclasses.jobject import JObject
 from .pymongo_object import PymongoObject
 from .pymongofy import pymongofy
 from .dbconf import DBConf
@@ -29,7 +29,7 @@ def pymongo(
 
 
 def pymongo(
-    cls: Optional[type[JSONClassObject]] = None,
+    cls: Optional[type[JObject]] = None,
     collection_name: Optional[str] = None,
     camelize_db_keys: Optional[bool] = None,
 ) -> Union[Callable[[type], type[PymongoObject]], type[PymongoObject]]:
@@ -45,7 +45,7 @@ def pymongo(
     if cls is not None:
         if not isinstance(cls, type):
             raise ValueError('@pymongo should be used to decorate a class.')
-        conf = DBConf(cls, cls.definition.config,
+        conf = DBConf(cls, cls.cdef.config,
                       collection_name, camelize_db_keys)
         cls.dbconf = conf
         return cast(type[PymongoObject], pymongofy(cls))

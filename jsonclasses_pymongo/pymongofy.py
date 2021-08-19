@@ -2,13 +2,13 @@ from __future__ import annotations
 from typing import TypeVar, Any, Union, cast
 from re import search
 from bson.objectid import ObjectId
-from jsonclasses.jsonclass_field import JSONClassField
+from jsonclasses.jfield import JField
 from pymongo.errors import DuplicateKeyError
 from inflection import camelize, underscore
 from pymongo.collection import Collection
-from jsonclasses.field_definition import FieldStorage, FieldType
+from jsonclasses.fdef import FieldStorage, FieldType
 from jsonclasses.exceptions import UniqueConstraintException
-from jsonclasses.types_resolver import TypesResolver
+from jsonclasses.rtypes import rtypes
 from jsonclasses.exceptions import DeletionDeniedException
 from .pymongo_object import PymongoObject
 from .query import BaseQuery, ExistQuery, IterateQuery, ListQuery, SingleQuery, IDQuery
@@ -57,7 +57,7 @@ def _database_write(self: T) -> None:
         if self.__class__.dbconf.camelize_db_keys:
             pt_key = underscore(db_key)
             json_key = pt_key
-        if self.__class__.definition.config.camelize_json_keys:
+        if self.__class__.cdef.config.camelize_json_keys:
             json_key = camelize(pt_key, False)
         raise UniqueConstraintException(
                 getattr(self, pt_key), json_key) from None
@@ -65,26 +65,23 @@ def _database_write(self: T) -> None:
 
 def _orm_delete(self: T, no_raise: bool = False) -> None:
     # deny test
-    for field in self.__class__.definition.deny_fields:
-        if field.definition.field_storage == FieldStorage.LOCAL_KEY:
-            key = self.__class__.definition.config.key_transformer(field)
+    for field in self.__class__.cdef.deny_fields:
+        if field.fdef.field_storage == FieldStorage.LOCAL_KEY:
+            key = self.__class__.cdef.config.key_transformer(field)
             if hasattr(self, key) and getattr(self, key) is not None:
                 if no_raise:
                     return
                 else:
                     raise DeletionDeniedException()
-        elif field.definition.field_storage == FieldStorage.FOREIGN_KEY:
-            r = TypesResolver()
-            if field.definition.field_type == FieldType.LIST:
-                t = r.resolve_types(field.definition.raw_item_types,
-                                    self.__class__.definition.config)
+        elif field.fdef.field_storage == FieldStorage.FOREIGN_KEY:
+            if field.fdef.field_type == FieldType.LIST:
+                t = rtypes(field.fdef.raw_item_types, self.__class__.cdef.config)
             else:
-                t = r.resolve_types(field.definition.instance_types,
-                                    self.__class__.definition.config)
+                t = rtypes(field.fdef.raw_inst_types, self.__class__.cdef.config)
             types = t
-            oc = cast(type[PymongoObject], types.definition.instance_types)
-            f = cast(JSONClassField, field.foreign_field)
-            if field.definition.use_join_table:
+            oc = cast(type[PymongoObject], types.fdef.raw_inst_types)
+            f = cast(JField, field.foreign_field)
+            if field.fdef.use_join_table:
                 jtname = Coder().join_table_name(
                     self.__class__,
                     field.name,
@@ -100,7 +97,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                     else:
                         raise DeletionDeniedException()
             else:
-                key = oc.definition.config.key_transformer(f)
+                key = oc.cdef.config.key_transformer(f)
                 exist = oc.exist(**{key: ObjectId(self._id)}).exec()
                 if exist:
                     if no_raise:
@@ -112,19 +109,16 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
     collection.delete_one({'_id': ObjectId(self._id)})
 
     # delete chain - nullify
-    for field in self.__class__.definition.nullify_fields:
-        if field.definition.field_storage == FieldStorage.FOREIGN_KEY:
-            r = TypesResolver()
-            if field.definition.field_type == FieldType.LIST:
-                t = r.resolve_types(field.definition.raw_item_types,
-                                    self.__class__.definition.config)
+    for field in self.__class__.cdef.nullify_fields:
+        if field.fdef.field_storage == FieldStorage.FOREIGN_KEY:
+            if field.fdef.field_type == FieldType.LIST:
+                t = rtypes(field.fdef.raw_item_types, self.__class__.cdef.config)
             else:
-                t = r.resolve_types(field.definition.instance_types,
-                                    self.__class__.definition.config)
+                t = rtypes(field.fdef.raw_inst_types, self.__class__.cdef.config)
             types = t
-            oc = cast(type[PymongoObject], types.definition.instance_types)
-            f = cast(JSONClassField, field.foreign_field)
-            if field.definition.use_join_table:
+            oc = cast(type[PymongoObject], types.fdef.raw_inst_types)
+            f = cast(JField, field.foreign_field)
+            if field.fdef.use_join_table:
                 jtname = Coder().join_table_name(
                     self.__class__,
                     field.name,
@@ -134,33 +128,29 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                 key = ref_db_field_key(self.__class__.__name__, self.__class__)
                 coll.delete_many({key: ObjectId(self._id)})
             else:
-                key = oc.definition.config.key_transformer(f)
+                key = oc.cdef.config.key_transformer(f)
                 for o in oc.iterate(**{key: ObjectId(self._id)}).exec():
                     setattr(o, f.name, None)
                     setattr(o, key, None)
                     o.save(skip_validation=True)
 
     # delete chain - cascade
-    for field in self.__class__.definition.cascade_fields:
-        r = TypesResolver()
-        if field.definition.field_type == FieldType.LIST:
-            t = r.resolve_types(field.definition.raw_item_types,
-                                self.__class__.definition.config)
+    for field in self.__class__.cdef.cascade_fields:
+        if field.fdef.field_type == FieldType.LIST:
+            t = rtypes(field.fdef.raw_item_types, self.__class__.cdef.config)
         else:
-            t = r.resolve_types(field.definition.instance_types,
-                                self.__class__.definition.config)
+            t = rtypes(field.fdef.raw_inst_types, self.__class__.cdef.config)
         types = t
-        types = t
-        oc = cast(type[PymongoObject], types.definition.instance_types)
-        f = cast(JSONClassField, field.foreign_field)
-        if field.definition.field_storage == FieldStorage.LOCAL_KEY:
-            key = self.__class__.definition.config.key_transformer(field)
+        oc = cast(type[PymongoObject], types.fdef.raw_inst_types)
+        f = cast(JField, field.foreign_field)
+        if field.fdef.field_storage == FieldStorage.LOCAL_KEY:
+            key = self.__class__.cdef.config.key_transformer(field)
             if getattr(self, key) is not None:
                 item = oc.id(getattr(self, key)).optional.exec()
                 if item is not None:
                     item._orm_delete(no_raise=True)
-        elif field.definition.field_storage == FieldStorage.FOREIGN_KEY:
-            if field.definition.use_join_table:
+        elif field.fdef.field_storage == FieldStorage.FOREIGN_KEY:
+            if field.fdef.use_join_table:
                 jtname = Coder().join_table_name(
                     self.__class__,
                     field.name,
@@ -176,7 +166,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                         item._orm_delete(no_raise=True)
                 coll.delete_many({key: ObjectId(self._id)})
             else:
-                key = oc.definition.config.key_transformer(f)
+                key = oc.cdef.config.key_transformer(f)
                 for o in oc.iterate(**{key: ObjectId(self._id)}).exec():
                     o._orm_delete(no_raise=True)
 
@@ -205,19 +195,19 @@ def pymongofy(class_: type) -> PymongoObject:
     class_._orm_delete = _orm_delete
     class_._orm_restore = _orm_restore
     connection = Connection.from_class(class_)
-    if class_.definition.config.abstract:
+    if class_.cdef.config.abstract:
         return class_
     def callback(coll: Collection):
         info = coll.index_information()
-        for field in class_.definition.fields:
+        for field in class_.cdef.fields:
             name = field.name
             if class_.dbconf.camelize_db_keys:
                 name = camelize(field.name, False)
-            index = field.definition.index
-            unique = field.definition.unique
-            required = field.definition.required
+            index = field.fdef.index
+            unique = field.fdef.unique
+            required = field.fdef.required
             index_name = f'{name}_1'
-            ftype = field.definition.field_type
+            ftype = field.fdef.field_type
             if unique:
                 if required:
                     coll.create_index(name, name=index_name, unique=True)

@@ -7,7 +7,7 @@ from pymongo.collection import Collection
 from inflection import parameterize, camelize
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
-    T = TypeVar('T', bound=PymongoObject, covariant=False)
+    T = TypeVar('T', bound=PymongoObject, covariant=True)
 
 
 ConnectedCallback = Callable[[Collection], None]
@@ -117,14 +117,14 @@ class Connection:
     @classmethod
     def get_collection(cls: type[Connection],
                        pmcls: type[T]) -> Collection:
-        graph = pmcls.definition.config.class_graph.name
+        graph = pmcls.cdef.config.class_graph.name
         connection = Connection(graph)
         return connection.collection_from(pmcls)
 
     @classmethod
     def from_class(cls: type[Connection],
                    pmcls: type[T]) -> Connection:
-        return Connection(pmcls.definition.config.class_graph.name)
+        return Connection(pmcls.cdef.config.class_graph.name)
 
 
 Connection.default = Connection('default')

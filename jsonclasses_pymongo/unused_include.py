@@ -7,17 +7,17 @@
 #         ref_id = getattr(self, ref_field_key(field.field_name))
 #         if ref_id is not None:
 #             Cls = cast(Type[MongoObject], resolve_types(
-#                     fd.instance_types,
+#                     fd.raw_inst_types,
 #                     graph_sibling=self.__class__
-#                 ).field_description.instance_types)
+#                 ).field_description.raw_inst_types)
 #             setattr(self, field.field_name, Cls.find_by_id(ref_id))
 #     elif (fd.field_type == FieldType.INSTANCE and
 #             fd.field_storage == FieldStorage.FOREIGN_KEY):
 #         foreign_key_name = ref_db_field_key(cast(str, fd.foreign_key),
 #                                             self.__class__)
 #         Cls = cast(Type[MongoObject], resolve_types(
-#             fd.instance_types,
-#             graph_sibling=self.__class__).field_description.instance_types)
+#             fd.raw_inst_types,
+#             graph_sibling=self.__class__).field_description.raw_inst_types)
 #         setattr(self, field.field_name, Cls.find_one(
 #             {foreign_key_name: ObjectId(self.id)}))
 #     elif (fd.field_type == FieldType.LIST and
@@ -27,7 +27,7 @@
 #             item_types = resolve_types(
 #                 fd.list_item_types, self.__class__)
 #             Cls = cast(Type[MongoObject], resolve_types(
-#                 item_types.field_description.instance_types,
+#                 item_types.field_description.raw_inst_types,
 #                 self.__class__))
 #             setattr(self, field.field_name, Cls.find_many(
 #                 {'_id': {'$in': [ObjectId(id) for id in ref_ids]}}))
@@ -82,8 +82,8 @@
 #             item_types = resolve_types(
 #                 fd.list_item_types, self.__class__)
 #             Cls = cast(Type[MongoObject], resolve_types(
-#                 item_types.field_description.instance_types,
-#                 self.__class__).field_description.instance_types)
+#                 item_types.field_description.raw_inst_types,
+#                 self.__class__).field_description.raw_inst_types)
 #             setattr(self, field.field_name, Cls.find_many(
 #                 {foreign_key_name: ObjectId(self.id)}))
 #     else:

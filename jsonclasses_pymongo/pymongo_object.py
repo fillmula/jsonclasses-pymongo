@@ -4,7 +4,7 @@ jsonclass object should confirm to.
 from __future__ import annotations
 from typing import TypeVar, ClassVar, Any, Union, TYPE_CHECKING
 from bson.objectid import ObjectId
-from jsonclasses.jsonclass_object import JSONClassObject
+from jsonclasses.jobject import JObject
 if TYPE_CHECKING:
     from .dbconf import DBConf
     from .query import (BaseQuery, ListQuery, IDQuery, SingleQuery, ExistQuery,
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 T = TypeVar('T', bound='PymongoObject')
 
 
-class PymongoObject(JSONClassObject):
+class PymongoObject(JObject):
     """The `PymongoObject` protocol defines methods that @pymongo decorated
     jsonclass object should confirm to.
     """
