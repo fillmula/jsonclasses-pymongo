@@ -8,7 +8,6 @@ from inflection import camelize, underscore
 from pymongo.collection import Collection
 from jsonclasses.fdef import FieldStorage, FieldType
 from jsonclasses.exceptions import UniqueConstraintException
-from jsonclasses.rtypes import rtypes
 from jsonclasses.exceptions import DeletionDeniedException
 from .pymongo_object import PymongoObject
 from .query import BaseQuery, ExistQuery, IterateQuery, ListQuery, SingleQuery, IDQuery
@@ -75,11 +74,9 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                     raise DeletionDeniedException()
         elif field.fdef.field_storage == FieldStorage.FOREIGN_KEY:
             if field.fdef.field_type == FieldType.LIST:
-                t = rtypes(field.fdef.raw_item_types, self.__class__.cdef.jconf)
+                oc = field.fdef.item_types.fdef.inst_cls
             else:
-                t = rtypes(field.fdef.raw_inst_types, self.__class__.cdef.jconf)
-            types = t
-            oc = cast(type[PymongoObject], types.fdef.raw_inst_types)
+                oc = field.fdef.inst_cls
             f = cast(JField, field.foreign_field)
             if field.fdef.use_join_table:
                 jtname = Coder().join_table_name(
@@ -112,11 +109,9 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
     for field in self.__class__.cdef.nullify_fields:
         if field.fdef.field_storage == FieldStorage.FOREIGN_KEY:
             if field.fdef.field_type == FieldType.LIST:
-                t = rtypes(field.fdef.raw_item_types, self.__class__.cdef.jconf)
+                oc = field.fdef.item_types.fdef.inst_cls
             else:
-                t = rtypes(field.fdef.raw_inst_types, self.__class__.cdef.jconf)
-            types = t
-            oc = cast(type[PymongoObject], types.fdef.raw_inst_types)
+                oc = field.fdef.inst_cls
             f = cast(JField, field.foreign_field)
             if field.fdef.use_join_table:
                 jtname = Coder().join_table_name(
@@ -137,11 +132,9 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
     # delete chain - cascade
     for field in self.__class__.cdef.cascade_fields:
         if field.fdef.field_type == FieldType.LIST:
-            t = rtypes(field.fdef.raw_item_types, self.__class__.cdef.jconf)
+            oc = field.fdef.item_types.fdef.inst_cls
         else:
-            t = rtypes(field.fdef.raw_inst_types, self.__class__.cdef.jconf)
-        types = t
-        oc = cast(type[PymongoObject], types.fdef.raw_inst_types)
+            oc = field.fdef.inst_cls
         f = cast(JField, field.foreign_field)
         if field.fdef.field_storage == FieldStorage.LOCAL_KEY:
             key = self.__class__.cdef.jconf.key_transformer(field)

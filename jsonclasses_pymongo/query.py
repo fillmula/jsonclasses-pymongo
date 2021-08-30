@@ -6,7 +6,6 @@ from bson import ObjectId
 from inflection import camelize
 from pymongo.cursor import Cursor
 from jsonclasses.fdef import FieldStorage, FieldType
-from jsonclasses.rtypes import rtypes
 from jsonclasses.mark_graph import MarkGraph
 from jsonclasses.exceptions import ObjectNotFoundException
 from .coder import Coder
@@ -43,10 +42,9 @@ class BaseQuery(Generic[T]):
             fname = subquery.name
             field = cls.cdef.field_named(fname)
             if field.fdef.field_type == FieldType.LIST:
-                types = field.fdef.item_types
+                it = field.fdef.item_types.fdef.inst_cls
             else:
-                types = rtypes(field.fdef.raw_inst_types)
-            it = cast(type[PymongoObject], types.fdef.raw_inst_types)
+                it = field.fdef.inst_cls
             if field.fdef.field_storage == FieldStorage.LOCAL_KEY:
                 key = ref_db_field_key(fname, cls)
                 if subquery.query is None:

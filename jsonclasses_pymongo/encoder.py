@@ -6,7 +6,6 @@ from bson.objectid import ObjectId
 from jsonclasses.jfield import JField
 from jsonclasses.fdef import FieldStorage, FieldType
 from jsonclasses.keypath import concat_keypath
-from jsonclasses.rtypes import rtypes
 from jsonclasses.mark_graph import MarkGraph
 from jsonclasses.types import types
 from .coder import Coder
@@ -59,7 +58,7 @@ class Encoder(Coder):
             return EncodingResult(result=None, commands=[])
         value = cast(dict[str, Any], context.value)
         fd = context.types.fdef
-        item_types = rtypes(fd.raw_item_types)
+        item_types = fd.item_types
         camelized = context.owner.__class__.dbconf.camelize_db_keys
         result = {}
         commands = []
@@ -80,12 +79,12 @@ class Encoder(Coder):
             return EncodingResult(result=None, commands=[])
         value = cast(dict[str, Any], context.value)
         fd = context.types.fdef
-        shape_types = cast(dict[str, Any], fd.raw_shape_types)
+        shape_types = cast(dict[str, Any], fd.shape_types)
         camelized = context.owner.__class__.dbconf.camelize_db_keys
         result = {}
         commands = []
         for key, item in value.items():
-            item_types = rtypes(shape_types[key])
+            item_types = shape_types[key]
             item_result, item_commands = self.encode_item(context.new(
                 value=item,
                 types=item_types,

@@ -3,7 +3,6 @@ from typing import Any, Optional, TypeVar, cast, TYPE_CHECKING
 from datetime import date
 from jsonclasses.types import Types
 from jsonclasses.fdef import FieldStorage, FieldType
-from jsonclasses.rtypes import rtypes
 from jsonclasses.mark_graph import MarkGraph
 from inflection import underscore, camelize
 from .utils import (ref_field_key, ref_field_keys, ref_db_field_key,
@@ -45,8 +44,7 @@ class Decoder(Coder):
             return ({underscore(k) if config.camelize_db_keys else k: str(v)
                     for k, v in value.items()})
         else:
-            item_types = rtypes(
-                types.fdef.raw_item_types)
+            item_types = types.fdef.item_types
             return ({underscore(k) if config.camelize_db_keys else k:
                     self.decode_item(value=v, cls=cls, types=item_types,
                                      graph=graph)
@@ -80,9 +78,7 @@ class Decoder(Coder):
             return date.fromisoformat(value.isoformat()[:10])
         elif types.fdef.field_type == FieldType.ENUM:
             if isinstance(types.fdef.enum_class, str):
-                t = rtypes(types.fdef.enum_class,
-                                                  cls.cdef.jconf)
-                enum_cls = cast(type, t.fdef.enum_class)
+                enum_cls = cast(type, types.fdef.enum_class)
                 return enum_cls(value)
             else:
                 enum_cls = cast(type, types.fdef.enum_class)
@@ -131,20 +127,14 @@ class Decoder(Coder):
                                 self.decode_list(
                                     value[key], new_cls, field.types, graph))
                     else:
-                        t = rtypes(
-                            field.fdef.raw_inst_types,
-                            cls.cdef.jconf)
-                        new_cls = t.fdef.raw_inst_types
+                        new_cls = field.fdef.inst_cls
                         setattr(dest, field.name,
                                 self.decode_instance(
                                     cast(dict[str, Any], value.get(key)),
                                     new_cls, field.types, graph))
             elif self.is_local_key_reference_field(field):
                 if value.get(key) is not None:
-                    t = rtypes(
-                        field.fdef.raw_inst_types,
-                        cls.cdef.jconf)
-                    new_cls = t.fdef.raw_inst_types
+                    new_cls = field.fdef.inst_cls
                     inst = self.decode_item(
                         value=value.get(key), types=field.types, cls=new_cls,
                         graph=graph)
@@ -153,10 +143,7 @@ class Decoder(Coder):
                 setattr(dest, ref_field_key(field.name), str(ref_id))
             elif self.is_local_keys_reference_field(field):
                 if value.get(key) is not None:
-                    t = rtypes(
-                        field.fdef.raw_item_types,
-                        cls.cdef.jconf)
-                    new_cls = t.fdef.raw_inst_types
+                    new_cls = field.fdef.inst_cls
                     setattr(dest, field.name,
                             self.decode_list(
                                 value[key], new_cls, field.types, graph))
@@ -165,10 +152,7 @@ class Decoder(Coder):
                 setattr(dest, ref_field_keys(field.name),
                         [str(k) for k in saved_keys])
             elif self.is_instance_field(field):
-                t = rtypes(
-                    field.fdef.raw_inst_types,
-                    cls.cdef.jconf)
-                new_cls = t.fdef.raw_inst_types
+                new_cls = field.fdef.inst_cls
                 setattr(dest, field.name, self.decode_item(
                     value=value.get(key), types=field.types, cls=new_cls,
                     graph=graph))

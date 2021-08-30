@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import cast, TYPE_CHECKING
 from jsonclasses.jfield import JField
 from jsonclasses.fdef import FieldType, FieldStorage
-from jsonclasses.rtypes import rtypes
 from inflection import camelize
 from .connection import Connection
 if TYPE_CHECKING:
