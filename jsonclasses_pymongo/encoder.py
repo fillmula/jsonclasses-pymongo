@@ -35,8 +35,7 @@ class Encoder(Coder):
             return EncodingResult(result=None, commands=[])
         value = cast(list[Any], context.value)
         fd = context.types.fdef
-        item_types = rtypes(
-            fd.raw_item_types, context.root.__class__.cdef.config)
+        item_types = fd.item_types
         if fd.field_storage == FieldStorage.FOREIGN_KEY:
             item_types = item_types.linkedby(cast(str, fd.foreign_key))
         if fd.field_storage == FieldStorage.LOCAL_KEY:
@@ -226,7 +225,7 @@ class Encoder(Coder):
                         commands.append(unlink_command)
             elif self.is_local_key_reference_field(field):
                 if fvalue is None:
-                    tsfm = value.__class__.cdef.config.key_transformer
+                    tsfm = value.__class__.cdef.jconf.key_transformer
                     if getattr(value, tsfm(field)) is not None:
                         if use_insert_command or fname in fields_need_update:
                             result_set[ref_db_field_key(fname, cls)] = \

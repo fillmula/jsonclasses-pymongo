@@ -43,9 +43,9 @@ class BaseQuery(Generic[T]):
             fname = subquery.name
             field = cls.cdef.field_named(fname)
             if field.fdef.field_type == FieldType.LIST:
-                types = rtypes(field.fdef.raw_item_types, cls.cdef.config)
+                types = field.fdef.item_types
             else:
-                types = rtypes(field.fdef.raw_inst_types, cls.cdef.config)
+                types = rtypes(field.fdef.raw_inst_types)
             it = cast(type[PymongoObject], types.fdef.raw_inst_types)
             if field.fdef.field_storage == FieldStorage.LOCAL_KEY:
                 key = ref_db_field_key(fname, cls)

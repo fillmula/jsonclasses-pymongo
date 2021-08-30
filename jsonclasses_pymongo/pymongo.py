@@ -45,7 +45,7 @@ def pymongo(
     if cls is not None:
         if not isinstance(cls, type):
             raise ValueError('@pymongo should be used to decorate a class.')
-        conf = DBConf(cls, cls.cdef.config,
+        conf = DBConf(cls, cls.cdef.jconf,
                       collection_name, camelize_db_keys)
         cls.dbconf = conf
         return cast(type[PymongoObject], pymongofy(cls))

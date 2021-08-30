@@ -24,8 +24,7 @@ class Coder():
                                      cls: type[PymongoObject]) -> bool:
         if not self.is_list_field(field):
             return False
-        t = rtypes(field.fdef.raw_item_types,
-                                          cls.cdef.config)
+        t = field.fdef.item_types
         if t.fdef.raw_inst_types is not None:
             return True
         return False
@@ -63,8 +62,7 @@ class Coder():
                            ) -> type[PymongoObject]:
         from .pymongo_object import PymongoObject
         fd = field.types.fdef
-        item_types = rtypes(fd.raw_item_types,
-                                                   sibling.cdef.config)
+        item_types = fd.item_types
         item_fd = item_types.fdef
         return cast(type[PymongoObject], item_fd.raw_inst_types)
 

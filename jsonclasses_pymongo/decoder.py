@@ -24,8 +24,7 @@ class Decoder(Coder):
                     graph: MarkGraph) -> Optional[list[Any]]:
         if value is None:
             return None
-        item_types = rtypes(
-            types.fdef.raw_item_types, cls.cdef.config)
+        item_types = types.fdef.item_types
         new_cls = item_types.fdef.raw_inst_types
         return ([self.decode_item(value=item, cls=new_cls,
                                   types=item_types,
@@ -82,7 +81,7 @@ class Decoder(Coder):
         elif types.fdef.field_type == FieldType.ENUM:
             if isinstance(types.fdef.enum_class, str):
                 t = rtypes(types.fdef.enum_class,
-                                                  cls.cdef.config)
+                                                  cls.cdef.jconf)
                 enum_cls = cast(type, t.fdef.enum_class)
                 return enum_cls(value)
             else:
@@ -126,9 +125,7 @@ class Decoder(Coder):
             elif self.is_foreign_key_storage(field):
                 if value.get(key) is not None:
                     if isinstance(value.get(key), list):
-                        t = rtypes(
-                            field.fdef.raw_item_types,
-                            cls.cdef.config)
+                        t = field.fdef.item_types
                         new_cls = t.fdef.raw_inst_types
                         setattr(dest, field.name,
                                 self.decode_list(
@@ -136,7 +133,7 @@ class Decoder(Coder):
                     else:
                         t = rtypes(
                             field.fdef.raw_inst_types,
-                            cls.cdef.config)
+                            cls.cdef.jconf)
                         new_cls = t.fdef.raw_inst_types
                         setattr(dest, field.name,
                                 self.decode_instance(
@@ -146,7 +143,7 @@ class Decoder(Coder):
                 if value.get(key) is not None:
                     t = rtypes(
                         field.fdef.raw_inst_types,
-                        cls.cdef.config)
+                        cls.cdef.jconf)
                     new_cls = t.fdef.raw_inst_types
                     inst = self.decode_item(
                         value=value.get(key), types=field.types, cls=new_cls,
@@ -158,7 +155,7 @@ class Decoder(Coder):
                 if value.get(key) is not None:
                     t = rtypes(
                         field.fdef.raw_item_types,
-                        cls.cdef.config)
+                        cls.cdef.jconf)
                     new_cls = t.fdef.raw_inst_types
                     setattr(dest, field.name,
                             self.decode_list(
@@ -170,7 +167,7 @@ class Decoder(Coder):
             elif self.is_instance_field(field):
                 t = rtypes(
                     field.fdef.raw_inst_types,
-                    cls.cdef.config)
+                    cls.cdef.jconf)
                 new_cls = t.fdef.raw_inst_types
                 setattr(dest, field.name, self.decode_item(
                     value=value.get(key), types=field.types, cls=new_cls,

@@ -117,14 +117,14 @@ class Connection:
     @classmethod
     def get_collection(cls: type[Connection],
                        pmcls: type[T]) -> Collection:
-        graph = pmcls.cdef.config.class_graph.name
+        graph = pmcls.cdef.jconf.cgraph.name
         connection = Connection(graph)
         return connection.collection_from(pmcls)
 
     @classmethod
     def from_class(cls: type[Connection],
                    pmcls: type[T]) -> Connection:
-        return Connection(pmcls.cdef.config.class_graph.name)
+        return Connection(pmcls.cdef.jconf.cgraph.name)
 
 
 Connection.default = Connection('default')
