@@ -50,7 +50,7 @@ class BaseQuery(Generic[T]):
                 if subquery.query is None:
                     result.append({
                         '$lookup': {
-                            'from': it.dbconf.collection_name,
+                            'from': it.pconf.collection_name,
                             'localField': key,
                             'foreignField': '_id',
                             'as': fname
@@ -67,7 +67,7 @@ class BaseQuery(Generic[T]):
                     })
                     result.append({
                         '$lookup': {
-                            'from': it.dbconf.collection_name,
+                            'from': it.pconf.collection_name,
                             'as': fname,
                             'let': {key: '$' + key},
                             'pipeline': subpipeline
@@ -82,7 +82,7 @@ class BaseQuery(Generic[T]):
                     if subquery.query is None:
                         result.append({
                             '$lookup': {
-                                'from': it.dbconf.collection_name,
+                                'from': it.pconf.collection_name,
                                 'localField': '_id',
                                 'foreignField': ref_db_field_key(fk, it),
                                 'as': fname
@@ -101,7 +101,7 @@ class BaseQuery(Generic[T]):
                         })
                         result.append({
                             '$lookup': {
-                                'from': it.dbconf.collection_name,
+                                'from': it.pconf.collection_name,
                                 'as': fname,
                                 'let': {key: '$_id'},
                                 'pipeline': subp
@@ -155,7 +155,7 @@ class BaseQuery(Generic[T]):
                             }
                         }}
                         lookup = {'$lookup': {
-                            'from': it.dbconf.collection_name,
+                            'from': it.pconf.collection_name,
                             'as': field.name,
                             'let': {that_key: '$'+that_key},
                             'pipeline': subpipeline
@@ -176,7 +176,7 @@ class BaseQuery(Generic[T]):
                         key = ref_db_field_key(fk, it)
                         item = {
                             '$lookup': {
-                                'from': it.dbconf.collection_name,
+                                'from': it.pconf.collection_name,
                                 'as': fname,
                                 'let': {key: '$_id'},
                                 'pipeline': subpipeline
@@ -233,7 +233,7 @@ class BaseListQuery(BaseQuery[T]):
                 new_value = ObjectId(value) if value is not None else None
             else:
                 new_value = value
-            if cls.dbconf.camelize_db_keys:
+            if cls.pconf.camelize_db_keys:
                 result[camelize(key, False)] = new_value
         self._match = result
 

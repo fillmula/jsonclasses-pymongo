@@ -5,7 +5,7 @@ from typing import Optional, Union, Callable, overload, cast
 from jsonclasses.jobject import JObject
 from .pymongo_object import PymongoObject
 from .pymongofy import pymongofy
-from .dbconf import DBConf
+from .pconf import PConf
 
 
 @overload
@@ -45,9 +45,9 @@ def pymongo(
     if cls is not None:
         if not isinstance(cls, type):
             raise ValueError('@pymongo should be used to decorate a class.')
-        conf = DBConf(cls, cls.cdef.jconf,
+        conf = PConf(cls, cls.cdef.jconf,
                       collection_name, camelize_db_keys)
-        cls.dbconf = conf
+        cls.pconf = conf
         return cast(type[PymongoObject], pymongofy(cls))
     else:
         def parametered_jsonclass(cls):

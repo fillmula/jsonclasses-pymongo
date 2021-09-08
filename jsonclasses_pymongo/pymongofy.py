@@ -52,7 +52,7 @@ def _database_write(self: T) -> None:
         assert result is not None
         db_key = result.group(1)
         pt_key = db_key
-        if self.__class__.dbconf.camelize_db_keys:
+        if self.__class__.pconf.camelize_db_keys:
             pt_key = underscore(db_key)
         raise UniqueConstraintException(pt_key) from None
 
@@ -189,7 +189,7 @@ def pymongofy(class_: type) -> PymongoObject:
         info = coll.index_information()
         for field in class_.cdef.fields:
             name = field.name
-            if class_.dbconf.camelize_db_keys:
+            if class_.pconf.camelize_db_keys:
                 name = camelize(field.name, False)
             index = field.fdef.index
             unique = field.fdef.unique
@@ -217,5 +217,5 @@ def pymongofy(class_: type) -> PymongoObject:
             else:
                 if index_name in info.keys():
                     coll.drop_index(index_name)
-    connection.add_connected_callback(class_.dbconf.collection_name, callback)
+    connection.add_connected_callback(class_.pconf.collection_name, callback)
     return class_

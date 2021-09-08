@@ -4,9 +4,9 @@ from jsonclasses.jconf import JConf
 from inflection import pluralize
 
 
-class DBConf:
+class PConf:
 
-    def __init__(self: DBConf,
+    def __init__(self: PConf,
                  cls: type,
                  config: JConf,
                  collection_name: Optional[str],
@@ -19,13 +19,13 @@ class DBConf:
                                   None else True)
 
     @property
-    def config(self: DBConf) -> JConf:
+    def config(self: PConf) -> JConf:
         return self._config
 
     @property
-    def collection_name(self: DBConf) -> str:
+    def collection_name(self: PConf) -> str:
         return self._collection_name
 
     @property
-    def camelize_db_keys(self: DBConf) -> bool:
+    def camelize_db_keys(self: PConf) -> bool:
         return self._camelize_db_keys

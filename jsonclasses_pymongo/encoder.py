@@ -59,7 +59,7 @@ class Encoder(Coder):
         value = cast(dict[str, Any], context.value)
         fd = context.types.fdef
         item_types = fd.item_types
-        camelized = context.owner.__class__.dbconf.camelize_db_keys
+        camelized = context.owner.__class__.pconf.camelize_db_keys
         result = {}
         commands = []
         for key, item in value.items():
@@ -80,7 +80,7 @@ class Encoder(Coder):
         value = cast(dict[str, Any], context.value)
         fd = context.types.fdef
         shape_types = cast(dict[str, Any], fd.shape_types)
-        camelized = context.owner.__class__.dbconf.camelize_db_keys
+        camelized = context.owner.__class__.pconf.camelize_db_keys
         result = {}
         commands = []
         for key, item in value.items():
@@ -278,7 +278,7 @@ class Encoder(Coder):
                     keypath_parent=fname,
                     parent=value))
                 if use_insert_command or fname in fields_need_update:
-                    if context.owner.__class__.dbconf.camelize_db_keys:
+                    if context.owner.__class__.pconf.camelize_db_keys:
                         result_set[camelize(field.name, False)] = item_result
                     else:
                         result_set[field.name] = item_result

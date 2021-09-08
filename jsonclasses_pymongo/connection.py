@@ -109,7 +109,7 @@ class Connection:
 
     def collection_from(self: Connection,
                         cls: type[T]) -> Collection:
-        coll_name = cls.dbconf.collection_name
+        coll_name = cls.pconf.collection_name
         return self.collection(coll_name)
 
     default: ClassVar[Connection]

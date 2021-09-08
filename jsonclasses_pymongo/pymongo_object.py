@@ -6,7 +6,7 @@ from typing import TypeVar, ClassVar, Any, Union, TYPE_CHECKING
 from bson.objectid import ObjectId
 from jsonclasses.jobject import JObject
 if TYPE_CHECKING:
-    from .dbconf import DBConf
+    from .pconf import PConf
     from .query import (BaseQuery, ListQuery, IDQuery, SingleQuery, ExistQuery,
                         IterateQuery)
 
@@ -19,7 +19,7 @@ class PymongoObject(JObject):
     jsonclass object should confirm to.
     """
 
-    dbconf: ClassVar[DBConf]
+    pconf: ClassVar[PConf]
     """The configuration user passed to JSON class through the jsonclass
     decorator.
     """

@@ -8,7 +8,7 @@ from inflection import underscore, camelize
 from .utils import (ref_field_key, ref_field_keys, ref_db_field_key,
                     ref_db_field_keys)
 from .coder import Coder
-from .dbconf import DBConf
+from .pconf import PConf
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
     T = TypeVar('T', bound=PymongoObject)
@@ -37,7 +37,7 @@ class Decoder(Coder):
                     graph: MGraph) -> Optional[dict[str, Any]]:
         if value is None:
             return None
-        config: DBConf = cls.dbconf
+        config: PConf = cls.pconf
         if types.fdef.field_storage == FieldStorage.FOREIGN_KEY:
             return None
         if types.fdef.field_storage == FieldStorage.LOCAL_KEY:
@@ -55,7 +55,7 @@ class Decoder(Coder):
                      cls: type[T],
                      types: Types,
                      graph: MGraph) -> dict[str, Any]:
-        config: DBConf = cls.dbconf
+        config: PConf = cls.pconf
         shape_types = cast(dict[str, Any], types.fdef.raw_shape_types)
         retval = {}
         for k, item_types in shape_types.items():
@@ -110,7 +110,7 @@ class Decoder(Coder):
             dest = cls()
             exist = False
         for field in cls.cdef.fields:
-            if cls.dbconf.camelize_db_keys:
+            if cls.pconf.camelize_db_keys:
                 key = camelize(field.name, False)
             else:
                 key = field.name
