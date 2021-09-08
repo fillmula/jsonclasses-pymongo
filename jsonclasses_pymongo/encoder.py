@@ -224,7 +224,7 @@ class Encoder(Coder):
                         commands.append(unlink_command)
             elif self.is_local_key_reference_field(field):
                 if fvalue is None:
-                    tsfm = value.__class__.cdef.jconf.key_transformer
+                    tsfm = value.__class__.cdef.jconf.ref_key_encoding_strategy
                     if getattr(value, tsfm(field)) is not None:
                         if use_insert_command or fname in fields_need_update:
                             result_set[ref_db_field_key(fname, cls)] = \

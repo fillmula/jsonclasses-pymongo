@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Optional
 from unittest import TestCase
 from jsonclasses.excs import UniqueConstraintException
 from jsonclasses_pymongo import Connection
@@ -32,7 +31,7 @@ class TestUniqueRecord(TestCase):
         two = SimplePerson(name='Tsuan Tsiu')
         self.assertRaisesRegex(
             UniqueConstraintException,
-            "Value 'Tsuan Tsiu' at 'name' is not unique.",
+            "value is not unique",
             two.save)
 
     def test_save_wont_raise_if_value_is_optional_and_is_null(self):
@@ -45,5 +44,5 @@ class TestUniqueRecord(TestCase):
         two = SimplePerson(name='Tsuan Tsiu')
         self.assertRaisesRegex(
             UniqueConstraintException,
-            "Value 'Tsuan Tsiu' at 'name' is not unique.",
+            "value is not unique",
             two.save)
