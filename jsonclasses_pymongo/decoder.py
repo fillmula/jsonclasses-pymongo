@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, Optional, TypeVar, cast, TYPE_CHECKING
 from datetime import date
 from jsonclasses.types import Types
-from jsonclasses.fdef import FieldStorage, FieldType
+from jsonclasses.fdef import FStore, FType
 from jsonclasses.mgraph import MGraph
 from inflection import underscore, camelize
 from .utils import (ref_field_key, ref_field_keys, ref_db_field_key,
@@ -38,9 +38,9 @@ class Decoder(Coder):
         if value is None:
             return None
         config: PConf = cls.pconf
-        if types.fdef.field_storage == FieldStorage.FOREIGN_KEY:
+        if types.fdef.field_storage == FStore.FOREIGN_KEY:
             return None
-        if types.fdef.field_storage == FieldStorage.LOCAL_KEY:
+        if types.fdef.field_storage == FStore.LOCAL_KEY:
             return ({underscore(k) if config.camelize_db_keys else k: str(v)
                     for k, v in value.items()})
         else:
@@ -74,25 +74,25 @@ class Decoder(Coder):
                     graph: MGraph) -> Any:
         if value is None:
             return value
-        if types.fdef.field_type == FieldType.DATE:
+        if types.fdef.field_type == FType.DATE:
             return date.fromisoformat(value.isoformat()[:10])
-        elif types.fdef.field_type == FieldType.ENUM:
+        elif types.fdef.field_type == FType.ENUM:
             if isinstance(types.fdef.enum_class, str):
                 enum_cls = cast(type, types.fdef.enum_class)
                 return enum_cls(value)
             else:
                 enum_cls = cast(type, types.fdef.enum_class)
                 return enum_cls(value)
-        elif types.fdef.field_type == FieldType.LIST:
+        elif types.fdef.field_type == FType.LIST:
             return self.decode_list(value=value, cls=cls, types=types,
                                     graph=graph)
-        elif types.fdef.field_type == FieldType.DICT:
+        elif types.fdef.field_type == FType.DICT:
             return self.decode_dict(value=value, cls=cls, types=types,
                                     graph=graph)
-        elif types.fdef.field_type == FieldType.SHAPE:
+        elif types.fdef.field_type == FType.SHAPE:
             return self.decode_shape(value=value, cls=cls, types=types,
                                      graph=graph)
-        elif types.fdef.field_type == FieldType.INSTANCE:
+        elif types.fdef.field_type == FType.INSTANCE:
             return self.decode_instance(value=value, cls=cls, types=types,
                                         graph=graph)
         else:

@@ -4,7 +4,7 @@ from datetime import datetime
 from inflection import camelize
 from bson.objectid import ObjectId
 from jsonclasses.jfield import JField
-from jsonclasses.fdef import FieldStorage, FieldType
+from jsonclasses.fdef import FStore, FType
 from jsonclasses.keypath import concat_keypath
 from jsonclasses.mgraph import MGraph
 from jsonclasses.types import types
@@ -35,9 +35,9 @@ class Encoder(Coder):
         value = cast(list[Any], context.value)
         fd = context.types.fdef
         item_types = fd.item_types
-        if fd.field_storage == FieldStorage.FOREIGN_KEY:
+        if fd.field_storage == FStore.FOREIGN_KEY:
             item_types = item_types.linkedby(cast(str, fd.foreign_key))
-        if fd.field_storage == FieldStorage.LOCAL_KEY:
+        if fd.field_storage == FStore.LOCAL_KEY:
             item_types = item_types.linkto
         result = []
         commands = []
@@ -159,7 +159,7 @@ class Encoder(Coder):
             return EncodingResult({'_id': ObjectId(id)}, commands=[])
         context.mark_graph.put(value)
         instance_fd = context.types.fdef
-        write_instance = instance_fd.field_storage != FieldStorage.EMBEDDED
+        write_instance = instance_fd.field_storage != FStore.EMBEDDED
         if root:
             write_instance = True
         use_insert_command = False
@@ -308,19 +308,19 @@ class Encoder(Coder):
         if context.value is None:
             return EncodingResult(result=None, commands=[])
         field_type = context.types.fdef.field_type
-        if field_type == FieldType.LIST:
+        if field_type == FType.LIST:
             return self.encode_list(context)
-        elif field_type == FieldType.DICT:
+        elif field_type == FType.DICT:
             return self.encode_dict(context)
-        elif field_type == FieldType.SHAPE:
+        elif field_type == FType.SHAPE:
             return self.encode_shape(context)
-        elif field_type == FieldType.INSTANCE:
+        elif field_type == FType.INSTANCE:
             return self.encode_instance(context)
-        elif field_type == FieldType.DATE:
+        elif field_type == FType.DATE:
             return EncodingResult(
                 result=datetime.fromisoformat(context.value.isoformat()),
                 commands=[])
-        elif field_type == FieldType.ENUM:
+        elif field_type == FType.ENUM:
             return EncodingResult(result=context.value.value, commands=[])
         else:
             return EncodingResult(context.value, [])

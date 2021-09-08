@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import cast, TYPE_CHECKING
 from jsonclasses.jfield import JField
-from jsonclasses.fdef import FieldType, FieldStorage
+from jsonclasses.fdef import FType, FStore
 from inflection import camelize
 from .connection import Connection
 if TYPE_CHECKING:
@@ -14,10 +14,10 @@ class Coder():
         return field.fdef.primary
 
     def is_instance_field(self, field: JField) -> bool:
-        return field.fdef.field_type == FieldType.INSTANCE
+        return field.fdef.field_type == FType.INSTANCE
 
     def is_list_field(self, field: JField) -> bool:
-        return field.fdef.field_type == FieldType.LIST
+        return field.fdef.field_type == FType.LIST
 
     def is_list_instance_field(self, field: JField,
                                      cls: type[PymongoObject]) -> bool:
@@ -31,11 +31,11 @@ class Coder():
 
     def is_foreign_key_storage(self, field: JField) -> bool:
         field_storage = field.fdef.field_storage
-        return field_storage == FieldStorage.FOREIGN_KEY
+        return field_storage == FStore.FOREIGN_KEY
 
     def is_local_key_storage(self, field: JField) -> bool:
         field_storage = field.fdef.field_storage
-        return field_storage == FieldStorage.LOCAL_KEY
+        return field_storage == FStore.LOCAL_KEY
 
     def is_foreign_key_reference_field(self, field: JField) -> bool:
         return (self.is_instance_field(field) and

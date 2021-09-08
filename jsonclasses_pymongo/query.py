@@ -5,7 +5,7 @@ from typing import (Iterator, Union, TypeVar, Generator, Optional, Any,
 from bson import ObjectId
 from inflection import camelize
 from pymongo.cursor import Cursor
-from jsonclasses.fdef import FieldStorage, FieldType
+from jsonclasses.fdef import FStore, FType
 from jsonclasses.mgraph import MGraph
 from jsonclasses.excs import ObjectNotFoundException
 from .coder import Coder
@@ -41,11 +41,11 @@ class BaseQuery(Generic[T]):
         for subquery in self.subqueries:
             fname = subquery.name
             field = cls.cdef.field_named(fname)
-            if field.fdef.field_type == FieldType.LIST:
+            if field.fdef.field_type == FType.LIST:
                 it = field.fdef.item_types.fdef.inst_cls
             else:
                 it = field.fdef.inst_cls
-            if field.fdef.field_storage == FieldStorage.LOCAL_KEY:
+            if field.fdef.field_storage == FStore.LOCAL_KEY:
                 key = ref_db_field_key(fname, cls)
                 if subquery.query is None:
                     result.append({
@@ -76,8 +76,8 @@ class BaseQuery(Generic[T]):
                 result.append({
                     '$unwind': '$' + fname
                 })
-            elif field.fdef.field_storage == FieldStorage.FOREIGN_KEY:
-                if field.fdef.field_type == FieldType.INSTANCE:
+            elif field.fdef.field_storage == FStore.FOREIGN_KEY:
+                if field.fdef.field_type == FType.INSTANCE:
                     fk = cast(str, field.fdef.foreign_key)
                     if subquery.query is None:
                         result.append({
@@ -110,7 +110,7 @@ class BaseQuery(Generic[T]):
                     result.append({
                         '$unwind': '$' + fname
                     })
-                elif field.fdef.field_type == FieldType.LIST:
+                elif field.fdef.field_type == FType.LIST:
                     if subquery.query is not None:
                         subpipeline = subquery.query \
                                                 ._build_aggregate_pipeline()
