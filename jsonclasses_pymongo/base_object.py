@@ -14,30 +14,19 @@ class BaseObject:
     key and timestamp fields, use `BaseMongoObject` instead.
     """
 
-    id: str = types.str.readonly.primary.default(lambda: str(ObjectId())) \
-                   .required
+    id: str = types.readonly.str.primary.mongoid.required
     """The id string of the object. This field is readonly. A user must not set
     an object's id through web request bodies.
     """
 
-    created_at: datetime = types.datetime.readonly.timestamp('created') \
-                                .default(datetime.now).required
+    created_at: datetime = types.readonly.datetime.tscreated.required
     """This field records when this object is created. The value of this field
     is managed internally thus cannot be updated externally with web request
     bodies.
     """
 
-    updated_at: datetime = types.datetime.readonly.timestamp('updated') \
-                                .default(datetime.now) \
-                                .setonsave(lambda: datetime.now()).required
+    updated_at: datetime = types.readonly.datetime.tsupdated.required
     """This field records when this object is last updated. The value of this
     field is managed internally thus cannot be updated externally with web
     request bodies.
-    """
-
-    deleted_at: Optional[datetime] = types.datetime.readonly \
-                                          .timestamp('deleted')
-    """This field records when this object is deleted. This is only used for
-    soft deleted objects. The value of this field is managed internally thus
-    cannot be updated externally with web request bodies.
     """
