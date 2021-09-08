@@ -1,6 +1,6 @@
 from __future__ import annotations
 from unittest import TestCase
-from jsonclasses.exceptions import DeletionDeniedException
+from jsonclasses.excs import DeletionDeniedException
 from jsonclasses_pymongo import Connection
 from tests.classes.simple_song import SimpleSong
 from tests.classes.simple_artist import SimpleArtist

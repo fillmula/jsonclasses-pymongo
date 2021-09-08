@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional
-from jsonclasses.config import Config
+from jsonclasses.jconf import JConf
 from inflection import pluralize
 
 
@@ -8,7 +8,7 @@ class DBConf:
 
     def __init__(self: DBConf,
                  cls: type,
-                 config: Config,
+                 config: JConf,
                  collection_name: Optional[str],
                  camelize_db_keys: Optional[bool]) -> None:
         self._cls = cls
@@ -19,7 +19,7 @@ class DBConf:
                                   None else True)
 
     @property
-    def config(self: DBConf) -> Config:
+    def config(self: DBConf) -> JConf:
         return self._config
 
     @property

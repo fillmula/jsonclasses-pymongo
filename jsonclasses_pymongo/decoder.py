@@ -3,7 +3,7 @@ from typing import Any, Optional, TypeVar, cast, TYPE_CHECKING
 from datetime import date
 from jsonclasses.types import Types
 from jsonclasses.fdef import FieldStorage, FieldType
-from jsonclasses.mark_graph import MarkGraph
+from jsonclasses.mgraph import MGraph
 from inflection import underscore, camelize
 from .utils import (ref_field_key, ref_field_keys, ref_db_field_key,
                     ref_db_field_keys)
@@ -20,7 +20,7 @@ class Decoder(Coder):
                     value: list[Any],
                     cls: type[T],
                     types: Types,
-                    graph: MarkGraph) -> Optional[list[Any]]:
+                    graph: MGraph) -> Optional[list[Any]]:
         if value is None:
             return None
         item_types = types.fdef.item_types
@@ -34,7 +34,7 @@ class Decoder(Coder):
                     value: dict[str, Any],
                     cls: type[T],
                     types: Types,
-                    graph: MarkGraph) -> Optional[dict[str, Any]]:
+                    graph: MGraph) -> Optional[dict[str, Any]]:
         if value is None:
             return None
         config: DBConf = cls.dbconf
@@ -54,7 +54,7 @@ class Decoder(Coder):
                      value: dict[str, Any],
                      cls: type[T],
                      types: Types,
-                     graph: MarkGraph) -> dict[str, Any]:
+                     graph: MGraph) -> dict[str, Any]:
         config: DBConf = cls.dbconf
         shape_types = cast(dict[str, Any], types.fdef.raw_shape_types)
         retval = {}
@@ -71,7 +71,7 @@ class Decoder(Coder):
                     value: Any,
                     cls: type[T],
                     types: Types,
-                    graph: MarkGraph) -> Any:
+                    graph: MGraph) -> Any:
         if value is None:
             return value
         if types.fdef.field_type == FieldType.DATE:
@@ -102,7 +102,7 @@ class Decoder(Coder):
                         value: dict[str, Any],
                         cls: type[T],
                         types: Types,
-                        graph: MarkGraph) -> Any:
+                        graph: MGraph) -> Any:
         inst_id = str(value.get('_id'))
         dest = graph.getp(cls, inst_id)
         exist = True
@@ -167,9 +167,9 @@ class Decoder(Coder):
         return dest
 
     def apply_initial_status(self, root: T,
-                             graph: Optional[MarkGraph] = None) -> None:
+                             graph: Optional[MGraph] = None) -> None:
         if graph is None:
-            graph = MarkGraph()
+            graph = MGraph()
         if graph.get(root) is not None:
             return
         graph.put(root)
@@ -186,9 +186,9 @@ class Decoder(Coder):
     def decode_root(self,
                     root: dict[str, Any],
                     cls: type[T],
-                    graph: Optional[MarkGraph] = None) -> T:
+                    graph: Optional[MGraph] = None) -> T:
         if graph is None:
-            graph = MarkGraph()
+            graph = MGraph()
         types = Types().instanceof(cls)
         decoded = self.decode_instance(root, cls, types, graph)
         self.apply_initial_status(decoded)
@@ -197,9 +197,9 @@ class Decoder(Coder):
     def decode_root_list(self,
                          root_list: list[dict[str, Any]],
                          cls: type[T],
-                         graph: Optional[MarkGraph] = None) -> list[T]:
+                         graph: Optional[MGraph] = None) -> list[T]:
         if graph is None:
-            graph = MarkGraph()
+            graph = MGraph()
         types = Types().instanceof(cls)
         results: list[T] = []
         for root in root_list:

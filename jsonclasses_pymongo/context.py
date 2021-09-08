@@ -2,7 +2,7 @@
 from __future__ import annotations
 from typing import NamedTuple, Any, Union, TYPE_CHECKING
 from jsonclasses.types import Types
-from jsonclasses.mark_graph import MarkGraph
+from jsonclasses.mgraph import MGraph
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
 
@@ -19,7 +19,7 @@ class EncodingContext(NamedTuple):
     owner: PymongoObject
     keypath_parent: str
     parent: Union[list[Any], dict[str, Any], PymongoObject]
-    mark_graph: MarkGraph
+    mark_graph: MGraph
 
     def new(self, **kwargs):
         """Return a new encoding context by replacing provided values."""

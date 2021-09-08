@@ -1,2 +1,2 @@
 pymongo~=3.11
-jsonclasses~=2.6.0
+jsonclasses~=2.7.0

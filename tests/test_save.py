@@ -65,7 +65,7 @@ class TestSave(TestCase):
             self.assertIsInstance(item['createdAt'], datetime)
             self.assertEqual(set(item.keys()),
                              {'_id', 'name', 'year', 'artist', 'updatedAt',
-                              'createdAt', 'deletedAt'})
+                              'createdAt'})
 
     def test_object_with_enum_is_saved_into_database(self):
         artist = SimpleArtist(name='Kaosai', gender='MALE')
@@ -80,7 +80,7 @@ class TestSave(TestCase):
             self.assertIsInstance(item['createdAt'], datetime)
             self.assertEqual(set(item.keys()),
                              {'_id', 'name', 'gender', 'updatedAt',
-                              'createdAt', 'deletedAt'})
+                              'createdAt'})
 
     def test_linked_objects_are_saved_at_the_same_time(self):
         input = {
@@ -109,7 +109,7 @@ class TestSave(TestCase):
             self.assertIsInstance(item['createdAt'], datetime)
             self.assertEqual(set(item.keys()),
                              {'_id', 'name', 'updatedAt',
-                              'createdAt', 'deletedAt'})
+                              'createdAt'})
         collection = Connection.get_collection(LinkedPost)
         self.assertEqual(collection.count_documents({}), 2)
         for item in collection.find():
@@ -121,7 +121,7 @@ class TestSave(TestCase):
             self.assertIsInstance(item['createdAt'], datetime)
             self.assertEqual(set(item.keys()),
                              {'_id', 'title', 'content', 'authorId',
-                              'updatedAt', 'createdAt', 'deletedAt'})
+                              'updatedAt', 'createdAt'})
 
     def test_object_is_not_new_after_saved(self):
         song = SimpleSong(name='Long', year=2020, artist='Thao')
@@ -154,7 +154,7 @@ class TestSave(TestCase):
             self.assertIsInstance(item['createdAt'], datetime)
             self.assertEqual(set(item.keys()),
                              {'_id', 'name', 'year', 'artist', 'updatedAt',
-                              'createdAt', 'deletedAt'})
+                              'createdAt'})
 
     def test_linked_object_is_not_new_after_saved(self):
         input = {

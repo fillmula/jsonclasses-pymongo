@@ -7,8 +7,8 @@ from pymongo.errors import DuplicateKeyError
 from inflection import camelize, underscore
 from pymongo.collection import Collection
 from jsonclasses.fdef import FieldStorage, FieldType
-from jsonclasses.exceptions import UniqueConstraintException
-from jsonclasses.exceptions import DeletionDeniedException
+from jsonclasses.excs import UniqueConstraintException
+from jsonclasses.excs import DeletionDeniedException
 from .pymongo_object import PymongoObject
 from .query import BaseQuery, ExistQuery, IterateQuery, ListQuery, SingleQuery, IDQuery
 from .encoder import Encoder

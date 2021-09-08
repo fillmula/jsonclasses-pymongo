@@ -6,7 +6,7 @@ from bson.objectid import ObjectId
 from jsonclasses.jfield import JField
 from jsonclasses.fdef import FieldStorage, FieldType
 from jsonclasses.keypath import concat_keypath
-from jsonclasses.mark_graph import MarkGraph
+from jsonclasses.mgraph import MGraph
 from jsonclasses.types import types
 from .coder import Coder
 from .utils import ref_db_field_key, ref_db_field_keys, ref_field_key
@@ -335,5 +335,5 @@ class Encoder(Coder):
             owner=root,
             keypath_parent='',
             parent=root,
-            mark_graph=MarkGraph()), root=True)[1]
+            mark_graph=MGraph()), root=True)[1]
         return BatchCommand(commands=commands)

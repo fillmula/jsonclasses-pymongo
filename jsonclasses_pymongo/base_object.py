@@ -5,11 +5,10 @@ from jsonclasses import jsonclass, types
 
 @jsonclass(abstract=True)
 class BaseObject:
-    """MongoObject is a concrete subclass for defining your business models
+    """MongoObject is a abstract subclass for defining your business models
     with MongoDB. A `MongoObject` class represents a MongoDB collection.
     Standard fields are defined on this class including `id`, `created_at` and
-    `updated_at`. If you want to define your own primary key and timestamp
-    fields, use `BaseMongoObject` instead.
+    `updated_at`. This class is obsolete and will be removed in the future.
     """
 
     id: str = types.readonly.str.primary.mongoid.required

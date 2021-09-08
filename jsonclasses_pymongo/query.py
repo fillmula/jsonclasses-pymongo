@@ -6,8 +6,8 @@ from bson import ObjectId
 from inflection import camelize
 from pymongo.cursor import Cursor
 from jsonclasses.fdef import FieldStorage, FieldType
-from jsonclasses.mark_graph import MarkGraph
-from jsonclasses.exceptions import ObjectNotFoundException
+from jsonclasses.mgraph import MGraph
+from jsonclasses.excs import ObjectNotFoundException
 from .coder import Coder
 from .decoder import Decoder
 from .connection import Connection
@@ -408,7 +408,7 @@ class QueryIterator(Generic[T]):
     def __init__(self, cls: type[T], cursor: Cursor):
         self.cls = cls
         self.cursor = cursor
-        self.graph = MarkGraph()
+        self.graph = MGraph()
 
     def __iter__(self):
         return self
