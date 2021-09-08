@@ -1,17 +1,15 @@
 from __future__ import annotations
-from typing import Optional
 from datetime import datetime
 from jsonclasses import jsonclass, types
-from bson.objectid import ObjectId
 
 
 @jsonclass(abstract=True)
 class BaseObject:
     """MongoObject is a concrete subclass for defining your business models
     with MongoDB. A `MongoObject` class represents a MongoDB collection.
-    Standard fields are defined on this class including `id`, `created_at`,
-    `updated_at` and `deleted_at`. If you want to define your own primary
-    key and timestamp fields, use `BaseMongoObject` instead.
+    Standard fields are defined on this class including `id`, `created_at` and
+    `updated_at`. If you want to define your own primary key and timestamp
+    fields, use `BaseMongoObject` instead.
     """
 
     id: str = types.readonly.str.primary.mongoid.required
