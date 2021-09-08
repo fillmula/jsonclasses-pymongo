@@ -2,6 +2,7 @@
 from __future__ import annotations
 from typing import (Iterator, Union, TypeVar, Generator, Optional, Any,
                     Generic, NamedTuple, cast)
+from datetime import date, datetime
 from bson import ObjectId
 from inflection import camelize
 from pymongo.cursor import Cursor
@@ -222,7 +223,6 @@ class BaseListQuery(BaseQuery[T]):
             pf_name: Optional[str] = cls.cdef.primary_field.name
         else:
             pf_name = None
-        cls.cdef._camelized_reference_names
         result: dict[str, Any] = {}
         for key, value in matcher.items():
             if key == pf_name:
@@ -233,8 +233,12 @@ class BaseListQuery(BaseQuery[T]):
                 new_value = ObjectId(value) if value is not None else None
             else:
                 new_value = value
+            if type(new_value) is date:
+                new_value = datetime(new_value.year, new_value.month, new_value.day)
             if cls.pconf.camelize_db_keys:
                 result[camelize(key, False)] = new_value
+            else:
+                result[key] = new_value
         self._match = result
 
     def order(self: V, field: str, sort: Optional[int] = None) -> V:

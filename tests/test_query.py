@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import date
 from unittest import TestCase
 from bson.objectid import ObjectId
 from jsonclasses_pymongo import Connection
@@ -7,6 +7,7 @@ from tests.classes.simple_song import SimpleSong
 from tests.classes.simple_artist import SimpleArtist
 from tests.classes.linked_author import LinkedAuthor
 from tests.classes.linked_post import LinkedPost
+from tests.classes.simple_date import SimpleDate
 
 
 class TestQuery(TestCase):
@@ -31,6 +32,8 @@ class TestQuery(TestCase):
         collection = Connection.get_collection(SimpleSong)
         collection.delete_many({})
         collection = Connection.get_collection(SimpleArtist)
+        collection.delete_many({})
+        collection = Connection.get_collection(SimpleDate)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedAuthor)
         collection.delete_many({})
@@ -79,3 +82,10 @@ class TestQuery(TestCase):
         self.assertEqual(song.id, result.id)
         self.assertGreaterEqual(song.created_at, result.created_at)
         self.assertGreaterEqual(song.updated_at, result.updated_at)
+
+    def test_query_object_with_date(self):
+        d = SimpleDate(represents=date(2010, 7, 7))
+        d.save()
+        results = SimpleDate.find(represents=date(2010, 7, 7)).exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].represents, d.represents)
