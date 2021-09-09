@@ -208,6 +208,8 @@ class BaseListQuery(BaseQuery[T]):
         super().__init__(cls)
         self._match: Optional[dict[str, Any]] = None
         self._sort: Optional[list[tuple[str, int]]] = None
+        self._page_number: Optional[int] = None
+        self._page_size: Optional[int] = None
         self._skip: Optional[int] = None
         self._limit: Optional[int] = None
         self._use_pick: bool = False
@@ -255,6 +257,19 @@ class BaseListQuery(BaseQuery[T]):
         self._limit = n
         return self
 
+    def page_number(self: V, n: int) -> V:
+        self._page_number = n
+        if self._page_size is None:
+            self._page_size = 30
+        return self
+
+    def page_no(self: V, n: int) -> V:
+        return self.page_number(n)
+
+    def page_size(self: V, n: int) -> V:
+        self._page_size = n
+        return self
+
     def _build_aggregate_pipeline(self: V) -> list[dict[str, Any]]:
         lookups = super()._build_aggregate_pipeline()
         result: list[dict[str, Any]] = []
@@ -262,10 +277,13 @@ class BaseListQuery(BaseQuery[T]):
             result.append({'$match': self._match})
         if self._sort is not None:
             result.append({'$sort': dict(self._sort)})
-        if self._skip is not None:
-            result.append({'$skip': self._skip})
-        if self._limit is not None:
-            result.append({'$limit': self._limit})
+        if self._page_number is not None and self._page_size is not None:
+            result.append({'$skip': (self._page_number - 1) * self._page_size})
+        else:
+            if self._skip is not None:
+                result.append({'$skip': self._skip})
+            if self._limit is not None:
+                result.append({'$limit': self._limit})
         result.extend(lookups)
         return result
 
