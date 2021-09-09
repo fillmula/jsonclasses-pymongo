@@ -14,6 +14,7 @@ from .decoder import Decoder
 from .connection import Connection
 from .pymongo_object import PymongoObject
 from .utils import ref_db_field_key
+from .readers import readbool, readdate, readdatetime, readenum, readfloat, readint
 T = TypeVar('T', bound=PymongoObject)
 U = TypeVar('U', bound='BaseQuery')
 V = TypeVar('V', bound='BaseListQuery')
@@ -222,21 +223,49 @@ class BaseListQuery(BaseQuery[T]):
     def _set_matcher(self: V, matcher: dict[str, Any]) -> None:
         cls = cast(PymongoObject, self._cls)
         if cls.cdef.primary_field is not None:
-            pf_name: Optional[str] = cls.cdef.primary_field.name
+            primary_name: Optional[str] = cls.cdef.primary_field.name
         else:
-            pf_name = None
+            primary_name = None
         result: dict[str, Any] = {}
         for key, value in matcher.items():
-            if key == pf_name:
+            if key == primary_name:
                 new_value = ObjectId(value) if value is not None else None
-            elif key in cls.cdef._camelized_reference_names:
+            elif key in cls.cdef.camelized_reference_names:
                 new_value = ObjectId(value) if value is not None else None
-            elif key in cls.cdef._reference_names:
+            elif key in cls.cdef.reference_names:
                 new_value = ObjectId(value) if value is not None else None
+            elif key.startswith('_'):
+                fkey = cls.cdef.jconf.key_decoding_strategy(key)
+                if fkey == '_skip':
+                    self._skip = readint(value)
+                elif fkey == '_limit':
+                    self._limit = readint(value)
+                elif fkey == '_page_size':
+                    self._page_size = readint(value)
+                elif fkey == '_page_number':
+                    self._page_number = readint(value)
+                elif fkey == '_page_no':
+                    self._page_number = readint(value)
+                pass # special
             else:
-                new_value = value
-            if type(new_value) is date:
-                new_value = datetime(new_value.year, new_value.month, new_value.day)
+                fkey = cls.cdef.jconf.key_decoding_strategy(key)
+                field = cls.cdef.field_named(fkey)
+                if field.fdef.field_type == FType.STR:
+                    new_value = value
+                elif field.fdef.field_type == FType.INT:
+                    new_value = readint(value)
+                elif field.fdef.field_type == FType.FLOAT:
+                    new_value = readfloat(value)
+                elif field.fdef.field_type == FType.BOOL:
+                    new_value = readbool(value)
+                elif field.fdef.field_type == FType.DATE:
+                    new_value = readdate(value)
+                elif field.fdef.field_type == FType.DATETIME:
+                    new_value = readdatetime(value)
+                elif field.fdef.field_type == FType.ENUM:
+                    new_value = readenum(value, field.fdef.enum_class)
+                else:
+                    new_value = value
             if cls.pconf.camelize_db_keys:
                 result[camelize(key, False)] = new_value
             else:
@@ -451,13 +480,3 @@ class IterateQuery(BaseListQuery[T]):
     def __await__(self) -> Generator[None, None, Iterator[T]]:
         yield
         return self.exec()
-
-
-# class CountQuery(BaseListQuery[T]):
-
-#     def exec(self) -> int:
-#         pass
-
-#     def __await__(self) -> Generator[None, None, int]:
-#         yield
-#         return self.exec()
