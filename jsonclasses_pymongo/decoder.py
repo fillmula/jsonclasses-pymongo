@@ -37,18 +37,8 @@ class Decoder(Coder):
                     graph: MGraph) -> Optional[dict[str, Any]]:
         if value is None:
             return None
-        config: PConf = cls.pconf
-        if types.fdef.field_storage == FStore.FOREIGN_KEY:
-            return None
-        if types.fdef.field_storage == FStore.LOCAL_KEY:
-            return ({underscore(k) if config.camelize_db_keys else k: str(v)
-                    for k, v in value.items()})
-        else:
-            item_types = types.fdef.item_types
-            return ({underscore(k) if config.camelize_db_keys else k:
-                    self.decode_item(value=v, cls=cls, types=item_types,
-                                     graph=graph)
-                    for k, v in value.items()})
+        item_types = types.fdef.item_types
+        return {k: self.decode_item(value=v, cls=cls, types=item_types, graph=graph) for k, v in value.items()}
 
     def decode_shape(self,
                      value: dict[str, Any],

@@ -303,31 +303,18 @@ class TestEncoder(TestCase):
         self.assertEqual(owner_data['addressesIds'], [
                          address_0_data['_id'], address_1_data['_id']])
 
-    def test_encode_dict_camelize_keys(self):
+    def test_encode_dict_keep_keys(self):
         @pymongo
         @jsonclass
         class MediumEncodeCamelizeDictKeys(BaseObject):
             val: Dict[str, str] = types.dictof(types.str)
         simple_object = MediumEncodeCamelizeDictKeys(
-            val={'key_one': 'val_one', 'key_two': 'val_two'})
+            val={'keyOne': 'val_one', 'keyTwo': 'val_two'})
         batch_command = Encoder().encode_root(simple_object)
         commands = batch_command.commands
         encoded_val = commands[0].object['val']
         self.assertEqual(
             encoded_val, {'keyOne': 'val_one', 'keyTwo': 'val_two'})
-
-    def test_encode_dict_do_not_camelize_keys(self):
-        @pymongo(camelize_db_keys=False)
-        @jsonclass
-        class MediumEncodeDoNotCamelizeDictKeys(BaseObject):
-            val: Dict[str, str] = types.dictof(types.str)
-        simple_object = MediumEncodeDoNotCamelizeDictKeys(
-            val={'key_one': 'val_one', 'key_two': 'val_two'})
-        batch_command = Encoder().encode_root(simple_object)
-        commands = batch_command.commands
-        encoded_val = commands[0].object['val']
-        self.assertEqual(
-            encoded_val, {'key_one': 'val_one', 'key_two': 'val_two'})
 
     def test_encode_shape_camelize_keys(self):
         @pymongo

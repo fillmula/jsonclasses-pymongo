@@ -57,9 +57,7 @@ class Encoder(Coder):
         if context.value is None:
             return EncodingResult(result=None, commands=[])
         value = cast(dict[str, Any], context.value)
-        fd = context.types.fdef
-        item_types = fd.item_types
-        camelized = context.owner.__class__.pconf.camelize_db_keys
+        item_types = context.types.fdef.item_types
         result = {}
         commands = []
         for key, item in value.items():
@@ -70,7 +68,7 @@ class Encoder(Coder):
                 keypath_owner=concat_keypath(context.keypath_owner, key),
                 keypath_parent=str(key),
                 parent=value))
-            result[camelize(key, False) if camelized else key] = item_result
+            result[key] = item_result
             commands.extend(item_commands)
         return EncodingResult(result, commands)
 

@@ -245,7 +245,7 @@ class TestDecoder(TestCase):
         self.assertEqual(getattr(instance, 'address_id'),
                          str(data['addressId']))
 
-    def test_decode_camelized_dict_keys(self):
+    def test_decode_keep_dict_keys(self):
         @pymongo
         @jsonclass
         class MediumDecodeCamelizeDictKeys(BaseObject):
@@ -257,21 +257,6 @@ class TestDecoder(TestCase):
             }
         }
         instance = Decoder().decode_root(data, MediumDecodeCamelizeDictKeys)
-        self.assertEqual(
-            instance.val, {'key_one': 'val_one', 'key_two': 'val_two'})
-
-    def test_decode_uncamelized_dict_keys(self):
-        @pymongo(camelize_db_keys=False)
-        @jsonclass
-        class MediumDecodeUncamelizeDictKeys(BaseObject):
-            val: Dict[str, str] = types.dictof(types.str)
-        data = {
-            'val': {
-                'keyOne': 'val_one',
-                'keyTwo': 'val_two'
-            }
-        }
-        instance = Decoder().decode_root(data, MediumDecodeUncamelizeDictKeys)
         self.assertEqual(
             instance.val, {'keyOne': 'val_one', 'keyTwo': 'val_two'})
 

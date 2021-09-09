@@ -8,6 +8,7 @@ from tests.classes.simple_artist import SimpleArtist
 from tests.classes.linked_author import LinkedAuthor
 from tests.classes.linked_post import LinkedPost
 from tests.classes.simple_date import SimpleDate
+from tests.classes.simple_persona import SimplePersona
 
 
 class TestQuery(TestCase):
@@ -34,6 +35,8 @@ class TestQuery(TestCase):
         collection = Connection.get_collection(SimpleArtist)
         collection.delete_many({})
         collection = Connection.get_collection(SimpleDate)
+        collection.delete_many({})
+        collection = Connection.get_collection(SimplePersona)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedAuthor)
         collection.delete_many({})
@@ -89,3 +92,8 @@ class TestQuery(TestCase):
         results = SimpleDate.find(represents=date(2010, 7, 7)).exec()
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].represents, d.represents)
+
+    def test_query_dict_in_list(self):
+        p = SimplePersona(items=[{'a': 1, 'b': 2}, {'c': 3}])
+        p.save()
+        results = SimplePersona.find().exec()
