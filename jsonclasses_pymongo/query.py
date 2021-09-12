@@ -1,5 +1,6 @@
 """This module contains queries."""
 from __future__ import annotations
+from jsonclasses_pymongo.query_reader import QueryReader
 from typing import (Iterator, Union, TypeVar, Generator, Optional, Any,
                     Generic, NamedTuple, cast)
 from datetime import date, datetime
@@ -221,56 +222,19 @@ class BaseListQuery(BaseQuery[T]):
             self._set_matcher(filter)
 
     def _set_matcher(self: V, matcher: dict[str, Any]) -> None:
-        cls = cast(PymongoObject, self._cls)
-        if cls.cdef.primary_field is not None:
-            primary_name: Optional[str] = cls.cdef.primary_field.name
-        else:
-            primary_name = None
-        result: dict[str, Any] = {}
-        for key, value in matcher.items():
-            if key == primary_name:
-                new_value = ObjectId(value) if value is not None else None
-            elif key in cls.cdef.camelized_reference_names:
-                new_value = ObjectId(value) if value is not None else None
-            elif key in cls.cdef.reference_names:
-                new_value = ObjectId(value) if value is not None else None
-            elif key.startswith('_'):
-                fkey = cls.cdef.jconf.key_decoding_strategy(key)
-                if fkey == '_skip':
-                    self._skip = readint(value)
-                elif fkey == '_limit':
-                    self._limit = readint(value)
-                elif fkey == '_page_size':
-                    self._page_size = readint(value)
-                elif fkey == '_page_number':
-                    self._page_number = readint(value)
-                elif fkey == '_page_no':
-                    self._page_number = readint(value)
-                pass # special
-            else:
-                fkey = cls.cdef.jconf.key_decoding_strategy(key)
-                field = cls.cdef.field_named(fkey)
-                if field.fdef.field_type == FType.STR:
-                    new_value = value
-                elif field.fdef.field_type == FType.INT:
-                    new_value = readint(value)
-                elif field.fdef.field_type == FType.FLOAT:
-                    new_value = readfloat(value)
-                elif field.fdef.field_type == FType.BOOL:
-                    new_value = readbool(value)
-                elif field.fdef.field_type == FType.DATE:
-                    new_value = readdate(value)
-                elif field.fdef.field_type == FType.DATETIME:
-                    new_value = readdatetime(value)
-                elif field.fdef.field_type == FType.ENUM:
-                    new_value = readenum(value, field.fdef.enum_class)
-                else:
-                    new_value = value
-            if cls.pconf.camelize_db_keys:
-                result[camelize(key, False)] = new_value
-            else:
-                result[key] = new_value
-        self._match = result
+        result = QueryReader(query=matcher, cls=self._cls).result()
+        if result.get('_match') is not None:
+            self._match = result['_match']
+        if result.get('_sort') is not None:
+            self._sort = result['_sort']
+        if result.get('_page_number') is not None:
+            self._page_number = result['_page_number']
+        if result.get('_page_size') is not None:
+            self._page_size = result['_page_size']
+        if result.get('_skip') is not None:
+            self._skip = result['_skip']
+        if result.get('_limit') is not None:
+            self._limit = result['_limit']
 
     def order(self: V, field: str, sort: Optional[int] = None) -> V:
         if self._sort is None:

@@ -95,8 +95,3 @@ def readorder(val: Any) -> int:
         else:
             return int(val)
     raise ValueError('value is not valid order descriptor')
-
-# def readorders(val: Any) -> list[tuple[str, int]]:
-#     result = []
-#     if isinstance(val, dict):
-#         for key, value in val.items():
