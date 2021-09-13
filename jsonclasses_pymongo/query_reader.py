@@ -4,7 +4,8 @@ from datetime import datetime, date, timedelta
 from re import compile, escape, IGNORECASE
 from inflection import camelize
 from bson.objectid import ObjectId
-from jsonclasses.fdef import FStore, FType
+from jsonclasses.fdef import FStore, FType, Fdef
+from jsonclasses.jfield import JField
 from .pymongo_object import PymongoObject
 from .readers import (
     readbool, readdate, readdatetime, readenum, readfloat, readint, readorder
@@ -88,27 +89,34 @@ class QueryReader:
             field = self.cls.cdef.field_named(key)
             if field is None:
                 raise ValueError(f'unexist field {key}')
-            if field.fdef.primary is True:
+            fdef = field.fdef
+            if fdef.primary is True:
                 result['_id'] = ObjectId(value) if value is not None else None
-            elif field.fdef.field_type == FType.STR:
-                result[dbkey] = self.str_descriptor(value)
-            elif field.fdef.field_type == FType.INT:
-                result[dbkey] = self.num_descriptor(value, False)
-            elif field.fdef.field_type == FType.FLOAT:
-                result[dbkey] = self.num_descriptor(value, True)
-            elif field.fdef.field_type == FType.BOOL:
-                result[dbkey] = self.bool_descriptor(value)
-            elif field.fdef.field_type == FType.DATE:
-                result[dbkey] = self.date_descriptor(value, True)
-                result[dbkey] = readdate(value)
-            elif field.fdef.field_type == FType.DATETIME:
-                result[dbkey] = self.date_descriptor(value, False)
-                result[dbkey] = readdatetime(value)
-            elif field.fdef.field_type == FType.ENUM:
-                result[dbkey] = readenum(value, field.fdef.enum_class)
             else:
-                result[dbkey] = value
+                result[dbkey] = self.readval(value, fdef)
         return result
+
+    def readval(self: QueryReader, val: Any, fdef: Fdef):
+        if fdef.field_type == FType.STR:
+            return self.str_descriptor(val)
+        elif fdef.field_type == FType.INT:
+            return self.num_descriptor(val, False)
+        elif fdef.field_type == FType.FLOAT:
+            return self.num_descriptor(val, True)
+        elif fdef.field_type == FType.BOOL:
+            return self.bool_descriptor(val)
+        elif fdef.field_type == FType.DATE:
+            return self.date_descriptor(val, True)
+        elif fdef.field_type == FType.DATETIME:
+            return self.date_descriptor(val, False)
+        elif fdef.field_type == FType.ENUM:
+            return readenum(val, fdef.enum_class)
+        elif fdef.field_type == FType.LIST and fdef.field_storage == FStore.EMBEDDED:
+            return self.list_descriptor(val, fdef)
+        elif fdef.field_type == FType.DICT:
+            return self.dict_descriptor(val, fdef)
+        else:
+            return val
 
     def str_descriptor(self: QueryReader, val: Any) -> Any:
         if val is None:
@@ -251,3 +259,31 @@ class QueryReader:
                 else:
                     raise ValueError(f'unrecognized str matcher key {key}')
             return result
+
+    def list_descriptor(self: QueryReader, val: Any, fdef: Fdef) -> Any:
+        if val is None:
+            return val
+        if isinstance(val, list):
+            return [self.readval(item, fdef.item_types.fdef) for item in val]
+        if isinstance(val, dict):
+            result = {}
+            for raw_key, value in val.items():
+                if raw_key.startswith('$'):
+                    result[raw_key] = value
+                    continue
+                key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
+                if key == '_eq':
+                    result['$eq'] = [self.readval(item, fdef.item_types.fdef) for item in value]
+                elif key == '_contains':
+                    if isinstance(value, list):
+                        result['$all'] = [self.readval(item, fdef.item_types.fdef) for item in value]
+                    else:
+                        result['$all'] = [self.readval(value, fdef.item_types.fdef)]
+                # TODO: contains a matcher or matchers, object matcher, list matcher, primitive types matcher
+            return result
+
+    def dict_descriptor(self: QueryReader, val: Any, fdef: Fdef) -> Any:
+        if val is None:
+            return val
+        if isinstance(val, dict):
+            pass
