@@ -209,7 +209,7 @@ class Encoder(Coder):
                         join_command = self._join_command(
                             value,
                             field,
-                            self.list_instance_type(field, cls),
+                            self.list_instance_type(field),
                             list_item['_id'])
                         commands.append(join_command)
                 for item in value.unlinked_objects[field.name]:
@@ -217,7 +217,7 @@ class Encoder(Coder):
                         unlink_command = self._unlink_command(
                             value,
                             field,
-                            self.list_instance_type(field, cls),
+                            self.list_instance_type(field),
                             ObjectId(item._id))
                         commands.append(unlink_command)
             elif self.is_local_key_reference_field(field):

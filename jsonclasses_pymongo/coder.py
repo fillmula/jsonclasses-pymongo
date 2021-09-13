@@ -28,7 +28,6 @@ class Coder():
             return True
         return False
 
-
     def is_foreign_key_storage(self, field: JField) -> bool:
         field_storage = field.fdef.field_storage
         return field_storage == FStore.FOREIGN_KEY
@@ -55,10 +54,7 @@ class Coder():
     def is_join_table_field(self, field: JField) -> bool:
         return field.types.fdef.use_join_table is True
 
-    def list_instance_type(self,
-                           field: JField,
-                           sibling: type[PymongoObject]
-                           ) -> type[PymongoObject]:
+    def list_instance_type(self, field: JField) -> type[PymongoObject]:
         from .pymongo_object import PymongoObject
         fd = field.types.fdef
         item_types = fd.item_types
