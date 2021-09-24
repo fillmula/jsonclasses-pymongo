@@ -97,23 +97,23 @@ class QueryReader:
         return result
 
     def readval(self: QueryReader, val: Any, fdef: Fdef):
-        if fdef.field_type == FType.STR:
+        if fdef.ftype == FType.STR:
             return self.str_descriptor(val)
-        elif fdef.field_type == FType.INT:
+        elif fdef.ftype == FType.INT:
             return self.num_descriptor(val, False)
-        elif fdef.field_type == FType.FLOAT:
+        elif fdef.ftype == FType.FLOAT:
             return self.num_descriptor(val, True)
-        elif fdef.field_type == FType.BOOL:
+        elif fdef.ftype == FType.BOOL:
             return self.bool_descriptor(val)
-        elif fdef.field_type == FType.DATE:
+        elif fdef.ftype == FType.DATE:
             return self.date_descriptor(val, True)
-        elif fdef.field_type == FType.DATETIME:
+        elif fdef.ftype == FType.DATETIME:
             return self.date_descriptor(val, False)
-        elif fdef.field_type == FType.ENUM:
+        elif fdef.ftype == FType.ENUM:
             return readenum(val, fdef.enum_class)
-        elif fdef.field_type == FType.LIST and fdef.field_storage == FStore.EMBEDDED:
+        elif fdef.ftype == FType.LIST and fdef.fstore == FStore.EMBEDDED:
             return self.list_descriptor(val, fdef)
-        elif fdef.field_type == FType.DICT:
+        elif fdef.ftype == FType.DICT:
             return self.dict_descriptor(val, fdef)
         else:
             return val

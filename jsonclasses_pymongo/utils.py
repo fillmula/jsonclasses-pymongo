@@ -41,18 +41,18 @@ def ref_db_field_keys(key: str, cls: type[PymongoObject]) -> str:
     return db_field_name
 
 
-def btype_from_ftype(field_type: FType) -> Union[str, list[str]]:
-    if field_type == FType.STR:
+def btype_from_ftype(ftype: FType) -> Union[str, list[str]]:
+    if ftype == FType.STR:
         return 'string'
-    elif field_type == FType.INT:
+    elif ftype == FType.INT:
         return ['int', 'long', 'decimal']
-    elif field_type == FType.FLOAT:
+    elif ftype == FType.FLOAT:
         return 'double'
-    elif field_type == FType.BOOL:
+    elif ftype == FType.BOOL:
         return 'bool'
-    elif field_type == FType.DATE:
+    elif ftype == FType.DATE:
         return 'date'
-    elif field_type == FType.DATETIME:
+    elif ftype == FType.DATETIME:
         return 'date'
     else:
         return []

@@ -66,15 +66,15 @@ def _database_write(self: T) -> None:
 def _orm_delete(self: T, no_raise: bool = False) -> None:
     # deny test
     for field in self.__class__.cdef.deny_fields:
-        if field.fdef.field_storage == FStore.LOCAL_KEY:
+        if field.fdef.fstore == FStore.LOCAL_KEY:
             key = self.__class__.cdef.jconf.ref_key_encoding_strategy(field)
             if hasattr(self, key) and getattr(self, key) is not None:
                 if no_raise:
                     return
                 else:
                     raise DeletionDeniedException()
-        elif field.fdef.field_storage == FStore.FOREIGN_KEY:
-            if field.fdef.field_type == FType.LIST:
+        elif field.fdef.fstore == FStore.FOREIGN_KEY:
+            if field.fdef.ftype == FType.LIST:
                 oc = field.fdef.item_types.fdef.inst_cls
             else:
                 oc = field.fdef.inst_cls
@@ -108,8 +108,8 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
 
     # delete chain - nullify
     for field in self.__class__.cdef.nullify_fields:
-        if field.fdef.field_storage == FStore.FOREIGN_KEY:
-            if field.fdef.field_type == FType.LIST:
+        if field.fdef.fstore == FStore.FOREIGN_KEY:
+            if field.fdef.ftype == FType.LIST:
                 oc = field.fdef.item_types.fdef.inst_cls
             else:
                 oc = field.fdef.inst_cls
@@ -132,18 +132,18 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
 
     # delete chain - cascade
     for field in self.__class__.cdef.cascade_fields:
-        if field.fdef.field_type == FType.LIST:
+        if field.fdef.ftype == FType.LIST:
             oc = field.fdef.item_types.fdef.inst_cls
         else:
             oc = field.fdef.inst_cls
         f = cast(JField, field.foreign_field)
-        if field.fdef.field_storage == FStore.LOCAL_KEY:
+        if field.fdef.fstore == FStore.LOCAL_KEY:
             key = self.__class__.cdef.jconf.ref_key_encoding_strategy(field)
             if getattr(self, key) is not None:
                 item = oc.id(getattr(self, key)).optional.exec()
                 if item is not None:
                     item._orm_delete(no_raise=True)
-        elif field.fdef.field_storage == FStore.FOREIGN_KEY:
+        elif field.fdef.fstore == FStore.FOREIGN_KEY:
             if field.fdef.use_join_table:
                 jtname = Coder().join_table_name(
                     self.__class__,
@@ -201,7 +201,7 @@ def pymongofy(class_: type) -> PymongoObject:
             unique = field.fdef.unique
             required = field.fdef.required
             index_name = f'{name}_1'
-            ftype = field.fdef.field_type
+            ftype = field.fdef.ftype
             if unique:
                 if required:
                     coll.create_index(name, name=index_name, unique=True)

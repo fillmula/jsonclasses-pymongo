@@ -44,11 +44,11 @@ class BaseQuery(Generic[T]):
         for subquery in self.subqueries:
             fname = subquery.name
             field = cls.cdef.field_named(fname)
-            if field.fdef.field_type == FType.LIST:
+            if field.fdef.ftype == FType.LIST:
                 it = field.fdef.item_types.fdef.inst_cls
             else:
                 it = field.fdef.inst_cls
-            if field.fdef.field_storage == FStore.LOCAL_KEY:
+            if field.fdef.fstore == FStore.LOCAL_KEY:
                 key = ref_db_field_key(fname, cls)
                 if subquery.query is None:
                     result.append({
@@ -79,8 +79,8 @@ class BaseQuery(Generic[T]):
                 result.append({
                     '$unwind': '$' + fname
                 })
-            elif field.fdef.field_storage == FStore.FOREIGN_KEY:
-                if field.fdef.field_type == FType.INSTANCE:
+            elif field.fdef.fstore == FStore.FOREIGN_KEY:
+                if field.fdef.ftype == FType.INSTANCE:
                     fk = cast(str, field.fdef.foreign_key)
                     if subquery.query is None:
                         result.append({
@@ -113,7 +113,7 @@ class BaseQuery(Generic[T]):
                     result.append({
                         '$unwind': '$' + fname
                     })
-                elif field.fdef.field_type == FType.LIST:
+                elif field.fdef.ftype == FType.LIST:
                     if subquery.query is not None:
                         subpipeline = subquery.query \
                                                 ._build_aggregate_pipeline()

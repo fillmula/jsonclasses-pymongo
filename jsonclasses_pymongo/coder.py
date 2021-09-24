@@ -14,10 +14,10 @@ class Coder():
         return field.fdef.primary
 
     def is_instance_field(self, field: JField) -> bool:
-        return field.fdef.field_type == FType.INSTANCE
+        return field.fdef.ftype == FType.INSTANCE
 
     def is_list_field(self, field: JField) -> bool:
-        return field.fdef.field_type == FType.LIST
+        return field.fdef.ftype == FType.LIST
 
     def is_list_instance_field(self, field: JField,
                                      cls: type[PymongoObject]) -> bool:
@@ -29,12 +29,12 @@ class Coder():
         return False
 
     def is_foreign_key_storage(self, field: JField) -> bool:
-        field_storage = field.fdef.field_storage
-        return field_storage == FStore.FOREIGN_KEY
+        fstore = field.fdef.fstore
+        return fstore == FStore.FOREIGN_KEY
 
     def is_local_key_storage(self, field: JField) -> bool:
-        field_storage = field.fdef.field_storage
-        return field_storage == FStore.LOCAL_KEY
+        fstore = field.fdef.fstore
+        return fstore == FStore.LOCAL_KEY
 
     def is_foreign_key_reference_field(self, field: JField) -> bool:
         return (self.is_instance_field(field) and

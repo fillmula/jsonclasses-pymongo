@@ -64,25 +64,25 @@ class Decoder(Coder):
                     graph: MGraph) -> Any:
         if value is None:
             return value
-        if types.fdef.field_type == FType.DATE:
+        if types.fdef.ftype == FType.DATE:
             return date.fromisoformat(value.isoformat()[:10])
-        elif types.fdef.field_type == FType.ENUM:
+        elif types.fdef.ftype == FType.ENUM:
             if isinstance(types.fdef.enum_class, str):
                 enum_cls = cast(type, types.fdef.enum_class)
                 return enum_cls(value)
             else:
                 enum_cls = cast(type, types.fdef.enum_class)
                 return enum_cls(value)
-        elif types.fdef.field_type == FType.LIST:
+        elif types.fdef.ftype == FType.LIST:
             return self.decode_list(value=value, cls=cls, types=types,
                                     graph=graph)
-        elif types.fdef.field_type == FType.DICT:
+        elif types.fdef.ftype == FType.DICT:
             return self.decode_dict(value=value, cls=cls, types=types,
                                     graph=graph)
-        elif types.fdef.field_type == FType.SHAPE:
+        elif types.fdef.ftype == FType.SHAPE:
             return self.decode_shape(value=value, cls=cls, types=types,
                                      graph=graph)
-        elif types.fdef.field_type == FType.INSTANCE:
+        elif types.fdef.ftype == FType.INSTANCE:
             return self.decode_instance(value=value, cls=cls, types=types,
                                         graph=graph)
         else:
