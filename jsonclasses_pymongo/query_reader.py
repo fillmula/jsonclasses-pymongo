@@ -225,6 +225,10 @@ class QueryReader:
             return readdate(val) if is_date else readdatetime(val)
         if type(val) is str:
             return readdate(val) if is_date else readdatetime(val)
+        if type(val) is datetime:
+            return readdate(val) if is_date else readdatetime(val)
+        if type(val) is date:
+            return readdate(val) if is_date else readdatetime(val)
         if isinstance(val, dict):
             result = {}
             for raw_key, value in val.items():
