@@ -1,5 +1,6 @@
 """This module contains queries."""
 from __future__ import annotations
+from jsonclasses_pymongo.query_to_object import query_to_object
 from jsonclasses_pymongo.query_reader import QueryReader
 from typing import (Iterator, Union, TypeVar, Generator, Optional, Any,
                     Generic, NamedTuple, cast)
@@ -15,7 +16,6 @@ from .decoder import Decoder
 from .connection import Connection
 from .pymongo_object import PymongoObject
 from .utils import ref_db_field_key
-from .readers import readbool, readdate, readdatetime, readenum, readfloat, readint
 T = TypeVar('T', bound=PymongoObject)
 U = TypeVar('U', bound='BaseQuery')
 V = TypeVar('V', bound='BaseListQuery')
@@ -206,7 +206,7 @@ class BaseListQuery(BaseQuery[T]):
 
     def __init__(self: V,
                  cls: type[T],
-                 filter: Optional[dict[str, Any]] = None) -> None:
+                 filter: Union[dict[str, Any], str, None] = None) -> None:
         super().__init__(cls)
         self._match: Optional[dict[str, Any]] = None
         self._sort: Optional[list[tuple[str, int]]] = None
@@ -219,7 +219,9 @@ class BaseListQuery(BaseQuery[T]):
         self._use_omit: bool = False
         self._omit: Optional[dict[str, Any]] = None
         if filter is not None:
-            self._set_matcher(filter)
+            if type(filter) is str:
+                filter = query_to_object(filter)
+            self._set_matcher(cast(dict, filter))
 
     def _set_matcher(self: V, matcher: dict[str, Any]) -> None:
         result = QueryReader(query=matcher, cls=self._cls).result()
