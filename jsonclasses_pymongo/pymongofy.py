@@ -20,12 +20,18 @@ from .coder import Coder
 T = TypeVar('T', bound=PymongoObject)
 
 
-def find(cls: type[T], **kwargs: Any) -> ListQuery[T]:
-    return ListQuery(cls=cls, filter=kwargs)
+def find(cls: type[T], *args, **kwargs: Any) -> ListQuery[T]:
+    if len(args) > 0:
+        return ListQuery(cls=cls, filter=args[0])
+    else:
+        return ListQuery(cls=cls, filter=kwargs)
 
 
-def one(cls: type[T], **kwargs: Any) -> SingleQuery[T]:
-    return SingleQuery(cls=cls, filter=kwargs)
+def one(cls: type[T], *args, **kwargs: Any) -> SingleQuery[T]:
+    if len(args) > 0:
+        return SingleQuery(cls=cls, filter=args[0])
+    else:
+        return SingleQuery(cls=cls, filter=kwargs)
 
 
 def pymongo_id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery[T]:

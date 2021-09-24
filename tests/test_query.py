@@ -78,7 +78,7 @@ class TestQuery(TestCase):
     def test_query_object_with_id(self):
         song = SimpleSong(name='Long', year=2020, artist='Thao')
         song.save()
-        result = SimpleSong.id(str(song.id)).exec()
+        result = SimpleSong.id(song.id).exec()
         self.assertEqual(song.name, result.name)
         self.assertEqual(song.year, result.year)
         self.assertEqual(song.artist, result.artist)
@@ -86,10 +86,93 @@ class TestQuery(TestCase):
         self.assertGreaterEqual(song.created_at, result.created_at)
         self.assertGreaterEqual(song.updated_at, result.updated_at)
 
+    def test_query_object_with_int(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find(year=2020).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+
+    def test_query_object_with_int_string(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find('year=2020').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+
+    def test_query_object_with_int_object(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find(year={'_gt': 2010}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+        result = SimpleSong.find(year={'_gt': 2030}).exec()
+        self.assertEqual(len(result), 0)
+
+    def test_query_object_with_int_object_string(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find('year[_gt]=2010').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+        result = SimpleSong.find('year[_gt]=2030').exec()
+        self.assertEqual(len(result), 0)
+
+    def test_query_object_with_str(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find(name='Long').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Long')
+
+    def test_query_object_with_str_str(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find('name=Long').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Long')
+
+    def test_query_object_with_str_object(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_prefix': 'Lo'}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Long')
+
+    def test_query_object_with_str_object_str(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_prefix]=Lo').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Long')
+
+    def test_query_object_with_bool(self):
+        pass
+
+    def test_query_object_with_bool_str(self):
+        pass
+
+    def test_query_object_with_bool_object(self):
+        pass
+
+    def test_query_object_with_bool_object_str(self):
+        pass
+
     def test_query_object_with_date(self):
         d = SimpleDate(represents=date(2010, 7, 7))
         d.save()
         results = SimpleDate.find(represents=date(2010, 7, 7)).exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].represents, d.represents)
+
+    def test_query_object_with_date_string(self):
+        d = SimpleDate(represents=date(2010, 7, 7))
+        d.save()
+        results = SimpleDate.find('represents=2010-07-07').exec()
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].represents, d.represents)
 

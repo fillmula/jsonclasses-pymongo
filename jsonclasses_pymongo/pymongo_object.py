@@ -25,11 +25,11 @@ class PymongoObject(JObject):
     """
 
     @classmethod
-    def find(cls: type[T], **kwargs: Any) -> ListQuery[T]:
+    def find(cls: type[T], *args, **kwargs: Any) -> ListQuery[T]:
         ...
 
     @classmethod
-    def one(cls: type[T], **kwargs: Any) -> SingleQuery[T]:
+    def one(cls: type[T], *args, **kwargs: Any) -> SingleQuery[T]:
         ...
 
     @classmethod
