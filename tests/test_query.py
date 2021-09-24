@@ -176,6 +176,12 @@ class TestQuery(TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].represents, d.represents)
 
+    def test_query_object_with_date_object(self):
+        pass
+
+    def test_query_object_with_date_object_string(self):
+        pass
+
     def test_query_dict_in_list(self):
         p = SimplePersona(items=[{'a': 1, 'b': 2}, {'c': 3}])
         p.save()
