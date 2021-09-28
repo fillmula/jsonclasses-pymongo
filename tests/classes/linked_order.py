@@ -1,33 +1,46 @@
 from __future__ import annotations
 from jsonclasses import jsonclass, types
-from jsonclasses_pymongo import pymongo, BaseObject
+from jsonclasses_pymongo import pymongo
+from datetime import datetime
 
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedOrder(BaseObject):
+class LinkedOrder():
+    id: str = types.readonly.str.primary.mongoid.required
     name: str
     user: LinkedBuyer = types.instanceof('LinkedBuyer').linkto
+    created_at: datetime = types.readonly.datetime.tscreated.required
+    updated_at: datetime = types.readonly.datetime.tsupdated.required
 
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedBuyer(BaseObject):
+class LinkedBuyer():
+    id: str = types.readonly.str.primary.mongoid.required
     name: str
     orders: list[LinkedOrder] = types.listof('LinkedOrder').linkedby('user') \
                                      .cascade
+    created_at: datetime = types.readonly.datetime.tscreated.required
+    updated_at: datetime = types.readonly.datetime.tsupdated.required
 
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedCOrder(BaseObject):
+class LinkedCOrder():
+    id: str = types.readonly.str.primary.mongoid.required
     name: str
     user: LinkedCBuyer = types.instanceof('LinkedCBuyer').linkto.cascade
+    created_at: datetime = types.readonly.datetime.tscreated.required
+    updated_at: datetime = types.readonly.datetime.tsupdated.required
 
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedCBuyer(BaseObject):
+class LinkedCBuyer():
+    id: str = types.readonly.str.primary.mongoid.required
     name: str
     orders: list[LinkedCOrder] = types.listof('LinkedCOrder').linkedby('user')\
                                       .cascade
+    created_at: datetime = types.readonly.datetime.tscreated.required
+    updated_at: datetime = types.readonly.datetime.tsupdated.required
