@@ -9,6 +9,7 @@ from tests.classes.linked_author import LinkedAuthor
 from tests.classes.linked_post import LinkedPost
 from tests.classes.simple_date import SimpleDate
 from tests.classes.simple_persona import SimplePersona
+from tests.classes.simple_sex import SimpleSex, Gender
 
 
 class TestQuery(TestCase):
@@ -37,6 +38,8 @@ class TestQuery(TestCase):
         collection = Connection.get_collection(SimpleDate)
         collection.delete_many({})
         collection = Connection.get_collection(SimplePersona)
+        collection.delete_many({})
+        collection = Connection.get_collection(SimpleSex)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedAuthor)
         collection.delete_many({})
@@ -186,3 +189,31 @@ class TestQuery(TestCase):
         p = SimplePersona(items=[{'a': 1, 'b': 2}, {'c': 3}])
         p.save()
         results = SimplePersona.find().exec()
+
+    def test_query_enum_with_enum(self):
+        d = SimpleSex(gender='MALE')
+        d.save()
+        results = SimpleSex.find(gender=Gender.MALE).exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].gender, d.gender)
+
+    def test_query_enum_with_enum_name(self):
+        d = SimpleSex(gender='MALE')
+        d.save()
+        results = SimpleSex.find(gender='MALE').exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].gender, d.gender)
+
+    def test_query_enum_with_lowercase_enum_name(self):
+        d = SimpleSex(gender='MALE')
+        d.save()
+        results = SimpleSex.find(gender='male').exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].gender, d.gender)
+
+    def test_query_enum_with_enum_value(self):
+        d = SimpleSex(gender='MALE')
+        d.save()
+        results = SimpleSex.find(gender=1).exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].gender, d.gender)
