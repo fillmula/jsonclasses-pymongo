@@ -217,3 +217,24 @@ class TestQuery(TestCase):
         results = SimpleSex.find(gender=1).exec()
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].gender, d.gender)
+
+    def test_query_enum_with_enum_name_str(self):
+        d = SimpleSex(gender='MALE')
+        d.save()
+        results = SimpleSex.find('gender=MALE').exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].gender, d.gender)
+
+    def test_query_enum_with_lowercase_enum_name_str(self):
+        d = SimpleSex(gender='MALE')
+        d.save()
+        results = SimpleSex.find('gender=male').exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].gender, d.gender)
+
+    def test_query_enum_with_enum_value_str(self):
+        d = SimpleSex(gender='MALE')
+        d.save()
+        results = SimpleSex.find('gender=1').exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].gender, d.gender)

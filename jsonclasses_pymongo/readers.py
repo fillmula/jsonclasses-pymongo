@@ -75,12 +75,15 @@ def readenum(val: Any, cls: type[Enum]) -> Optional[Any]:
             return cls(val).value
         except:
             try:
-                return cls[val].value
+                return cls(int(val)).value
             except:
                 try:
-                    return cls[val.upper()].value
+                    return cls[val].value
                 except:
-                    pass
+                    try:
+                        return cls[val.upper()].value
+                    except:
+                        pass
     if type(val) is cls:
         return val.value
     raise ValueError(f'value is not valid enum {cls.__name__} value')
