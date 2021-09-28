@@ -8,7 +8,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 setup(name='jsonclasses-pymongo',
-      version='2.8.0',
+      version='2.8.1',
       description='jsonclasses integration with pymongo',
       long_description=README,
       long_description_content_type="text/markdown",
@@ -20,4 +20,8 @@ setup(name='jsonclasses-pymongo',
       zip_safe=False,
       url='https://github.com/fillmula/jsonclasses-pymongo',
       include_package_data=True,
-      python_requires='>=3.9')
+      python_requires='>=3.9',
+      install_requires=[
+            'jsonclasses-orm==2.8.1',
+            'pymongo>=3.12.0,<4.0.0'
+      ])
