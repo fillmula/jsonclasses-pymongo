@@ -1,12 +1,12 @@
 from __future__ import annotations
+from datetime import datetime
 from jsonclasses import jsonclass, types
 from jsonclasses_pymongo import pymongo
-from datetime import datetime
 
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedBomb():
+class LinkedBomb:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     soldiers: list[LinkedSoldier] = types.listof('LinkedSoldier') \
@@ -17,7 +17,7 @@ class LinkedBomb():
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedSoldier():
+class LinkedSoldier:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     bombs: list[LinkedBomb] = types.listof('LinkedBomb') \

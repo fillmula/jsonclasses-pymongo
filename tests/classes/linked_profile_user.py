@@ -1,12 +1,12 @@
 from __future__ import annotations
+from datetime import datetime
 from jsonclasses import jsonclass, types
 from jsonclasses_pymongo import pymongo
-from datetime import datetime
 
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedProfile():
+class LinkedProfile:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     user: LinkedUser = types.instanceof('LinkedUser').linkto
@@ -16,7 +16,7 @@ class LinkedProfile():
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedUser():
+class LinkedUser:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     profile: LinkedProfile = types.instanceof('LinkedProfile').linkedby('user')
@@ -26,7 +26,7 @@ class LinkedUser():
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedDProfile():
+class LinkedDProfile:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     user: LinkedCUser = types.instanceof('LinkedCUser').linkto.deny
@@ -36,7 +36,7 @@ class LinkedDProfile():
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedCUser():
+class LinkedCUser:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     profile: LinkedDProfile = types.instanceof('LinkedDProfile') \
@@ -47,7 +47,7 @@ class LinkedCUser():
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedCProfile():
+class LinkedCProfile:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     user: LinkedDUser = types.instanceof('LinkedDUser').linkto.cascade
@@ -57,7 +57,7 @@ class LinkedCProfile():
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedDUser():
+class LinkedDUser:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     profile: LinkedCProfile = types.instanceof('LinkedCProfile') \

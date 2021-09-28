@@ -1,8 +1,8 @@
 from __future__ import annotations
 from enum import Enum
+from datetime import datetime
 from jsonclasses import jsonclass, jsonenum, types
 from jsonclasses_pymongo import pymongo
-from datetime import datetime
 
 
 @jsonenum(class_graph='simple')
@@ -13,7 +13,7 @@ class Gender(Enum):
 
 @pymongo
 @jsonclass(class_graph='simple')
-class SimpleArtist():
+class SimpleArtist:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     gender: Gender

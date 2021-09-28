@@ -6,7 +6,7 @@ from jsonclasses_pymongo import pymongo
 
 @pymongo
 @jsonclass(class_graph='chained')
-class ChainedProfile():
+class ChainedProfile:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     user: ChainedUser = types.instanceof('ChainedUser').linkto
@@ -16,7 +16,7 @@ class ChainedProfile():
 
 @pymongo
 @jsonclass(class_graph='chained')
-class ChainedUser():
+class ChainedUser:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     profile: ChainedProfile = types.instanceof('ChainedProfile').linkedby('user')
@@ -27,7 +27,7 @@ class ChainedUser():
 
 @pymongo
 @jsonclass(class_graph='chained')
-class ChainedAddress():
+class ChainedAddress:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     user: ChainedUser = types.instanceof('ChainedUser').linkto

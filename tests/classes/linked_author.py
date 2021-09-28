@@ -1,15 +1,16 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from datetime import datetime
 from jsonclasses import jsonclass, types
 from jsonclasses_pymongo import pymongo
 if TYPE_CHECKING:
     from .linked_post import LinkedPost
-    from datetime import datetime
+
 
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedAuthor():
+class LinkedAuthor:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     posts: list[LinkedPost] = types.nonnull.listof('LinkedPost') \

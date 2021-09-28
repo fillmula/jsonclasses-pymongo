@@ -1,12 +1,12 @@
 from __future__ import annotations
+from datetime import datetime
 from jsonclasses import jsonclass, types
 from jsonclasses_pymongo import pymongo
-from datetime import datetime
 
 
 @pymongo
 @jsonclass(class_graph='simple')
-class SimpleSong():
+class SimpleSong:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     year: int

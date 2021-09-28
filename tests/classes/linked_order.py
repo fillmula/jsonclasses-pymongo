@@ -1,12 +1,12 @@
 from __future__ import annotations
+from datetime import datetime
 from jsonclasses import jsonclass, types
 from jsonclasses_pymongo import pymongo
-from datetime import datetime
 
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedOrder():
+class LinkedOrder:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     user: LinkedBuyer = types.instanceof('LinkedBuyer').linkto
@@ -16,7 +16,7 @@ class LinkedOrder():
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedBuyer():
+class LinkedBuyer:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     orders: list[LinkedOrder] = types.listof('LinkedOrder').linkedby('user') \
@@ -27,7 +27,7 @@ class LinkedBuyer():
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedCOrder():
+class LinkedCOrder:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     user: LinkedCBuyer = types.instanceof('LinkedCBuyer').linkto.cascade
@@ -37,7 +37,7 @@ class LinkedCOrder():
 
 @pymongo
 @jsonclass(class_graph='linked')
-class LinkedCBuyer():
+class LinkedCBuyer:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
     orders: list[LinkedCOrder] = types.listof('LinkedCOrder').linkedby('user')\
