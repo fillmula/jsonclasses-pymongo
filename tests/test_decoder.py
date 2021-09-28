@@ -4,7 +4,7 @@ from typing import List, Dict
 from datetime import date, datetime
 from bson import ObjectId
 from jsonclasses import jsonclass, types
-from jsonclasses_pymongo import BaseObject, pymongo
+from jsonclasses_pymongo import pymongo
 from jsonclasses_pymongo.decoder import Decoder
 
 
@@ -13,7 +13,8 @@ class TestDecoder(TestCase):
     def test_decode_str_into_str(self):
         @pymongo
         @jsonclass
-        class SimpleDecodeStr(BaseObject):
+        class SimpleDecodeStr:
+            id: str = types.readonly.str.primary.mongoid.required
             val1: str
             val2: str
         data = {
@@ -33,7 +34,8 @@ class TestDecoder(TestCase):
     def test_decode_int_into_int(self):
         @pymongo
         @jsonclass
-        class SimpleDecodeInt(BaseObject):
+        class SimpleDecodeInt:
+            id: str = types.readonly.str.primary.mongoid.required
             val1: int
             val2: int
         data = {
@@ -51,7 +53,8 @@ class TestDecoder(TestCase):
     def test_decode_float_into_float(self):
         @pymongo
         @jsonclass
-        class SimpleDecodeFloat(BaseObject):
+        class SimpleDecodeFloat:
+            id: str = types.readonly.str.primary.mongoid.required
             val1: float
             val2: float
         data = {
@@ -69,7 +72,8 @@ class TestDecoder(TestCase):
     def test_decode_bool_into_bool(self):
         @pymongo
         @jsonclass
-        class SimpleDecodeBool(BaseObject):
+        class SimpleDecodeBool:
+            id: str = types.readonly.str.primary.mongoid.required
             val1: bool
             val2: bool
         data = {
@@ -87,7 +91,8 @@ class TestDecoder(TestCase):
     def test_decode_datetime_into_date(self):
         @pymongo
         @jsonclass
-        class SimpleDecodeDate(BaseObject):
+        class SimpleDecodeDate:
+            id: str = types.readonly.str.primary.mongoid.required
             val1: date
             val2: date
         data = {
@@ -105,7 +110,8 @@ class TestDecoder(TestCase):
     def test_decode_datetime_into_datetime(self):
         @pymongo
         @jsonclass
-        class SimpleDecodeDatetime(BaseObject):
+        class SimpleDecodeDatetime:
+            id: str = types.readonly.str.primary.mongoid.required
             val1: datetime
             val2: datetime
         data = {
@@ -123,7 +129,8 @@ class TestDecoder(TestCase):
     def test_decode_embedded_list(self):
         @pymongo
         @jsonclass
-        class SimpleDecodeList(BaseObject):
+        class SimpleDecodeList:
+            id: str = types.readonly.str.primary.mongoid.required
             vals: List[int]
         data = {
             '_id': ObjectId(),
@@ -138,14 +145,16 @@ class TestDecoder(TestCase):
     def test_decode_local_keys_list(self):
         @pymongo
         @jsonclass
-        class SimpleDecodeLocalKeyListAddress(BaseObject):
+        class SimpleDecodeLocalKeyListAddress:
+            id: str = types.readonly.str.primary.mongoid.required
             city: str
             owner: SimpleDecodeLocalKeyList = types.instanceof(
                 'SimpleDecodeLocalKeyList').linkedby('address')
 
         @pymongo
         @jsonclass
-        class SimpleDecodeLocalKeyList(BaseObject):
+        class SimpleDecodeLocalKeyList:
+            id: str = types.readonly.str.primary.mongoid.required
             addresses: List[SimpleDecodeLocalKeyListAddress] = (types.linkto
                 .listof(SimpleDecodeLocalKeyListAddress))
         data = {
@@ -164,7 +173,8 @@ class TestDecoder(TestCase):
     def test_decode_embedded_dict(self):
         @pymongo
         @jsonclass
-        class SimpleDecodeDict(BaseObject):
+        class SimpleDecodeDict:
+            id: str = types.readonly.str.primary.mongoid.required
             vals: Dict[str, int]
         data = {
             '_id': ObjectId(),
@@ -179,7 +189,8 @@ class TestDecoder(TestCase):
     def test_decode_embedded_shape(self):
         @pymongo
         @jsonclass
-        class SimpleDecodeShape(BaseObject):
+        class SimpleDecodeShape:
+            id: str = types.readonly.str.primary.mongoid.required
             vals: Dict[str, int] = types.shape({
                 'one': types.int,
                 'two': types.int
@@ -197,12 +208,14 @@ class TestDecoder(TestCase):
     def test_decode_embedded_instance(self):
         @pymongo
         @jsonclass
-        class SimpleDecodeInstanceAddress(BaseObject):
+        class SimpleDecodeInstanceAddress:
+            id: str = types.readonly.str.primary.mongoid.required
             city: str
 
         @pymongo
         @jsonclass
-        class SimpleDecodeInstance(BaseObject):
+        class SimpleDecodeInstance:
+            id: str = types.readonly.str.primary.mongoid.required
             address: SimpleDecodeInstanceAddress
         data = {
             '_id': ObjectId(),
@@ -223,14 +236,16 @@ class TestDecoder(TestCase):
     def test_decode_local_key_instance(self):
         @pymongo
         @jsonclass
-        class SimpleDecodeLocalKeyInstanceAddress(BaseObject):
+        class SimpleDecodeLocalKeyInstanceAddress:
+            id: str = types.readonly.str.primary.mongoid.required
             city: str
             owner: SimpleDecodeLocalKeyInstance = types.instanceof(
                 'SimpleDecodeLocalKeyInstance').linkedby('address')
 
         @pymongo
         @jsonclass
-        class SimpleDecodeLocalKeyInstance(BaseObject):
+        class SimpleDecodeLocalKeyInstance:
+            id: str = types.readonly.str.primary.mongoid.required
             address: SimpleDecodeLocalKeyInstanceAddress = (types
                     .linkto.instanceof(
                         SimpleDecodeLocalKeyInstanceAddress))
@@ -248,7 +263,8 @@ class TestDecoder(TestCase):
     def test_decode_keep_dict_keys(self):
         @pymongo
         @jsonclass
-        class MediumDecodeCamelizeDictKeys(BaseObject):
+        class MediumDecodeCamelizeDictKeys:
+            id: str = types.readonly.str.primary.mongoid.required
             val: Dict[str, str] = types.dictof(types.str)
         data = {
             'val': {
@@ -263,7 +279,8 @@ class TestDecoder(TestCase):
     def test_decode_camelized_shape_keys(self):
         @pymongo
         @jsonclass
-        class MediumDecodeCamelizeShapeKeys(BaseObject):
+        class MediumDecodeCamelizeShapeKeys:
+            id: str = types.readonly.str.primary.mongoid.required
             val: Dict[str, str] = types.shape({
                 'key_one': types.str,
                 'key_two': types.str
@@ -281,7 +298,8 @@ class TestDecoder(TestCase):
     def test_decode_uncamelized_shape_keys(self):
         @pymongo(camelize_db_keys=False)
         @jsonclass
-        class MediumDecodeUncamelizeShapeKeys(BaseObject):
+        class MediumDecodeUncamelizeShapeKeys:
+            id: str = types.readonly.str.primary.mongoid.required
             val: Dict[str, str] = types.shape({
                 'key_one': types.str,
                 'key_two': types.str

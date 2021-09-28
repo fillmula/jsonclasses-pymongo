@@ -5,7 +5,7 @@ from typing import List, Dict, cast
 from datetime import date, datetime
 from bson import ObjectId
 from jsonclasses import jsonclass, types
-from jsonclasses_pymongo import BaseObject, pymongo
+from jsonclasses_pymongo import pymongo
 from jsonclasses_pymongo.encoder import Encoder
 from jsonclasses_pymongo.command import InsertOneCommand
 from tests.classes.linked_account import LinkedAccount, LinkedBalance
@@ -18,7 +18,8 @@ class TestEncoder(TestCase):
     def test_encode_str_into_str(self):
         @pymongo
         @jsonclass
-        class SimpleEncodeStr(BaseObject):
+        class SimpleEncodeStr:
+            id: str = types.readonly.str.primary.mongoid.required
             val1: str
             val2: str
         simple_object = SimpleEncodeStr(val1='q', val2='e')
@@ -26,7 +27,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'val1', 'val2']))
+            ['_id', 'val1', 'val2']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['val1'], 'q')
         self.assertEqual(serialized['val2'], 'e')
@@ -34,7 +35,8 @@ class TestEncoder(TestCase):
     def test_encode_int_into_int(self):
         @pymongo
         @jsonclass
-        class SimpleEncodeInt(BaseObject):
+        class SimpleEncodeInt:
+            id: str = types.readonly.str.primary.mongoid.required
             age: int
             length: int
         simple_object = SimpleEncodeInt(age=4, length=8)
@@ -42,7 +44,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'age', 'length']))
+            ['_id', 'age', 'length']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['age'], 4)
         self.assertEqual(serialized['length'], 8)
@@ -50,7 +52,8 @@ class TestEncoder(TestCase):
     def test_encode_float_into_float(self):
         @pymongo
         @jsonclass
-        class SimpleEncodeFloat(BaseObject):
+        class SimpleEncodeFloat:
+            id: str = types.readonly.str.primary.mongoid.required
             width: float
             length: float
         simple_object = SimpleEncodeFloat(width=4.5, length=8.5)
@@ -58,7 +61,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'width', 'length']))
+            ['_id', 'width', 'length']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['width'], 4.5)
         self.assertEqual(serialized['length'], 8.5)
@@ -66,7 +69,8 @@ class TestEncoder(TestCase):
     def test_encode_bool_into_bool(self):
         @pymongo
         @jsonclass
-        class SimpleEncodeBool(BaseObject):
+        class SimpleEncodeBool:
+            id: str = types.readonly.str.primary.mongoid.required
             b1: bool
             b2: bool
         simple_object = SimpleEncodeBool(b1=True, b2=False)
@@ -74,7 +78,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'b1', 'b2']))
+            ['_id', 'b1', 'b2']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['b1'], True)
         self.assertEqual(serialized['b2'], False)
@@ -82,7 +86,8 @@ class TestEncoder(TestCase):
     def test_encode_date_into_datetime(self):
         @pymongo
         @jsonclass
-        class SimpleEncodeDate(BaseObject):
+        class SimpleEncodeDate:
+            id: str = types.readonly.str.primary.mongoid.required
             d1: date = date(2012, 9, 15)
             d2: date = date(2020, 9, 14)
         simple_object = SimpleEncodeDate()
@@ -90,7 +95,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'd1', 'd2']))
+            ['_id', 'd1', 'd2']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['d1'], datetime(2012, 9, 15, 0, 0, 0))
         self.assertEqual(serialized['d2'], datetime(2020, 9, 14, 0, 0, 0))
@@ -98,7 +103,8 @@ class TestEncoder(TestCase):
     def test_encode_datetime_into_datetime(self):
         @pymongo
         @jsonclass
-        class SimpleEncodeDatetime(BaseObject):
+        class SimpleEncodeDatetime:
+            id: str = types.readonly.str.primary.mongoid.required
             d1: date = datetime(2012, 9, 15, 0, 0, 0)
             d2: date = datetime(2020, 9, 14, 0, 0, 0)
         simple_object = SimpleEncodeDatetime()
@@ -106,7 +112,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'd1', 'd2']))
+            ['_id', 'd1', 'd2']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['d1'], datetime(2012, 9, 15, 0, 0, 0))
         self.assertEqual(serialized['d2'], datetime(2020, 9, 14, 0, 0, 0))
@@ -114,7 +120,8 @@ class TestEncoder(TestCase):
     def test_encode_embedded_list(self):
         @pymongo
         @jsonclass
-        class SimpleEncodeScalarTypesList(BaseObject):
+        class SimpleEncodeScalarTypesList:
+            id: str = types.readonly.str.primary.mongoid.required
             str_values: List[str]
             int_values: List[int]
             bool_values: List[bool]
@@ -125,7 +132,7 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'strValues', 'intValues',
+            ['_id', 'strValues', 'intValues',
              'boolValues']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['strValues'], ['0', '1'])
@@ -135,7 +142,8 @@ class TestEncoder(TestCase):
     def test_encode_embedded_dict(self):
         @pymongo
         @jsonclass
-        class SimpleEncodeScalarTypesDict(BaseObject):
+        class SimpleEncodeScalarTypesDict:
+            id: str = types.readonly.str.primary.mongoid.required
             str_values: Dict[str, str]
         simple_object = SimpleEncodeScalarTypesDict(
             str_values={'0': 'zero', '1': 'one'})
@@ -143,14 +151,15 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'strValues']))
+            ['_id', 'strValues']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['strValues'], {'0': 'zero', '1': 'one'})
 
     def test_encode_embedded_shape(self):
         @pymongo
         @jsonclass
-        class SimpleEncodeScalarTypesShape(BaseObject):
+        class SimpleEncodeScalarTypesShape:
+            id: str = types.readonly.str.primary.mongoid.required
             vals: Dict[str, str] = types.shape({
                 '0': str,
                 '1': int
@@ -161,19 +170,21 @@ class TestEncoder(TestCase):
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
         serialized = insert_command.object
         self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'createdAt', 'updatedAt', 'vals']))
+            ['_id', 'vals']))
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['vals'], {'0': 'zero', '1': 1})
 
     def test_encode_embedded_instance(self):
         @pymongo
         @jsonclass
-        class SimpleEncodeEmbeddedInstanceAddress(BaseObject):
+        class SimpleEncodeEmbeddedInstanceAddress:
+            id: str = types.readonly.str.primary.mongoid.required
             line1: str
 
         @pymongo
         @jsonclass
-        class SimpleEncodeEmbeddedInstance(BaseObject):
+        class SimpleEncodeEmbeddedInstance:
+            id: str = types.readonly.str.primary.mongoid.required
             address: SimpleEncodeEmbeddedInstanceAddress
         simple_object = SimpleEncodeEmbeddedInstance(
             address={'line1': 'Flam Road'})
@@ -191,14 +202,16 @@ class TestEncoder(TestCase):
     def test_encode_foreign_key_instance(self):
         @pymongo
         @jsonclass
-        class SimpleEncodeForeignKeyInstanceAddress(BaseObject):
+        class SimpleEncodeForeignKeyInstanceAddress:
+            id: str = types.readonly.str.primary.mongoid.required
             line1: str
             owner: SimpleEncodeForeignKeyInstance = types.linkto.instanceof(
                 'SimpleEncodeForeignKeyInstance')
 
         @pymongo
         @jsonclass
-        class SimpleEncodeForeignKeyInstance(BaseObject):
+        class SimpleEncodeForeignKeyInstance:
+            id: str = types.readonly.str.primary.mongoid.required
             address: SimpleEncodeForeignKeyInstanceAddress = types.instanceof(
                 SimpleEncodeForeignKeyInstanceAddress).linkedby('owner')
         simple_object = SimpleEncodeForeignKeyInstance(
@@ -213,14 +226,16 @@ class TestEncoder(TestCase):
     def test_encode_local_key_instance(self):
         @pymongo
         @jsonclass
-        class SimpleEncodeLocalKeyInstanceAddress(BaseObject):
+        class SimpleEncodeLocalKeyInstanceAddress:
+            id: str = types.readonly.str.primary.mongoid.required
             line1: str
             owner: SimpleEncodeLocalKeyInstance = types.instanceof(
                 'SimpleEncodeLocalKeyInstance').linkedby('address')
 
         @pymongo
         @jsonclass
-        class SimpleEncodeLocalKeyInstance(BaseObject):
+        class SimpleEncodeLocalKeyInstance:
+            id: str = types.readonly.str.primary.mongoid.required
             address: SimpleEncodeLocalKeyInstanceAddress = types.linkto.instanceof(SimpleEncodeLocalKeyInstanceAddress)
         simple_object = SimpleEncodeLocalKeyInstance(
             address={'line1': 'Flam Road'})
@@ -234,12 +249,14 @@ class TestEncoder(TestCase):
     def test_encode_embedded_instance_list(self):
         @pymongo
         @jsonclass
-        class MediumEncodeEmbeddedInstanceAddress(BaseObject):
+        class MediumEncodeEmbeddedInstanceAddress:
+            id: str = types.readonly.str.primary.mongoid.required
             line1: str
 
         @pymongo
         @jsonclass
-        class MediumEncodeEmbeddedInstance(BaseObject):
+        class MediumEncodeEmbeddedInstance:
+            id: str = types.readonly.str.primary.mongoid.required
             addresses: List[MediumEncodeEmbeddedInstanceAddress]
         medium_object = MediumEncodeEmbeddedInstance(
             addresses=[{'line1': 'Flam Road'}, {'line1': 'Plam Road'}])
@@ -258,14 +275,16 @@ class TestEncoder(TestCase):
     def test_encode_foreign_keys_instance_list(self):
         @pymongo
         @jsonclass
-        class MediumEncodeForeignKeyInstanceAddress(BaseObject):
+        class MediumEncodeForeignKeyInstanceAddress:
+            id: str = types.readonly.str.primary.mongoid.required
             line1: str
             owner: MediumEncodeForeignKeyInstance = types.linkto.instanceof(
                 'MediumEncodeForeignKeyInstance')
 
         @pymongo
         @jsonclass
-        class MediumEncodeForeignKeyInstance(BaseObject):
+        class MediumEncodeForeignKeyInstance:
+            id: str = types.readonly.str.primary.mongoid.required
             addresses: List[MediumEncodeForeignKeyInstanceAddress] = types.listof(
                 MediumEncodeForeignKeyInstanceAddress).linkedby('owner')
         simple_object = MediumEncodeForeignKeyInstance(
@@ -282,14 +301,16 @@ class TestEncoder(TestCase):
     def test_encode_local_keys_instance_list(self):
         @pymongo
         @jsonclass
-        class MediumEncodeLocalKeyInstanceAddress(BaseObject):
+        class MediumEncodeLocalKeyInstanceAddress:
+            id: str = types.readonly.str.primary.mongoid.required
             line1: str
             owner: MediumEncodeLocalKeyInstance = types.linkedby(
                 'address').instanceof('SimpleEncodeLocalKeyInstance')
 
         @pymongo
         @jsonclass
-        class MediumEncodeLocalKeyInstance(BaseObject):
+        class MediumEncodeLocalKeyInstance:
+            id: str = types.readonly.str.primary.mongoid.required
             addresses: List[MediumEncodeLocalKeyInstanceAddress] = types.listof(
                 MediumEncodeLocalKeyInstanceAddress).linkto
         simple_object = MediumEncodeLocalKeyInstance(
@@ -306,7 +327,8 @@ class TestEncoder(TestCase):
     def test_encode_dict_keep_keys(self):
         @pymongo
         @jsonclass
-        class MediumEncodeCamelizeDictKeys(BaseObject):
+        class MediumEncodeCamelizeDictKeys:
+            id: str = types.readonly.str.primary.mongoid.required
             val: Dict[str, str] = types.dictof(types.str)
         simple_object = MediumEncodeCamelizeDictKeys(
             val={'keyOne': 'val_one', 'keyTwo': 'val_two'})
@@ -319,7 +341,8 @@ class TestEncoder(TestCase):
     def test_encode_shape_camelize_keys(self):
         @pymongo
         @jsonclass
-        class MediumEncodeCamelizeShapeKeys(BaseObject):
+        class MediumEncodeCamelizeShapeKeys:
+            id: str = types.readonly.str.primary.mongoid.required
             val: Dict[str, str] = types.shape({
                 'key_one': types.str,
                 'key_two': types.str
@@ -335,7 +358,8 @@ class TestEncoder(TestCase):
     def test_encode_shape_do_not_camelize_keys(self):
         @pymongo(camelize_db_keys=False)
         @jsonclass
-        class MediumEncodeDoNotCamelizeShapeKeys(BaseObject):
+        class MediumEncodeDoNotCamelizeShapeKeys:
+            id: str = types.readonly.str.primary.mongoid.required
             val: Dict[str, str] = types.shape({
                 'key_one': types.str,
                 'key_two': types.str
@@ -351,14 +375,16 @@ class TestEncoder(TestCase):
     def test_encoder_handle_many_to_many_with_linkedthru(self):
         @pymongo
         @jsonclass
-        class DifficultEncodeLinkedThruA(BaseObject):
+        class DifficultEncodeLinkedThruA:
+            id: str = types.readonly.str.primary.mongoid.required
             aval: str
             blinks: List[DifficultEncodeLinkedThruB] = types.listof(
                 'DifficultEncodeLinkedThruB').linkedthru('alinks')
 
         @pymongo
         @jsonclass
-        class DifficultEncodeLinkedThruB(BaseObject):
+        class DifficultEncodeLinkedThruB:
+            id: str = types.readonly.str.primary.mongoid.required
             bval: str
             alinks: List[DifficultEncodeLinkedThruA] = types.listof(
                 'DifficultEncodeLinkedThruA').linkedthru('blinks')
