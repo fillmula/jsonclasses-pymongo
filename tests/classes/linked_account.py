@@ -17,6 +17,7 @@ class LinkedAccount:
 @pymongo
 @jsonclass(class_graph='linked')
 class LinkedBalance:
+    id: str = types.readonly.str.primary.mongoid.required
     name: str
     account: LinkedAccount = types.instanceof('LinkedAccount') \
                                   .linkedby('balance').cascade
