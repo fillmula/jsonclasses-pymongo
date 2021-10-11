@@ -77,7 +77,10 @@ class BaseQuery(Generic[T]):
                         }
                     })
                 result.append({
-                    '$unwind': '$' + fname
+                    '$unwind': {
+                        "path": '$' + fname,
+                        "preserveNullAndEmptyArrays": True
+                    }
                 })
             elif field.fdef.fstore == FStore.FOREIGN_KEY:
                 if field.fdef.ftype == FType.INSTANCE:
@@ -111,7 +114,10 @@ class BaseQuery(Generic[T]):
                             }
                         })
                     result.append({
-                        '$unwind': '$' + fname
+                        '$unwind': {
+                            'path': '$' + fname,
+                            "preserveNullAndEmptyArrays": True
+                        }
                     })
                 elif field.fdef.ftype == FType.LIST:
                     if subquery.query is not None:
@@ -164,7 +170,10 @@ class BaseQuery(Generic[T]):
                             'pipeline': subpipeline
                         }}
                         unwind = {
-                            '$unwind': '$' + field.name
+                            '$unwind': {
+                                'path': '$' + field.name,
+                                "preserveNullAndEmptyArrays": True
+                            }
                         }
                         replace = {
                             '$replaceRoot': {'newRoot': '$'+field.name}
