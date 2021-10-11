@@ -5,10 +5,10 @@ from re import compile, escape, IGNORECASE
 from inflection import camelize
 from bson.objectid import ObjectId
 from jsonclasses.fdef import FStore, FType, Fdef
-from jsonclasses.jfield import JField
 from .pymongo_object import PymongoObject
 from .readers import (
-    readbool, readdate, readdatetime, readenum, readfloat, readint, readorder
+    readstr, readbool, readdate, readdatetime, readenum, readfloat, readint,
+    readorder
 )
 
 
@@ -86,7 +86,8 @@ class QueryReader:
             else:
                 dbkey = key
             if key in self.cls.cdef.reference_names:
-                result[dbkey] = ObjectId(value) if value is not None else None
+                idval = readstr(value)
+                result[dbkey] = ObjectId(idval) if idval is not None else None
                 continue
             field = self.cls.cdef.field_named(key)
             if field is None:

@@ -4,6 +4,14 @@ from datetime import date, datetime
 from enum import Enum
 
 
+def readstr(val: Any) -> Optional[str]:
+    if val in ['null', 'NULL', 'nil', 'None', 'NONE']:
+        return None
+    if type(val) is str:
+        return val
+    return str(val)
+
+
 def readint(val: Any) -> Optional[int]:
     if val in ['null', 'NULL', 'nil', 'None', 'NONE']:
         return None
