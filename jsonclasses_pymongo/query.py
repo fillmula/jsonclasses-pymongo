@@ -237,6 +237,13 @@ class BaseListQuery(BaseQuery[T]):
             self._skip = result['_skip']
         if result.get('_limit') is not None:
             self._limit = result['_limit']
+        if result.get('_includes') is not None:
+            for item in result['_includes']:
+                if type(item) is str:
+                    self.subqueries.append(Subquery(item, None))
+                elif isinstance(item, dict):
+                    for k, v in item:
+                        self.subqueries.append(Subquery(k, v))
 
     def order(self: V, field: str, sort: Optional[int] = None) -> V:
         if self._sort is None:

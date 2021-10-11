@@ -49,6 +49,8 @@ class QueryReader:
                 result['_page_number'] = readint(value)
             elif key == '_order':
                 result['_sort'] = self.readorders(value)
+            elif key == '_includes':
+                result['_includes'] = value
         return result
 
     def readorders(self: QueryReader, val: Any) -> list[tuple[str, int]]:
