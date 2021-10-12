@@ -38,7 +38,7 @@ def pymongo_id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery[T]:
     return IDQuery(cls=cls, id=id)
 
 
-def linked(cls: type[T]) -> BaseQuery[T]:
+def linked(cls: type[T], *args, **kwargs: Any) -> BaseQuery[T]:
     return BaseQuery(cls=cls)
 
 

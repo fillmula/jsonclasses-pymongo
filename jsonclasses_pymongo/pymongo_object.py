@@ -37,7 +37,7 @@ class PymongoObject(JObject):
         ...
 
     @classmethod
-    def linked(cls: type[T]) -> BaseQuery[T]:
+    def linked(cls: type[T], *args, **kwargs: Any) -> BaseQuery[T]:
         ...
 
     @classmethod

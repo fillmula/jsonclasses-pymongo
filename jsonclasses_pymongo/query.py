@@ -121,8 +121,7 @@ class BaseQuery(Generic[T]):
                     })
                 elif field.fdef.ftype == FType.LIST:
                     if subquery.query is not None:
-                        subpipeline = subquery.query \
-                                                ._build_aggregate_pipeline()
+                        subpipeline = subquery.query._build_aggregate_pipeline()
                     else:
                         subpipeline = []
                     has_match = False
@@ -252,6 +251,14 @@ class BaseListQuery(BaseQuery[T]):
                     self.subqueries.append(Subquery(item, None))
                 elif isinstance(item, dict):
                     for k, v in item.items():
+                        tcls = cast(type[PymongoObject], self._cls)
+                        decoded_key = tcls.cdef.jconf.key_decoding_strategy(k)
+                        field = tcls.cdef.field_named(decoded_key)
+                        fcls = field.foreign_class
+                        if field.fdef.ftype == FType.LIST:
+                            v = fcls.find(**v)
+                        else:
+                            v = fcls.linked(**v)
                         self.subqueries.append(Subquery(k, v))
 
     def order(self: V, field: str, sort: Optional[int] = None) -> V:
