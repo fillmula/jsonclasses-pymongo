@@ -251,7 +251,7 @@ class BaseListQuery(BaseQuery[T]):
                 if type(item) is str:
                     self.subqueries.append(Subquery(item, None))
                 elif isinstance(item, dict):
-                    for k, v in item:
+                    for k, v in item.items():
                         self.subqueries.append(Subquery(k, v))
 
     def order(self: V, field: str, sort: Optional[int] = None) -> V:
