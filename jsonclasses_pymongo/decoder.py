@@ -40,23 +40,6 @@ class Decoder(Coder):
         item_types = types.fdef.item_types
         return {k: self.decode_item(value=v, cls=cls, types=item_types, graph=graph) for k, v in value.items()}
 
-    def decode_shape(self,
-                     value: dict[str, Any],
-                     cls: type[T],
-                     types: Types,
-                     graph: MGraph) -> dict[str, Any]:
-        config: PConf = cls.pconf
-        shape_types = cast(dict[str, Any], types.fdef.raw_shape_types)
-        retval = {}
-        for k, item_types in shape_types.items():
-            retval[k] = self.decode_item(
-                value=value[(camelize(k, False)
-                             if config.camelize_db_keys else k)],
-                cls=cls,
-                types=item_types,
-                graph=graph)
-        return retval
-
     def decode_item(self,
                     value: Any,
                     cls: type[T],
@@ -79,9 +62,6 @@ class Decoder(Coder):
         elif types.fdef.ftype == FType.DICT:
             return self.decode_dict(value=value, cls=cls, types=types,
                                     graph=graph)
-        elif types.fdef.ftype == FType.SHAPE:
-            return self.decode_shape(value=value, cls=cls, types=types,
-                                     graph=graph)
         elif types.fdef.ftype == FType.INSTANCE:
             return self.decode_instance(value=value, cls=cls, types=types,
                                         graph=graph)

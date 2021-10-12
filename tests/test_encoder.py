@@ -155,25 +155,6 @@ class TestEncoder(TestCase):
         self.assertIsInstance(serialized['_id'], ObjectId)
         self.assertEqual(serialized['strValues'], {'0': 'zero', '1': 'one'})
 
-    def test_encode_embedded_shape(self):
-        @pymongo
-        @jsonclass
-        class SimpleEncodeScalarTypesShape:
-            id: str = types.readonly.str.primary.mongoid.required
-            vals: Dict[str, str] = types.shape({
-                '0': str,
-                '1': int
-            })
-        simple_object = SimpleEncodeScalarTypesShape(
-            vals={'0': 'zero', '1': 1})
-        batch_command = Encoder().encode_root(simple_object)
-        insert_command = cast(InsertOneCommand, batch_command.commands[0])
-        serialized = insert_command.object
-        self.assertEqual(set(serialized.keys()), set(
-            ['_id', 'vals']))
-        self.assertIsInstance(serialized['_id'], ObjectId)
-        self.assertEqual(serialized['vals'], {'0': 'zero', '1': 1})
-
     def test_encode_embedded_instance(self):
         @pymongo
         @jsonclass
@@ -337,40 +318,6 @@ class TestEncoder(TestCase):
         encoded_val = commands[0].object['val']
         self.assertEqual(
             encoded_val, {'keyOne': 'val_one', 'keyTwo': 'val_two'})
-
-    def test_encode_shape_camelize_keys(self):
-        @pymongo
-        @jsonclass
-        class MediumEncodeCamelizeShapeKeys:
-            id: str = types.readonly.str.primary.mongoid.required
-            val: Dict[str, str] = types.shape({
-                'key_one': types.str,
-                'key_two': types.str
-            })
-        simple_object = MediumEncodeCamelizeShapeKeys(
-            val={'key_one': 'val_one', 'key_two': 'val_two'})
-        batch_command = Encoder().encode_root(simple_object)
-        commands = batch_command.commands
-        encoded_val = commands[0].object['val']
-        self.assertEqual(
-            encoded_val, {'keyOne': 'val_one', 'keyTwo': 'val_two'})
-
-    def test_encode_shape_do_not_camelize_keys(self):
-        @pymongo(camelize_db_keys=False)
-        @jsonclass
-        class MediumEncodeDoNotCamelizeShapeKeys:
-            id: str = types.readonly.str.primary.mongoid.required
-            val: Dict[str, str] = types.shape({
-                'key_one': types.str,
-                'key_two': types.str
-            })
-        simple_object = MediumEncodeDoNotCamelizeShapeKeys(
-            val={'key_one': 'val_one', 'key_two': 'val_two'})
-        batch_command = Encoder().encode_root(simple_object)
-        commands = batch_command.commands
-        encoded_val = commands[0].object['val']
-        self.assertEqual(
-            encoded_val, {'key_one': 'val_one', 'key_two': 'val_two'})
 
     def test_encoder_handle_many_to_many_with_linkedthru(self):
         @pymongo

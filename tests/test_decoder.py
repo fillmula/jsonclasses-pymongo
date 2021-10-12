@@ -186,25 +186,6 @@ class TestDecoder(TestCase):
         self.assertEqual(instance.id, str(data['_id']))
         self.assertEqual(instance.vals, {'one': 1, 'two': 2})
 
-    def test_decode_embedded_shape(self):
-        @pymongo
-        @jsonclass
-        class SimpleDecodeShape:
-            id: str = types.readonly.str.primary.mongoid.required
-            vals: Dict[str, int] = types.shape({
-                'one': types.int,
-                'two': types.int
-            })
-        data = {
-            '_id': ObjectId(),
-            'createdAt': datetime.now(),
-            'updatedAt': datetime.now(),
-            'vals': {'one': 1, 'two': 2}
-        }
-        instance = Decoder().decode_root(data, SimpleDecodeShape)
-        self.assertEqual(instance.id, str(data['_id']))
-        self.assertEqual(instance.vals, {'one': 1, 'two': 2})
-
     def test_decode_embedded_instance(self):
         @pymongo
         @jsonclass
@@ -275,41 +256,3 @@ class TestDecoder(TestCase):
         instance = Decoder().decode_root(data, MediumDecodeCamelizeDictKeys)
         self.assertEqual(
             instance.val, {'keyOne': 'val_one', 'keyTwo': 'val_two'})
-
-    def test_decode_camelized_shape_keys(self):
-        @pymongo
-        @jsonclass
-        class MediumDecodeCamelizeShapeKeys:
-            id: str = types.readonly.str.primary.mongoid.required
-            val: Dict[str, str] = types.shape({
-                'key_one': types.str,
-                'key_two': types.str
-            })
-        data = {
-            'val': {
-                'keyOne': 'val_one',
-                'keyTwo': 'val_two'
-            }
-        }
-        instance = Decoder().decode_root(data, MediumDecodeCamelizeShapeKeys)
-        self.assertEqual(
-            instance.val, {'key_one': 'val_one', 'key_two': 'val_two'})
-
-    def test_decode_uncamelized_shape_keys(self):
-        @pymongo(camelize_db_keys=False)
-        @jsonclass
-        class MediumDecodeUncamelizeShapeKeys:
-            id: str = types.readonly.str.primary.mongoid.required
-            val: Dict[str, str] = types.shape({
-                'key_one': types.str,
-                'key_two': types.str
-            })
-        data = {
-            'val': {
-                'key_one': 'val_one',
-                'key_two': 'val_two'
-            }
-        }
-        instance = Decoder().decode_root(data, MediumDecodeUncamelizeShapeKeys)
-        self.assertEqual(
-            instance.val, {'key_one': 'val_one', 'key_two': 'val_two'})

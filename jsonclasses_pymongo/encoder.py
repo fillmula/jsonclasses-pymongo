@@ -72,28 +72,6 @@ class Encoder(Coder):
             commands.extend(item_commands)
         return EncodingResult(result, commands)
 
-    def encode_shape(self, context: EncodingContext) -> EncodingResult:
-        if context.value is None:
-            return EncodingResult(result=None, commands=[])
-        value = cast(dict[str, Any], context.value)
-        fd = context.types.fdef
-        shape_types = cast(dict[str, Any], fd.shape_types)
-        camelized = context.owner.__class__.pconf.camelize_db_keys
-        result = {}
-        commands = []
-        for key, item in value.items():
-            item_types = shape_types[key]
-            item_result, item_commands = self.encode_item(context.new(
-                value=item,
-                types=item_types,
-                keypath_root=concat_keypath(context.keypath_root, key),
-                keypath_owner=concat_keypath(context.keypath_owner, key),
-                keypath_parent=str(key),
-                parent=value))
-            result[camelize(key, False) if camelized else key] = item_result
-            commands.extend(item_commands)
-        return EncodingResult(result, commands)
-
     def _join_command(self,
                       this_instance: PymongoObject,
                       this_field: JField,
@@ -310,8 +288,6 @@ class Encoder(Coder):
             return self.encode_list(context)
         elif ftype == FType.DICT:
             return self.encode_dict(context)
-        elif ftype == FType.SHAPE:
-            return self.encode_shape(context)
         elif ftype == FType.INSTANCE:
             return self.encode_instance(context)
         elif ftype == FType.DATE:
