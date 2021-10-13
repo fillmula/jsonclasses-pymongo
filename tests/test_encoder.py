@@ -11,6 +11,7 @@ from jsonclasses_pymongo.command import InsertOneCommand
 from tests.classes.linked_account import LinkedAccount, LinkedBalance
 from tests.classes.linked_author import LinkedAuthor
 from tests.classes.linked_post import LinkedPost
+from tests.classes.simple_calcuser import SimpleCalcUser
 
 
 class TestEncoder(TestCase):
@@ -340,6 +341,17 @@ class TestEncoder(TestCase):
         batch_command = Encoder().encode_root(instance_a)
         commands = batch_command.commands
         self.assertEqual(len(commands), 7)
+
+    def test_encoder_ignores_calculated_fields(self):
+        user = SimpleCalcUser(name='ABC', base_score=5)
+        batch_command = Encoder().encode_root(user)
+        self.assertEqual(len(batch_command.commands), 1)
+        command = batch_command.commands[0]
+        self.assertNotIn('firstName', command.object)
+        self.assertNotIn('lastName', command.object)
+        self.assertNotIn('score', command.object)
+        self.assertIn('name', command.object)
+        self.assertIn('baseScore', command.object)
 
     def test_encode_new_object_correctly_with_existing_objects_1f_1l(self):
         account = LinkedAccount(name='Account')

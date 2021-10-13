@@ -149,6 +149,8 @@ class Encoder(Coder):
         for field in value.__class__.cdef.fields:
             if field.fdef.is_temp_field:
                 continue
+            if field.fdef.fstore == FStore.CALCULATED:
+                continue
             fname = field.name
             fvalue = getattr(value, fname)
             ftypes = field.types
