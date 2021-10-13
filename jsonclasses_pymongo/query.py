@@ -1,5 +1,6 @@
 """This module contains queries."""
 from __future__ import annotations
+from math import ceil
 from jsonclasses_pymongo.query_to_object import query_to_object
 from jsonclasses_pymongo.query_reader import QueryReader
 from typing import (Iterator, Union, TypeVar, Generator, Optional, Any,
@@ -336,6 +337,9 @@ class ListQuery(BaseListQuery[T]):
     def sum(self, field_name: str) -> SumQuery:
         return SumQuery(self, field_name)
 
+    def pages(self) -> PagesQuery:
+        return PagesQuery(self)
+
 
 
 
@@ -551,5 +555,22 @@ class SumQuery:
         return list(coll.aggregate(result))[0][self.filed_name]
 
     def __await__(self) -> Generator[None, None, int | float]:
+        yield
+        return self.exec()
+
+
+class PagesQuery:
+
+    def __init__(self, list_query: ListQuery):
+        self.list_query = list_query
+
+    def exec(self) -> int:
+        result = self.list_query._build_aggregate_pipeline()
+        result.append({'$count': 'count'})
+        coll = Connection.get_collection(self.list_query._cls)
+        page_size = self.list_query._page_size if self.list_query._page_size is not None else 30
+        return ceil(list(coll.aggregate(result))[0]['count'] / page_size)
+
+    def __await__(self) -> Generator[None, None, int]:
         yield
         return self.exec()
