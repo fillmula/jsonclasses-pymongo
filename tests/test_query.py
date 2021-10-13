@@ -1,5 +1,6 @@
 from __future__ import annotations
 from datetime import date
+from math import ceil
 from unittest import TestCase
 from statistics import mean
 from bson.objectid import ObjectId
@@ -330,3 +331,15 @@ class TestQuery(TestCase):
         SimpleScore(name="d", score=4.4).save()
         results = SimpleScore.find().max("name").exec()
         self.assertEqual(results, max('a', 'b', 'c', 'd'))
+
+    def test_query_pages_with_all_list_objects(self):
+        for i in range(100):
+            SimpleScore(name=f's{i}', score=i+20).save()
+        results = SimpleScore.find().pages().exec()
+        self.assertEqual(results, ceil(100/30))
+
+    def test_query_pages_with_filter_list_objects(self):
+        for i in range(100):
+            SimpleScore(name=f's{i}', score=i+20).save()
+        results = SimpleScore.find(**{'_pageSize': 10}).pages().exec()
+        self.assertEqual(results, ceil(100/10))
