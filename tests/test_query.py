@@ -3,6 +3,8 @@ from datetime import date
 from unittest import TestCase
 from bson.objectid import ObjectId
 from jsonclasses_pymongo import Connection
+from tests.classes.simple_score import SimpleScore
+from statistics import mean
 from tests.classes.simple_song import SimpleSong
 from tests.classes.simple_artist import SimpleArtist
 from tests.classes.linked_author import LinkedAuthor
@@ -40,6 +42,8 @@ class TestQuery(TestCase):
         collection = Connection.get_collection(SimplePersona)
         collection.delete_many({})
         collection = Connection.get_collection(SimpleSex)
+        collection.delete_many({})
+        collection = Connection.get_collection(SimpleScore)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedAuthor)
         collection.delete_many({})
@@ -238,3 +242,91 @@ class TestQuery(TestCase):
         results = SimpleSex.find('gender=1').exec()
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].gender, d.gender)
+
+    def test_query_avg_with_all_list_of_number(self):
+        SimpleScore(name="a", score=1.3).save()
+        SimpleScore(name="b", score=2.2).save()
+        SimpleScore(name="c", score=3.2).save()
+        SimpleScore(name="d", score=4.4).save()
+        results = SimpleScore.find().avg("score").exec()
+        self.assertEqual(results, mean([1.3, 2.2, 3.2, 4.4]))
+
+    def test_query_avg_with_filter_list_of_number(self):
+        SimpleScore(name="Sa", score=4).save()
+        SimpleScore(name="Sb", score=2.5).save()
+        SimpleScore(name="Sc", score=33).save()
+        SimpleScore(name="Sd", score=43).save()
+        SimpleScore(name="d", score=423).save()
+        SimpleScore(name="e", score=43).save()
+        results = SimpleScore.find(**{'name': {'_prefix': 'S'}}).avg("score").exec()
+        self.assertEqual(results, mean([4, 2.5, 33, 43]))
+
+    def test_query_sum_with_all_list_of_number(self):
+        SimpleScore(name="a", score=1.3).save()
+        SimpleScore(name="b", score=2.2).save()
+        SimpleScore(name="c", score=3.2).save()
+        SimpleScore(name="d", score=4.4).save()
+        results = SimpleScore.find().sum("score").exec()
+        self.assertEqual(results, sum([1.3, 2.2, 3.2, 4.4]))
+
+    def test_query_sum_with_filter_list_of_number(self):
+        SimpleScore(name="Sa", score=4).save()
+        SimpleScore(name="Sb", score=2.5).save()
+        SimpleScore(name="Sc", score=33).save()
+        SimpleScore(name="Sd", score=43).save()
+        SimpleScore(name="d", score=423).save()
+        SimpleScore(name="e", score=43).save()
+        results = SimpleScore.find(**{'name': {'_prefix': 'S'}}).sum("score").exec()
+        self.assertEqual(results, sum([4, 2.5, 33, 43]))
+
+    def test_query_min_with_all_list_of_number(self):
+        SimpleScore(name="a", score=1.3).save()
+        SimpleScore(name="b", score=2.2).save()
+        SimpleScore(name="c", score=3.2).save()
+        SimpleScore(name="d", score=4.4).save()
+        results = SimpleScore.find().min("score").exec()
+        self.assertEqual(results, min(1.3, 2.2, 3.2, 4.4))
+
+    def test_query_min_with_filter_list_of_number(self):
+        SimpleScore(name="Sa", score=4).save()
+        SimpleScore(name="Sb", score=2.5).save()
+        SimpleScore(name="Sc", score=33).save()
+        SimpleScore(name="Sd", score=43).save()
+        SimpleScore(name="d", score=423).save()
+        SimpleScore(name="e", score=43).save()
+        results = SimpleScore.find(**{'name': {'_prefix': 'S'}}).min("score").exec()
+        self.assertEqual(results, min(4, 2.5, 33, 43))
+
+    def test_query_min_with_all_list_of_str(self):
+        SimpleScore(name="a", score=1.3).save()
+        SimpleScore(name="b", score=2.2).save()
+        SimpleScore(name="c", score=3.2).save()
+        SimpleScore(name="d", score=4.4).save()
+        results = SimpleScore.find().min("name").exec()
+        self.assertEqual(results, min('a', 'b', 'c', 'd'))
+
+    def test_query_max_with_all_list_of_number(self):
+        SimpleScore(name="a", score=1.3).save()
+        SimpleScore(name="b", score=2.2).save()
+        SimpleScore(name="c", score=3.2).save()
+        SimpleScore(name="d", score=4.4).save()
+        results = SimpleScore.find().max("score").exec()
+        self.assertEqual(results, max(1.3, 2.2, 3.2, 4.4))
+
+    def test_query_max_with_filter_list_of_number(self):
+        SimpleScore(name="Sa", score=4).save()
+        SimpleScore(name="Sb", score=2.5).save()
+        SimpleScore(name="Sc", score=33).save()
+        SimpleScore(name="Sd", score=43).save()
+        SimpleScore(name="d", score=423).save()
+        SimpleScore(name="e", score=43).save()
+        results = SimpleScore.find(**{'name': {'_prefix': 'S'}}).max("score").exec()
+        self.assertEqual(results, max(4, 2.5, 33, 43))
+
+    def test_query_max_with_all_list_of_str(self):
+        SimpleScore(name="a", score=1.3).save()
+        SimpleScore(name="b", score=2.2).save()
+        SimpleScore(name="c", score=3.2).save()
+        SimpleScore(name="d", score=4.4).save()
+        results = SimpleScore.find().max("name").exec()
+        self.assertEqual(results, max('a', 'b', 'c', 'd'))
