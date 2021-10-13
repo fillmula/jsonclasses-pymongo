@@ -94,6 +94,7 @@ class TestQuery(TestCase):
         self.assertGreaterEqual(song.created_at, result.created_at)
         self.assertGreaterEqual(song.updated_at, result.updated_at)
 
+
     def test_query_object_with_int(self):
         song = SimpleSong(name='Long', year=2020, artist='Thao')
         song.save()

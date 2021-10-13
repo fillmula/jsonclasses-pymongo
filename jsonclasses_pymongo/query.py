@@ -394,16 +394,28 @@ class BaseIDQuery(BaseQuery[T]):
     """Query collection from object id.
     """
 
-    def __init__(self: U, cls: type[T], id: Union[str, ObjectId]) -> None:
+    def __init__(
+                 self: U, cls: type[T],
+                 id: Union[str, ObjectId],
+                 matcher: Union[dict[str, Any], str, None] = None) -> None:
         super().__init__(cls)
+        self.list_query = ListQuery(cls=cls, filter=matcher)
         self._id = id
 
+    def include(self: U, name: str, query: Optional[BaseQuery] = None) -> U:
+        self.list_query.include(name, query)
+        return self
+
     def _build_aggregate_pipeline(self: BaseIDQuery) -> list[dict[str, Any]]:
-        lookups = super()._build_aggregate_pipeline()
-        result: list[dict[str, Any]] = []
-        result.append({'$match': {'_id': ObjectId(self._id)}})
-        result.extend(lookups)
+        list_query_results = self.list_query._build_aggregate_pipeline()
+        result = [{'$match': {'_id': ObjectId(self._id)}}]
+        for v in list_query_results:
+            if '$match' in v.keys():
+                continue
+            else:
+                result.append(v)
         return result
+
 
     def _exec(self) -> Optional[T]:
         pipeline = self._build_aggregate_pipeline()

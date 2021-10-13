@@ -33,7 +33,7 @@ class PymongoObject(JObject):
         ...
 
     @classmethod
-    def id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery[T]:
+    def id(cls: type[T], id: str | ObjectId, *args, **kwargs: Any) -> IDQuery[T]:
         ...
 
     @classmethod

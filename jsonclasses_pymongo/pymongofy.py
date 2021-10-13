@@ -34,8 +34,11 @@ def one(cls: type[T], *args, **kwargs: Any) -> SingleQuery[T]:
         return SingleQuery(cls=cls, filter=kwargs)
 
 
-def pymongo_id(cls: type[T], id: Union[str, ObjectId]) -> IDQuery[T]:
-    return IDQuery(cls=cls, id=id)
+def pymongo_id(cls: type[T], id: str | ObjectId, *args, **kwargs: Any) -> IDQuery[T]:
+    if len(args) > 0:
+        return IDQuery(cls=cls, id=id, matcher=args[0])
+    else:
+        return IDQuery(cls=cls, id=id, matcher=kwargs)
 
 
 def linked(cls: type[T], *args, **kwargs: Any) -> BaseQuery[T]:
