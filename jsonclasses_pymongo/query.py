@@ -324,6 +324,21 @@ class ListQuery(BaseListQuery[T]):
         yield
         return self.exec()
 
+    def avg(self, field_name: str) -> AvgQuery:
+        return AvgQuery(self, field_name)
+
+    def min(self, field_name: str) -> MinQuery:
+        return MinQuery(self, field_name)
+
+    def max(self, field_name: str) -> MaxQuery:
+        return MaxQuery(self, field_name)
+
+    def sum(self, field_name: str) -> SumQuery:
+        return SumQuery(self, field_name)
+
+
+
+
 
 class SingleQuery(BaseListQuery[T]):
     """Queries only one object from the query.
@@ -467,5 +482,74 @@ class IterateQuery(BaseListQuery[T]):
         return QueryIterator(cls=self._cls, cursor=cursor)
 
     def __await__(self) -> Generator[None, None, Iterator[T]]:
+        yield
+        return self.exec()
+
+
+class AvgQuery:
+
+    def __init__(self, list_query: ListQuery, field_name: str):
+        self.list_query = list_query
+        self.filed_name = field_name
+
+    def exec(self) -> int | float:
+        result = self.list_query._build_aggregate_pipeline()
+        result.append({'$group': {'_id': None, self.filed_name: {'$avg': '$' + self.filed_name}}})
+        coll = Connection.get_collection(self.list_query._cls)
+        return list(coll.aggregate(result))[0][self.filed_name]
+
+    def __await__(self) -> Generator[None, None, int | float]:
+        yield
+        return self.exec()
+
+
+
+class MinQuery:
+
+    def __init__(self, list_query: ListQuery, field_name: str):
+        self.list_query = list_query
+        self.filed_name = field_name
+
+    def exec(self) -> Any:
+        result = self.list_query._build_aggregate_pipeline()
+        result.append({'$group': {'_id': None, self.filed_name: {'$min': '$' + self.filed_name}}})
+        coll = Connection.get_collection(self.list_query._cls)
+        return list(coll.aggregate(result))[0][self.filed_name]
+
+    def __await__(self) -> Generator[None, None, Any]:
+        yield
+        return self.exec()
+
+
+class MaxQuery:
+
+    def __init__(self, list_query: ListQuery, field_name: str):
+        self.list_query = list_query
+        self.filed_name = field_name
+
+    def exec(self) -> Any:
+        result = self.list_query._build_aggregate_pipeline()
+        result.append({'$group': {'_id': None, self.filed_name: {'$max': '$' + self.filed_name}}})
+        coll = Connection.get_collection(self.list_query._cls)
+        return list(coll.aggregate(result))[0][self.filed_name]
+
+    def __await__(self) -> Generator[None, None, Any]:
+        yield
+        return self.exec()
+
+
+class SumQuery:
+
+    def __init__(self, list_query: ListQuery, field_name: str):
+        self.list_query = list_query
+        self.filed_name = field_name
+
+    def exec(self) -> int | float:
+        result = self.list_query._build_aggregate_pipeline()
+        result.append({'$group': {'_id': None, self.filed_name: {'$sum': '$' + self.filed_name}}})
+        coll = Connection.get_collection(self.list_query._cls)
+        return list(coll.aggregate(result))[0][self.filed_name]
+
+    def __await__(self) -> Generator[None, None, int | float]:
         yield
         return self.exec()
