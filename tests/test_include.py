@@ -70,6 +70,24 @@ class TestSave(TestCase):
         self.assertEqual(user.profile.id, profile.id)
         self.assertEqual(user.profile.name, profile.name)
 
+    def test_1f_1l_ref_lookup_fetches_linked_object_use_id_include(self):
+        user = LinkedUser(name='Teo Yeo')
+        profile = LinkedProfile(name='Great City')
+        user.profile = profile
+        user.save()
+        user = LinkedUser.id(user.id, **{'_includes': ['profile']}).exec()
+        self.assertEqual(user.profile.id, profile.id)
+        self.assertEqual(user.profile.name, profile.name)
+
+    def test_1f_1l_ref_lookup_fetches_linked_object_use_id_str_include(self):
+        user = LinkedUser(name='Teo Yeo')
+        profile = LinkedProfile(name='Great City')
+        user.profile = profile
+        user.save()
+        user = LinkedUser.id(user.id, '_includes[0]=profile').exec()
+        self.assertEqual(user.profile.id, profile.id)
+        self.assertEqual(user.profile.name, profile.name)
+
     def test_1l_1f_ref_lookup_fetches_linked_object(self):
         user = LinkedUser(name='Teo Yeo')
         profile = LinkedProfile(name='Great City')
