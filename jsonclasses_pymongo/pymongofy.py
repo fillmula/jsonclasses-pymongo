@@ -6,6 +6,7 @@ from jsonclasses.jfield import JField
 from pymongo.errors import DuplicateKeyError
 from inflection import camelize, underscore
 from pymongo.collection import Collection
+from pymongo import ASCENDING
 from jsonclasses.fdef import FStore, FType
 from jsonclasses.excs import UniqueConstraintException
 from jsonclasses.excs import DeletionDeniedException
@@ -196,35 +197,55 @@ def pymongofy(class_: type) -> PymongoObject:
         return class_
     def callback(coll: Collection):
         info = coll.index_information()
+        existing_index_keys = list(info.keys())
+        compound_keys: dict[str, list[str]] = {}
         for field in class_.cdef.fields:
-            name = field.name
+            fname = field.name
             if class_.pconf.camelize_db_keys:
-                name = camelize(field.name, False)
+                fname = camelize(field.name, False)
             index = field.fdef.index
             unique = field.fdef.unique
             required = field.fdef.required
-            index_name = f'{name}_1'
+            index_name = f'{fname}_1'
             ftype = field.fdef.ftype
+            cindex = field.fdef.cindex
+            cindex_names = field.fdef.cindex_names
+            # check single index
             if unique:
                 if required:
-                    coll.create_index(name, name=index_name, unique=True)
+                    coll.create_index(fname, name=index_name, unique=True)
                 else:
                     coll.create_index(
-                        name, name=index_name, unique=True,
+                        fname, name=index_name, unique=True,
                         partialFilterExpression={
-                            name: {'$type': btype_from_ftype(ftype)}
+                            fname: {'$type': btype_from_ftype(ftype)}
                         })
             elif index:
                 if required:
-                    coll.create_index(name, name=index_name)
+                    coll.create_index(fname, name=index_name)
                 else:
                     coll.create_index(
-                        name, name=index_name,
+                        fname, name=index_name,
                         partialFilterExpression={
-                            name: {'$type': btype_from_ftype(ftype)}
+                            fname: {'$type': btype_from_ftype(ftype)}
                         })
             else:
-                if index_name in info.keys():
+                if index_name in existing_index_keys:
                     coll.drop_index(index_name)
+                    existing_index_keys.remove(index_name)
+            # check compound index
+            if cindex:
+                for ciname in cindex_names:
+                    if ciname not in compound_keys:
+                        compound_keys[ciname] = []
+                    compound_keys[ciname].append(fname)
+        for index_name, field_names in compound_keys.items():
+            keys = [(fn, ASCENDING) for fn in field_names]
+            coll.create_index(keys, name=index_name)
+            if index_name in existing_index_keys:
+                existing_index_keys.remove(index_name)
+        for left_key in existing_index_keys:
+            if left_key != '_id_':
+                coll.drop_index(left_key)
     connection.add_connected_callback(class_.pconf.collection_name, callback)
     return class_
