@@ -1,15 +1,17 @@
 """
 This module contains `jsonclass`, the decorator for JSON Classes.
 """
-from typing import Optional, Union, Callable, overload, cast
+from typing import Optional, Union, Callable, TypeVar, overload, cast
 from jsonclasses.jobject import JObject
 from .pymongo_object import PymongoObject
 from .pymongofy import pymongofy
 from .pconf import PConf
 
 
+T = TypeVar('T', bound=type[JObject])
+
 @overload
-def pymongo(cls: type) -> type: ...
+def pymongo(cls: T) -> T | type[PymongoObject]: ...
 
 
 @overload
@@ -17,22 +19,22 @@ def pymongo(
     cls: None,
     collection_name: Optional[str] = None,
     camelize_db_keys: Optional[bool] = None,
-) -> Callable[[type], type[PymongoObject]]: ...
+) -> Callable[[T], T | type[PymongoObject]]: ...
 
 
 @overload
 def pymongo(
-    cls: type,
+    cls: T,
     collection_name: Optional[str] = None,
     camelize_db_keys: Optional[bool] = None,
-) -> type[PymongoObject]: ...
+) -> T | type[PymongoObject]: ...
 
 
 def pymongo(
-    cls: Optional[type[JObject]] = None,
+    cls: Optional[T] = None,
     collection_name: Optional[str] = None,
     camelize_db_keys: Optional[bool] = None,
-) -> Union[Callable[[type], type[PymongoObject]], type[PymongoObject]]:
+) -> Union[Callable[[T], T | type[PymongoObject]], T | type[PymongoObject]]:
     """The pymongo object class decorator. To declare a jsonclass class, use
     this syntax:
 
