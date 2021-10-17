@@ -58,14 +58,28 @@ def _database_write(self: T) -> None:
     try:
         Encoder().encode_root(self).execute()
     except DuplicateKeyError as exception:
-        result = search('index: (.+?)_1', exception._message)
+        result = search('index: (.+?) dup key', exception._message)
         assert result is not None
-        db_key = result.group(1)
-        pt_key = db_key
-        if self.__class__.pconf.camelize_db_keys:
-            pt_key = underscore(db_key)
-        raise UniqueConstraintException(pt_key) from None
-
+        index_key = result.group(1)
+        single_key = True
+        if index_key.endswith('_1'):
+            db_key = index_key[:-2]
+            single_key = True
+        else:
+            db_key = index_key
+            single_key = False
+        if single_key:
+            pt_key = db_key
+            if self.__class__.pconf.camelize_db_keys:
+                pt_key = underscore(db_key)
+            raise UniqueConstraintException(pt_key) from None
+        else:
+            results = []
+            for field in self.__class__.cdef.fields:
+                if field.fdef.cindex and db_key in field.fdef.cindex_names:
+                    results.append(field.name)
+            ek = self.__class__.cdef.jconf.key_encoding_strategy
+            raise UniqueConstraintException([ek(r) for r in results], f'voilated unique compound index \'{index_key}\'')
 
 def _orm_delete(self: T, no_raise: bool = False) -> None:
     # deny test
@@ -238,10 +252,14 @@ def pymongofy(class_: type) -> PymongoObject:
                 for ciname in cindex_names:
                     if ciname not in compound_keys:
                         compound_keys[ciname] = []
-                    compound_keys[ciname].append(fname)
+                    if field.fdef.fstore == FStore.LOCAL_KEY:
+                        res = field.fdef.cdef.jconf.ref_key_encoding_strategy
+                        compound_keys[ciname].append(res(field))
+                    else:
+                        compound_keys[ciname].append(fname)
         for index_name, field_names in compound_keys.items():
             keys = [(fn, ASCENDING) for fn in field_names]
-            coll.create_index(keys, name=index_name)
+            coll.create_index(keys, name=index_name, unique=True)
             if index_name in existing_index_keys:
                 existing_index_keys.remove(index_name)
         for left_key in existing_index_keys:
