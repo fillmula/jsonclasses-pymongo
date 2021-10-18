@@ -117,7 +117,7 @@ class TestQuery(TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].year, 2020)
 
-    def test_query_object_with_int_object(self):
+    def test_query_object_with_gt_int_object(self):
         song = SimpleSong(name='Long', year=2020, artist='Thao')
         song.save()
         result = SimpleSong.find(year={'_gt': 2010}).exec()
@@ -126,7 +126,7 @@ class TestQuery(TestCase):
         result = SimpleSong.find(year={'_gt': 2030}).exec()
         self.assertEqual(len(result), 0)
 
-    def test_query_object_with_int_object_string(self):
+    def test_query_object_with_gt_int_object_string(self):
         song = SimpleSong(name='Long', year=2020, artist='Thao')
         song.save()
         result = SimpleSong.find('year[_gt]=2010').exec()
@@ -134,6 +134,97 @@ class TestQuery(TestCase):
         self.assertEqual(result[0].year, 2020)
         result = SimpleSong.find('year[_gt]=2030').exec()
         self.assertEqual(len(result), 0)
+
+    def test_query_object_with_gte_int_object(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find(year={'_gte': 2020}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+        result = SimpleSong.find(year={'_gte': 2030}).exec()
+        self.assertEqual(len(result), 0)
+
+    def test_query_object_with_gte_int_object_string(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find('year[_gte]=2010').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+        result = SimpleSong.find('year[_gte]=2030').exec()
+        self.assertEqual(len(result), 0)
+
+    def test_query_object_with_lt_int_object(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find(year={'_lt': 2021}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+        result = SimpleSong.find(year={'_lt': 2010}).exec()
+        self.assertEqual(len(result), 0)
+
+    def test_query_object_with_lt_int_object_string(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find('year[_lt]=2021').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+        result = SimpleSong.find('year[_lt]=2010').exec()
+        self.assertEqual(len(result), 0)
+
+    def test_query_object_with_lte_int_object(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find(year={'_lte': 2020}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+        result = SimpleSong.find(year={'_lte': 2010}).exec()
+        self.assertEqual(len(result), 0)
+
+    def test_query_object_with_lte_int_object_string(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find('year[_lte]=2025').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+        result = SimpleSong.find('year[_lte]=2010').exec()
+        self.assertEqual(len(result), 0)
+
+    def test_query_object_with_eq_int_object(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find(year={'_eq': 2020}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+        result = SimpleSong.find(year={'_eq': 2010}).exec()
+        self.assertEqual(len(result), 0)
+
+    def test_query_object_with_eq_int_object_string(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find('year[_eq]=2020').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+        result = SimpleSong.find('year[_eq]=2010').exec()
+        self.assertEqual(len(result), 0)
+
+    def test_query_object_with_not_int_object(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find(year={'_not': 2010}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+        result = SimpleSong.find(year={'_not': 2020}).exec()
+        self.assertEqual(len(result), 0)
+
+    def test_query_object_with_not_int_object_string(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find('year[_not]=2010').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+        result = SimpleSong.find('year[_not]=2020').exec()
+        self.assertEqual(len(result), 0)
+
 
     def test_query_object_with_str(self):
         song = SimpleSong(name='Long', year=2020, artist='Thao')
