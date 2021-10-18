@@ -1,10 +1,12 @@
 from __future__ import annotations
-from datetime import date
+from datetime import date, datetime
 from math import ceil
 from unittest import TestCase
 from statistics import mean
 from bson.objectid import ObjectId
 from jsonclasses_pymongo import Connection
+from tests.classes.simple_animal import SimpleAnimal
+from tests.classes.simple_datetime import SimpleDatetime
 from tests.classes.simple_score import SimpleScore
 from tests.classes.simple_song import SimpleSong
 from tests.classes.simple_artist import SimpleArtist
@@ -13,6 +15,7 @@ from tests.classes.linked_post import LinkedPost
 from tests.classes.simple_date import SimpleDate
 from tests.classes.simple_persona import SimplePersona
 from tests.classes.simple_sex import SimpleSex, Gender
+from tests.classes.simple_str import SimpleString
 
 
 class TestQuery(TestCase):
@@ -40,6 +43,8 @@ class TestQuery(TestCase):
         collection.delete_many({})
         collection = Connection.get_collection(SimpleDate)
         collection.delete_many({})
+        collection = Connection.get_collection(SimpleDatetime)
+        collection.delete_many({})
         collection = Connection.get_collection(SimplePersona)
         collection.delete_many({})
         collection = Connection.get_collection(SimpleSex)
@@ -49,6 +54,10 @@ class TestQuery(TestCase):
         collection = Connection.get_collection(LinkedAuthor)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedPost)
+        collection.delete_many({})
+        collection = Connection.get_collection(SimpleAnimal)
+        collection.delete_many({})
+        collection = Connection.get_collection(SimpleString)
         collection.delete_many({})
 
     def test_query_objects_from_database(self):
@@ -93,7 +102,6 @@ class TestQuery(TestCase):
         self.assertEqual(song.id, result.id)
         self.assertGreaterEqual(song.created_at, result.created_at)
         self.assertGreaterEqual(song.updated_at, result.updated_at)
-
 
     def test_query_object_with_int(self):
         song = SimpleSong(name='Long', year=2020, artist='Thao')
@@ -141,7 +149,7 @@ class TestQuery(TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Long')
 
-    def test_query_object_with_str_object(self):
+    def test_query_object_with_prefix_str_object(self):
         song = SimpleSong(name='Long', year=2020, artist='Thao')
         song.save()
         song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
@@ -150,7 +158,7 @@ class TestQuery(TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Long')
 
-    def test_query_object_with_str_object_str(self):
+    def test_query_object_with_prefix_str_object_str(self):
         song = SimpleSong(name='Long', year=2020, artist='Thao')
         song.save()
         song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
@@ -159,17 +167,217 @@ class TestQuery(TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Long')
 
+    def test_query_object_with_contains_str_object(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_contains': 'on'}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Long')
+
+    def test_query_object_with_contains_str_object_str(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_contains]=on').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Long')
+
+    def test_query_object_with_suffix_str_object(self):
+        song = SimpleSong(name='Ben', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_suffix': 'en'}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Ben')
+
+    def test_query_object_with_suffix_str_object_str(self):
+        song = SimpleSong(name='Ben', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_suffix]=en').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Ben')
+
+    def test_query_object_with_match_str_object(self):
+        song = SimpleSong(name='Ben', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_match': 'B'}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Ben')
+
+    def test_query_object_with_match_str_object_str(self):
+        song = SimpleSong(name='Ben', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_match]=B').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Ben')
+
+    def test_query_object_with_containsi_str_object(self):
+        song = SimpleSong(name='Ben', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_containsi': 'b'}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Ben')
+
+    def test_query_object_with_containsi_str_object_str(self):
+        song = SimpleSong(name='Ben', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_containsi]=b').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Ben')
+
+    def test_query_object_with_prefixi_str_object(self):
+        song = SimpleSong(name='Ben', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_prefixi': 'b'}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Ben')
+
+    def test_query_object_with_prefixi_str_object_str(self):
+        song = SimpleSong(name='Ben', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_prefixi]=b').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Ben')
+
+    def test_query_object_with_suffixi_str_object(self):
+        song = SimpleSong(name='BenS', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_suffixi': 's'}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'BenS')
+
+    def test_query_object_with_suffixi_str_object_str(self):
+        song = SimpleSong(name='BenS', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_suffixi]=s').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'BenS')
+
+    def test_query_object_with_matchi_str_object(self):
+        song = SimpleSong(name='Lucy', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_matchi': 'C'}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Lucy')
+
+    def test_query_object_with_matchi_str_object_str(self):
+        song = SimpleSong(name='Lucy', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_matchi]=C').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Lucy')
+
+    def test_query_object_with_equal_str_object(self):
+        song = SimpleSong(name='Lucy', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_equal': 'Lieng'}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Lieng')
+
+    def test_query_object_with_equal_str_object_str(self):
+        song = SimpleSong(name='Lucy', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_equal]=Lieng').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Lieng')
+
+    def test_query_object_with_not_str_object(self):
+        song = SimpleSong(name='Lucy', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_not': 'Lieng'}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Lucy')
+
+    def test_query_object_with_not_str_object_str(self):
+        song = SimpleSong(name='Lucy', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_not]=Lieng').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Lucy')
+
+    def test_query_object_with_field_exists_str_object(self):
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_field_exists': 'True'}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Lieng')
+
+    def test_query_object_with_field_exists_str_object_str(self):
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_field_exists]=True').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Lieng')
+
     def test_query_object_with_bool(self):
-        pass
+        animal = SimpleAnimal(name='tiger', can_fly=False)
+        animal.save()
+        animal2 = SimpleAnimal(name='bird', can_fly=True)
+        animal2.save()
+        result = SimpleAnimal.find(can_fly=False).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'tiger')
 
     def test_query_object_with_bool_str(self):
-        pass
+        animal = SimpleAnimal(name='tiger', can_fly=False)
+        animal.save()
+        animal2 = SimpleAnimal(name='bird', can_fly=True)
+        animal2.save()
+        result = SimpleAnimal.find(can_fly='false').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'tiger')
 
     def test_query_object_with_bool_object(self):
-        pass
+        animal = SimpleAnimal(name='tiger', can_fly=False)
+        animal.save()
+        animal2 = SimpleAnimal(name='bird', can_fly=True)
+        animal2.save()
+        result = SimpleAnimal.find(can_fly={'_eq': "False"}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'tiger')
 
     def test_query_object_with_bool_object_str(self):
-        pass
+        animal = SimpleAnimal(name='tiger', can_fly=False)
+        animal.save()
+        animal2 = SimpleAnimal(name='bird', can_fly=True)
+        animal2.save()
+        result = SimpleAnimal.find('canFly[_eq]=false').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'tiger')
 
     def test_query_object_with_date(self):
         d = SimpleDate(represents=date(2010, 7, 7))
@@ -186,10 +394,46 @@ class TestQuery(TestCase):
         self.assertEqual(results[0].represents, d.represents)
 
     def test_query_object_with_date_object(self):
-        pass
+        d = SimpleDate(represents=date(2010, 7, 7))
+        d.save()
+        results = SimpleDate.find(represents={'_eq': '2010-07-07'}).exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].represents, d.represents)
 
     def test_query_object_with_date_object_string(self):
-        pass
+        d = SimpleDate(represents=date(2010, 7, 7))
+        d.save()
+        results = SimpleDate.find('represents[_eq]=2010-07-07').exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].represents, d.represents)
+
+    def test_query_object_with_datetime(self):
+        d = SimpleDatetime(represents=datetime(2021, 6, 6, 12, 30))
+        d.save()
+        results = SimpleDatetime.find(represents=datetime(2021, 6, 6, 12, 30)).exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].represents, d.represents)
+
+    def test_query_object_with_datetime_string(self):
+        d = SimpleDatetime(represents=datetime(2021, 6, 6, 12, 30, 0))
+        d.save()
+        results = SimpleDatetime.find('represents=2021-06-06 12:30:00').exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].represents, d.represents)
+
+    def test_query_object_with_datetime_object(self):
+        d = SimpleDatetime(represents=datetime(2021, 6, 6, 12, 30, 0))
+        d.save()
+        results = SimpleDatetime.find(represents={'_eq': '2021-06-06 12:30:00'}).exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].represents, d.represents)
+
+    def test_query_object_with_date_object_string(self):
+        d = SimpleDate(represents=datetime(2021, 6, 6, 12, 30, 0))
+        d.save()
+        results = SimpleDate.find('represents[_eq]=2021-06-06 12:30:00').exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].represents, d.represents)
 
     def test_query_dict_in_list(self):
         p = SimplePersona(items=[{'a': 1, 'b': 2}, {'c': 3}])
