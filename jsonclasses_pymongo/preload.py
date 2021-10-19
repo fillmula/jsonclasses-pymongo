@@ -12,9 +12,9 @@ from .connection import Connection
 
 
 def getidref(cls: type[PymongoObject], id: str | int) -> str | int:
-    coll = Connection(cls.cdef.cgraph.name).collection('_refkeys')
+    coll = Connection(cls.cdef.jconf.cgraph.name).collection('_refkeys')
     matcher = {
-        'graph': cls.cdef.cgraph.name, 'cls': cls.__name__, 'sid':id
+        'graph': cls.cdef.jconf.cgraph.name, 'cls': cls.__name__, 'sid':id
     }
     result = coll.find_one(matcher)
     if result is not None:
@@ -69,7 +69,7 @@ def loadobject(cls: type[PymongoObject], obj: dict[str, Any]) -> None:
     if fval is None:
         raise ValueError('please assign a primary key name')
     oid = getidref(cls, fval)
-    exist_object = cls.id(oid).exec()
+    exist_object = cls.id(oid).optional.exec()
     if exist_object is None:
         seedobject(cls, fvalues, oid, False)
     elif strategy == 'reseed':
