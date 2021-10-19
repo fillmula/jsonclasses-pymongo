@@ -179,7 +179,7 @@ class TestSave(TestCase):
         self.assertEqual(author.posts[0].is_new, False)
         self.assertEqual(author.posts[1].is_new, False)
 
-    def test_set_local_key_to_none_is_saved(self):
+    def test_set_local_key_to_unset_is_saved(self):
         post = LinkedPost(title='P1', content='P2')
         author = LinkedAuthor(name='A1')
         post.author = author
@@ -188,7 +188,7 @@ class TestSave(TestCase):
         post.save()
         collection = Connection.get_collection(LinkedPost)
         for item in collection.find({}):
-            self.assertEqual(item['authorId'], None)
+            self.assertNotIn('authorId', item)
 
     def test_set_local_key_to_id_is_saved(self):
         post = LinkedPost(title='P1', content='P2')
@@ -251,7 +251,7 @@ class TestSave(TestCase):
         self.assertEqual(user.modified_fields, ())
         collection = Connection.get_collection(LinkedProfile)
         for item in collection.find({}):
-            self.assertEqual(item['userId'], None)
+            self.assertNotIn('userId', item)
 
     def test_1f_1l_object_unlink_is_saved(self):
         user = LinkedUser(name='u')
@@ -268,7 +268,7 @@ class TestSave(TestCase):
         self.assertEqual(user.modified_fields, ())
         collection = Connection.get_collection(LinkedProfile)
         for item in collection.find({}):
-            self.assertEqual(item['userId'], None)
+            self.assertNotIn('userId', item)
 
     def test_1_many_unlink_is_saved(self):
         author = LinkedAuthor(name='A')
@@ -285,9 +285,9 @@ class TestSave(TestCase):
         self.assertEqual(post.modified_fields, ())
         collection = Connection.get_collection(LinkedPost)
         for item in collection.find({}):
-            self.assertEqual(item['authorId'], None)
+            self.assertNotIn('authorId', item)
 
-    def test_many_1_unlink_is_saved(self):
+    def test_many_1_unlink_unset_is_saved(self):
         author = LinkedAuthor(name='A')
         post = LinkedPost(title='T', content='C')
         post.author = author
@@ -302,7 +302,7 @@ class TestSave(TestCase):
         self.assertEqual(post.modified_fields, ())
         collection = Connection.get_collection(LinkedPost)
         for item in collection.find({}):
-            self.assertEqual(item['authorId'], None)
+            self.assertNotIn('authorId', item)
 
     def test_many_many_unlink_is_saved(self):
         course1 = LinkedCourse(name='C1')

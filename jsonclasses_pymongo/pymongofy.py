@@ -212,8 +212,8 @@ def pymongofy(class_: type) -> PymongoObject:
     def callback(coll: Collection):
         info = coll.index_information()
         existing_index_keys = list(info.keys())
-        compound_keys: dict[str, list[str]] = {}
-        compound_ukeys: dict[str, list[str]] = {}
+        compound_fields: dict[str, list[JField]] = {}
+        compound_ufields: dict[str, list[JField]] = {}
         for field in class_.cdef.fields:
             fname = field.name
             if class_.pconf.camelize_db_keys:
@@ -253,40 +253,60 @@ def pymongofy(class_: type) -> PymongoObject:
             # check compound index
             if cindex:
                 for ciname in cindex_names:
-                    if ciname not in compound_keys:
-                        compound_keys[ciname] = []
+                    if ciname not in compound_fields:
+                        compound_fields[ciname] = []
                     if field.fdef.fstore == FStore.LOCAL_KEY:
                         res = field.fdef.cdef.jconf.ref_key_encoding_strategy
-                        compound_keys[ciname].append(res(field))
+                        compound_fields[ciname].append(field)
                     else:
-                        compound_keys[ciname].append(fname)
+                        compound_fields[ciname].append(field)
             if cunique:
                 for cuname in cunique_names:
-                    if cuname not in compound_ukeys:
-                        compound_ukeys[cuname] = []
+                    if cuname not in compound_ufields:
+                        compound_ufields[cuname] = []
                     if field.fdef.fstore == FStore.LOCAL_KEY:
                         res = field.fdef.cdef.jconf.ref_key_encoding_strategy
-                        compound_ukeys[cuname].append(res(field))
+                        compound_ufields[cuname].append(field)
                     else:
-                        compound_ukeys[cuname].append(fname)
-        for index_name, field_names in compound_keys.items():
-            sparse = False
-            for fname in field_names:
-                if not class_.cdef.field_named(fname).fdef.required:
-                    sparse = True
-                    break
-            keys = [(fn, ASCENDING) for fn in field_names]
-            coll.create_index(keys, name=index_name, sparse=sparse)
+                        compound_ufields[cuname].append(field)
+        for index_name, fields in compound_fields.items():
+            partial: dict[str, Any] = {}
+            keys: list[tuple[str, Any]] = []
+            for field in fields:
+                if field.fdef.fstore == FStore.LOCAL_KEY:
+                    res = field.fdef.cdef.jconf.ref_key_encoding_strategy
+                    key = res(field)
+                else:
+                    key = field.name
+                if class_.pconf.camelize_db_keys:
+                    key = camelize(key, False)
+                if not field.fdef.required:
+                    partial[key] = {'$type': btype_from_ftype(field.fdef.ftype)}
+                keys.append((key, ASCENDING))
+            if partial == {}:
+                coll.create_index(keys, name=index_name)
+            else:
+                coll.create_index(keys, name=index_name, partialFilterExpression=partial)
             if index_name in existing_index_keys:
                 existing_index_keys.remove(index_name)
-        for index_name, field_names in compound_ukeys.items():
-            sparse = False
-            for fname in field_names:
-                if not class_.cdef.field_named(fname).fdef.required:
-                    sparse = True
-                    break
-            keys = [(fn, ASCENDING) for fn in field_names]
-            coll.create_index(keys, name=index_name, unique=True, sparse=sparse)
+        for index_name, fields in compound_ufields.items():
+            partial: dict[str, Any] = {}
+            keys: list[tuple[str, Any]] = []
+            for field in fields:
+                if field.fdef.fstore == FStore.LOCAL_KEY:
+                    res = field.fdef.cdef.jconf.ref_key_encoding_strategy
+                    key = res(field)
+                else:
+                    key = field.name
+                if class_.pconf.camelize_db_keys:
+                    key = camelize(key, False)
+                if not field.fdef.required:
+                    partial[key] = {'$type': btype_from_ftype(field.fdef.ftype)}
+                keys.append((key, ASCENDING))
+            if partial == {}:
+                coll.create_index(keys, name=index_name)
+            else:
+                coll.create_index(keys, name=index_name, unique=True, partialFilterExpression=partial)
             if index_name in existing_index_keys:
                 existing_index_keys.remove(index_name)
         for left_key in existing_index_keys:

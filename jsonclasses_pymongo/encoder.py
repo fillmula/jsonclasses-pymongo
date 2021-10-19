@@ -143,9 +143,10 @@ class Encoder(Coder):
         if value.is_new:
             use_insert_command = True
         result_set = {}
+        result_addtoset = {}
+        result_unset = {}
         matcher = {}
         commands = []
-        result_addtoset = {}
         for field in value.__class__.cdef.fields:
             if field.fdef.is_temp_field:
                 continue
@@ -156,7 +157,9 @@ class Encoder(Coder):
             ftypes = field.types
             if self.is_id_field(field):
                 result_set['_id'] = ObjectId(fvalue)
-                if not use_insert_command:
+                if use_insert_command:
+                    pass
+                else:
                     matcher['_id'] = ObjectId(fvalue)
             elif self.is_foreign_key_reference_field(field):
                 if fvalue is None:
@@ -208,8 +211,10 @@ class Encoder(Coder):
                             result_set[ref_db_field_key(fname, cls)] = \
                                 ObjectId(getattr(value, tsfm(field)))
                     else:
-                        if use_insert_command or fname in fields_need_update:
-                            result_set[ref_db_field_key(fname, cls)] = None
+                        if use_insert_command:
+                            pass
+                        elif fname in fields_need_update:
+                            result_unset[ref_db_field_key(fname, cls)] = None
                     continue
                 item_result, item_commands = self.encode_instance(context.new(
                     value=fvalue,
@@ -256,10 +261,17 @@ class Encoder(Coder):
                     keypath_parent=fname,
                     parent=value))
                 if use_insert_command or fname in fields_need_update:
+                    efname = fname
                     if context.owner.__class__.pconf.camelize_db_keys:
-                        result_set[camelize(field.name, False)] = item_result
+                        efname = camelize(field.name, False)
+                    if use_insert_command:
+                        if item_result is not None:
+                            result_set[efname] = item_result
                     else:
-                        result_set[field.name] = item_result
+                        if item_result is None:
+                            result_unset[efname] = None
+                        else:
+                            result_set[efname] = item_result
                 commands.extend(item_commands)
         if write_instance:
             collection = Connection.get_collection(value.__class__)
@@ -272,6 +284,8 @@ class Encoder(Coder):
                     updator['$set'] = result_set
                 if len(result_addtoset) > 0:
                     updator['$addToSet'] = result_addtoset
+                if len(result_unset) > 0:
+                    updator['$unset'] = result_unset
                 if len(updator) > 0:
                     update_c = UpdateOneCommand(collection, updator, matcher)
                     commands.append(update_c)

@@ -121,7 +121,7 @@ class TestDelete(TestCase):
         self.assertEqual(collection.count_documents({}), 2)
         author.delete()
         for obj in collection.find():
-            self.assertEqual(obj['authorId'], None)
+            self.assertNotIn('authorId', obj)
 
     def test_1l_1f_instance_can_be_nullified(self):
         user = LinkedUser(name='crazy')
@@ -134,7 +134,7 @@ class TestDelete(TestCase):
         self.assertEqual(collection.count_documents({}), 1)
         user.delete()
         for obj in collection.find():
-            self.assertEqual(obj['userId'], None)
+            self.assertNotIn('userId', obj)
 
     def test_many_many_can_be_nullified(self):
         course1 = LinkedCourse(name='C1')
@@ -333,7 +333,7 @@ class TestDelete(TestCase):
         collection = Connection.get_collection(LinkedRNote)
         self.assertEqual(collection.count_documents({}), 2)
         for item in collection.find({}):
-            self.assertEqual(item['notebookId'], None)
+            self.assertNotIn('notebookId', item)
 
     def test_many_many_denies_deletion(self):
         c1 = LinkedCompany(name='C1')

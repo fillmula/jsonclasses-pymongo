@@ -54,5 +54,7 @@ def btype_from_ftype(ftype: FType) -> Union[str, list[str]]:
         return 'date'
     elif ftype == FType.DATETIME:
         return 'date'
+    elif ftype == FType.INSTANCE:
+        return 'objectId'
     else:
         return []
