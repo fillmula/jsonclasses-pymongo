@@ -1,0 +1,52 @@
+[
+    {
+        "class": "PLUser",
+        "graph": "preload",
+        "objects": [
+            {
+                "id": "john",
+                "name": "John Peterson"
+            },
+            {
+                "id": "peter",
+                "name": "Peter Benson"
+            },
+            {
+                "id": "ben",
+                "name": "Benedict Chiam"
+            }
+        ]
+    },
+    {
+        "class": "PLArticle",
+        "graph": "preload",
+        "objects": [
+            {
+                "id": "python",
+                "name": "Python Programming Language 2",
+                "author": "john"
+            },
+            {
+                "id": "json",
+                "name": "JSON Data Describing Language 2",
+                "author": "john"
+            },
+            {
+                "id": "ruby",
+                "name": "The Ruby Programming Language 2",
+                "author": "peter"
+            },
+            {
+                "id": "ai",
+                "name": "The AI Era 2",
+                "author": "ben",
+                "_strategy": "reseed"
+            },
+            {
+                "id": "vim",
+                "name": "The Vim Editor 2",
+                "author": "ben"
+            }
+        ]
+    }
+]

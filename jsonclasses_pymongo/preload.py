@@ -71,9 +71,9 @@ def loadobject(cls: type[PymongoObject], obj: dict[str, Any]) -> None:
     oid = getidref(cls, fval)
     exist_object = cls.id(oid).optional.exec()
     if exist_object is None:
-        seedobject(cls, fvalues, oid, False)
+        seedobject(cls, fvalues, oid, None)
     elif strategy == 'reseed':
-        seedobject(cls, fvalues, oid, True)
+        seedobject(cls, fvalues, oid, exist_object)
 
 
 def loadjson(jsondata: list[Any] | dict[str, Any]) -> None:

@@ -35,3 +35,18 @@ class TestPreload(TestCase):
         self.assertEqual(articles[2].author_id, users[1].id)
         self.assertEqual(articles[3].author_id, users[2].id)
         self.assertEqual(articles[4].author_id, users[2].id)
+
+    def test_preload_wont_update_existing_objects(self):
+        preload('tests/data/preload.json')
+        preload('tests/data/rewrite.json')
+        articles = PLArticle.find().exec()
+        self.assertFalse(articles[0].name.endswith(' 2'))
+        self.assertFalse(articles[1].name.endswith(' 2'))
+        self.assertFalse(articles[2].name.endswith(' 2'))
+        self.assertFalse(articles[4].name.endswith(' 2'))
+
+    def test_preload_will_update_existing_objects_if_strategy_is_reseed(self):
+        preload('tests/data/preload.json')
+        preload('tests/data/rewrite.json')
+        articles = PLArticle.find().exec()
+        self.assertTrue(articles[3].name.endswith(' 2'))
