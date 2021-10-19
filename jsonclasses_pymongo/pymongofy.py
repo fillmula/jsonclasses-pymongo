@@ -285,7 +285,7 @@ def pymongofy(class_: type) -> PymongoObject:
                 if not field.fdef.required:
                     sparse = True
                 keys.append((key, ASCENDING))
-                coll.create_index(keys, name=index_name, unique=True, sparse=sparse)
+            coll.create_index(keys, name=index_name, unique=True, sparse=sparse)
             if index_name in existing_index_keys:
                 existing_index_keys.remove(index_name)
         for left_key in existing_index_keys:
