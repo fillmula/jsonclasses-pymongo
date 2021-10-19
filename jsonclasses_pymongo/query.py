@@ -171,8 +171,7 @@ class BaseQuery(Generic[T]):
                         }}
                         unwind = {
                             '$unwind': {
-                                'path': '$' + field.name,
-                                "preserveNullAndEmptyArrays": True
+                                'path': '$' + field.name
                             }
                         }
                         replace = {
