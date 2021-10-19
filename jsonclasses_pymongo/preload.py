@@ -7,14 +7,33 @@ from bson.objectid import ObjectId
 from jsonclasses.cgraph import CGraph
 from jsonclasses.jfield import JField
 from jsonclasses.fdef import FStore
+from pymongo import ASCENDING
+from pymongo.collection import Collection
 from .pymongo_object import PymongoObject
 from .connection import Connection
 
 
+_refkeycolls: dict[str, Collection] = {}
+
+
+def getrefkeycoll(cls: type[PymongoObject]) -> Collection:
+    global _refkeycolls
+    gname = cls.cdef.jconf.cgraph.name
+    if _refkeycolls.get(gname) is not None:
+        return _refkeycolls.get(gname)
+    coll = Connection(gname).collection('_refkeys')
+    coll.create_index([
+        ('graph', ASCENDING), ('class', ASCENDING), ('sid', ASCENDING)
+    ], name='graph_class_sid', unique=True)
+    coll.create_index('oid', name='oid_1', unique=True)
+    _refkeycolls[gname] = coll
+    return _refkeycolls[gname]
+
+
 def getidref(cls: type[PymongoObject], id: str | int) -> str | int:
-    coll = Connection(cls.cdef.jconf.cgraph.name).collection('_refkeys')
+    coll = getrefkeycoll(cls)
     matcher = {
-        'graph': cls.cdef.jconf.cgraph.name, 'cls': cls.__name__, 'sid':id
+        'graph': cls.cdef.jconf.cgraph.name, 'cls': cls.__name__, 'sid': id
     }
     result = coll.find_one(matcher)
     if result is not None:
