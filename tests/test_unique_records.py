@@ -25,6 +25,12 @@ class TestUniqueRecord(TestCase):
         collection = Connection.get_collection(SimpleSinger)
         collection.delete_many({})
 
+    def tearDown(self) -> None:
+        collection = Connection.get_collection(SimplePerson)
+        collection.delete_many({})
+        collection = Connection.get_collection(SimpleSinger)
+        collection.delete_many({})
+
     def test_save_raises_if_violate_unique_rule(self):
         one = SimplePerson(name='Tsuan Tsiu')
         one.save()
@@ -39,10 +45,3 @@ class TestUniqueRecord(TestCase):
         one.save()
         two = SimpleSinger(name=None)
         two.save()
-        one = SimplePerson(name='Tsuan Tsiu')
-        one.save()
-        two = SimplePerson(name='Tsuan Tsiu')
-        self.assertRaisesRegex(
-            UniqueConstraintException,
-            "value is not unique",
-            two.save)

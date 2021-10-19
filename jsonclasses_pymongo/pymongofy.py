@@ -14,7 +14,7 @@ from .pymongo_object import PymongoObject
 from .query import BaseQuery, ExistQuery, IterateQuery, ListQuery, SingleQuery, IDQuery
 from .encoder import Encoder
 from .connection import Connection
-from .utils import btype_from_ftype, ref_db_field_key
+from .utils import ref_db_field_key
 from .coder import Coder
 
 
@@ -222,30 +222,15 @@ def pymongofy(class_: type) -> PymongoObject:
             unique = field.fdef.unique
             required = field.fdef.required
             index_name = f'{fname}_1'
-            ftype = field.fdef.ftype
             cindex = field.fdef.cindex
             cindex_names = field.fdef.cindex_names
             cunique = field.fdef.cunique
             cunique_names = field.fdef.cunique_names
             # check single index
-            if unique:
-                if required:
-                    coll.create_index(fname, name=index_name, unique=True)
-                else:
-                    coll.create_index(
-                        fname, name=index_name, unique=True,
-                        partialFilterExpression={
-                            fname: {'$type': btype_from_ftype(ftype)}
-                        })
-            elif index:
-                if required:
-                    coll.create_index(fname, name=index_name)
-                else:
-                    coll.create_index(
-                        fname, name=index_name,
-                        partialFilterExpression={
-                            fname: {'$type': btype_from_ftype(ftype)}
-                        })
+            if unique or index:
+                coll.create_index(fname, name=index_name, unique=unique, sparse=not required)
+                if index_name in existing_index_keys:
+                    existing_index_keys.remove(index_name)
             else:
                 if index_name in existing_index_keys:
                     coll.drop_index(index_name)
@@ -270,7 +255,7 @@ def pymongofy(class_: type) -> PymongoObject:
                     else:
                         compound_ufields[cuname].append(field)
         for index_name, fields in compound_fields.items():
-            partial: dict[str, Any] = {}
+            sparse: bool = False
             keys: list[tuple[str, Any]] = []
             for field in fields:
                 if field.fdef.fstore == FStore.LOCAL_KEY:
@@ -281,16 +266,13 @@ def pymongofy(class_: type) -> PymongoObject:
                 if class_.pconf.camelize_db_keys:
                     key = camelize(key, False)
                 if not field.fdef.required:
-                    partial[key] = {'$type': btype_from_ftype(field.fdef.ftype)}
+                    sparse = True
                 keys.append((key, ASCENDING))
-            if partial == {}:
-                coll.create_index(keys, name=index_name)
-            else:
-                coll.create_index(keys, name=index_name, partialFilterExpression=partial)
+            coll.create_index(keys, name=index_name, sparse=sparse)
             if index_name in existing_index_keys:
                 existing_index_keys.remove(index_name)
         for index_name, fields in compound_ufields.items():
-            partial: dict[str, Any] = {}
+            sparse: bool = False
             keys: list[tuple[str, Any]] = []
             for field in fields:
                 if field.fdef.fstore == FStore.LOCAL_KEY:
@@ -301,12 +283,9 @@ def pymongofy(class_: type) -> PymongoObject:
                 if class_.pconf.camelize_db_keys:
                     key = camelize(key, False)
                 if not field.fdef.required:
-                    partial[key] = {'$type': btype_from_ftype(field.fdef.ftype)}
+                    sparse = True
                 keys.append((key, ASCENDING))
-            if partial == {}:
-                coll.create_index(keys, name=index_name)
-            else:
-                coll.create_index(keys, name=index_name, unique=True, partialFilterExpression=partial)
+                coll.create_index(keys, name=index_name, unique=True, sparse=sparse)
             if index_name in existing_index_keys:
                 existing_index_keys.remove(index_name)
         for left_key in existing_index_keys:
