@@ -3,7 +3,6 @@ from datetime import date, datetime
 from math import ceil
 from unittest import TestCase
 from statistics import mean
-from bson.objectid import ObjectId
 from jsonclasses_pymongo import Connection
 from tests.classes.simple_animal import SimpleAnimal
 from tests.classes.simple_datetime import SimpleDatetime
@@ -16,6 +15,7 @@ from tests.classes.simple_date import SimpleDate
 from tests.classes.simple_persona import SimplePersona
 from tests.classes.simple_sex import SimpleSex, Gender
 from tests.classes.simple_str import SimpleString
+from tests.classes.simple_record import SimpleRecord, SimpleORecord
 
 
 class TestQuery(TestCase):
@@ -58,6 +58,10 @@ class TestQuery(TestCase):
         collection = Connection.get_collection(SimpleAnimal)
         collection.delete_many({})
         collection = Connection.get_collection(SimpleString)
+        collection.delete_many({})
+        collection = Connection.get_collection(SimpleRecord)
+        collection.delete_many({})
+        collection = Connection.get_collection(SimpleORecord)
         collection.delete_many({})
 
     def test_query_objects_from_database(self):
@@ -679,3 +683,15 @@ class TestQuery(TestCase):
             SimpleScore(name=f's{i}', score=i+20).save()
         results = SimpleScore.find(**{'_pageSize': 10}).pages().exec()
         self.assertEqual(results, ceil(100/10))
+
+    def test_query_omit_specific_fields(self):
+        SimpleRecord(name='n', desc='d', age=1, score=5.0).save()
+        result = SimpleRecord.one().omit(['age', 'score']).exec()
+        self.assertEqual(result.age, None)
+        self.assertEqual(result.score, None)
+        self.assertEqual(result.name, 'n')
+        self.assertEqual(result.desc, 'd')
+        self.assertIsNotNone(result.id)
+        self.assertIsNotNone(result.created_at)
+        self.assertIsNotNone(result.updated_at)
+        self.assertEqual(result.is_partial, True)

@@ -3,9 +3,10 @@ from __future__ import annotations
 from math import ceil
 from jsonclasses_pymongo.query_to_object import query_to_object
 from jsonclasses_pymongo.query_reader import QueryReader
-from typing import (Iterator, Union, TypeVar, Generator, Optional, Any,
-                    Generic, NamedTuple, cast, final)
-from datetime import date, datetime
+from typing import (
+    Iterator, Union, TypeVar, Generator, Optional, Any, Generic, NamedTuple,
+    cast
+)
 from bson import ObjectId
 from inflection import camelize
 from pymongo.cursor import Cursor
@@ -331,14 +332,15 @@ class BaseListQuery(BaseQuery[T]):
                 omits = [kds(k) for k in self._omit]
                 finalpick: list[str] = []
                 for field in self._cls.cdef.fields:
-                    if field.fstore == FStore.EMBEDDED:
+                    if field.fdef.fstore == FStore.EMBEDDED:
                         if field.name not in omits:
                             finalpick.append(field.name)
-                    elif field.fstore == FStore.LOCAL_KEY:
+                    elif field.fdef.fstore == FStore.LOCAL_KEY:
                         rkes = self._cls.cdef.jconf.ref_key_encoding_strategy
                         rk = rkes(field)
                         if rk not in omits:
                             finalpick.append(rk)
+            self._final_pick = finalpick
             if self._cls.cdef.primary_field.name not in finalpick:
                 omit_primary = True
             else:
@@ -357,7 +359,7 @@ class BaseListQuery(BaseQuery[T]):
         collection = Connection.get_collection(self._cls)
         cursor = collection.aggregate(pipeline)
         results = [result for result in cursor]
-        return Decoder().decode_root_list(results, self._cls)
+        return Decoder().decode_root_list(results, self._cls, None, self)
 
 
 class ListQuery(BaseListQuery[T]):
@@ -411,6 +413,8 @@ class SingleQuery(BaseListQuery[T]):
         query.subqueries = self.subqueries
         query._match = self._match
         query._sort = self._sort
+        query._page_number = self._page_number
+        query._page_size = self._page_size
         query._skip = self._skip
         query._limit = self._limit
         query._use_pick = self._use_pick
@@ -470,7 +474,7 @@ class BaseIDQuery(BaseQuery[T]):
         results = [result for result in cursor]
         if len(results) == 0:
             return None
-        return Decoder().decode_root(results[0], self._cls)
+        return Decoder().decode_root(results[0], self._cls, None, self)
 
 
 class IDQuery(BaseIDQuery[T]):
@@ -532,7 +536,7 @@ class QueryIterator(Generic[T]):
 
     def __next__(self) -> T:
         value = self.cursor.__next__()
-        return Decoder().decode_root(value, self.cls, self.graph)
+        return Decoder().decode_root(value, self.cls, self.graph, self)
 
 
 class IterateQuery(BaseListQuery[T]):

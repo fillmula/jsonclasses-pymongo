@@ -5,11 +5,13 @@ from jsonclasses.types import Types
 from jsonclasses.fdef import FStore, FType
 from jsonclasses.mgraph import MGraph
 from inflection import underscore, camelize
-from .utils import (ref_field_key, ref_field_keys, ref_db_field_key,
-                    ref_db_field_keys)
+from .utils import (
+    ref_field_key, ref_field_keys, ref_db_field_key, ref_db_field_keys
+)
 from .coder import Coder
 from .pconf import PConf
 if TYPE_CHECKING:
+    from .query import BaseQuery
     from .pymongo_object import PymongoObject
     T = TypeVar('T', bound=PymongoObject)
 
@@ -20,14 +22,16 @@ class Decoder(Coder):
                     value: list[Any],
                     cls: type[T],
                     types: Types,
-                    graph: MGraph) -> Optional[list[Any]]:
+                    graph: MGraph,
+                    query: BaseQuery | None = None) -> Optional[list[Any]]:
         if value is None:
             return None
         item_types = types.fdef.item_types
         new_cls = item_types.fdef.raw_inst_types
         return ([self.decode_item(value=item, cls=new_cls,
                                   types=item_types,
-                                  graph=graph)
+                                  graph=graph,
+                                  query=query)
                 for item in value])
 
     def decode_dict(self,
@@ -44,7 +48,8 @@ class Decoder(Coder):
                     value: Any,
                     cls: type[T],
                     types: Types,
-                    graph: MGraph) -> Any:
+                    graph: MGraph,
+                    query: BaseQuery | None = None) -> Any:
         if value is None:
             return value
         if types.fdef.ftype == FType.DATE:
@@ -58,13 +63,13 @@ class Decoder(Coder):
                 return enum_cls(value)
         elif types.fdef.ftype == FType.LIST:
             return self.decode_list(value=value, cls=cls, types=types,
-                                    graph=graph)
+                                    graph=graph, query=query)
         elif types.fdef.ftype == FType.DICT:
             return self.decode_dict(value=value, cls=cls, types=types,
                                     graph=graph)
         elif types.fdef.ftype == FType.INSTANCE:
             return self.decode_instance(value=value, cls=cls, types=types,
-                                        graph=graph)
+                                        graph=graph, query=query)
         else:
             return value
 
@@ -72,7 +77,8 @@ class Decoder(Coder):
                         value: dict[str, Any],
                         cls: type[T],
                         types: Types,
-                        graph: MGraph) -> Any:
+                        graph: MGraph,
+                        query: BaseQuery | None = None) -> Any:
         inst_id = str(value.get('_id'))
         dest = graph.getp(cls, inst_id)
         exist = True
@@ -117,7 +123,6 @@ class Decoder(Coder):
                     setattr(dest, field.name,
                             self.decode_list(
                                 value[key], new_cls, field.types, graph))
-
                 saved_keys = value.get(ref_db_field_keys(field.name, cls))
                 setattr(dest, ref_field_keys(field.name),
                         [str(k) for k in saved_keys])
@@ -134,9 +139,13 @@ class Decoder(Coder):
                         self.decode_item(value=value.get(key),
                                          types=field.types,
                                          cls=cls, graph=graph))
+        # apply partial status
+        if hasattr(query, '_final_pick'):
+            setattr(dest, '_is_partial', True)
+            setattr(dest, '_partial_picks', getattr(query, '_final_pick'))
         return dest
 
-    def apply_initial_status(self, root: T,
+    def apply_unmodified_status(self, root: T,
                              graph: Optional[MGraph] = None) -> None:
         if graph is None:
             graph = MGraph()
@@ -146,35 +155,39 @@ class Decoder(Coder):
         for field in root.__class__.cdef.fields:
             if self.is_instance_field(field):
                 if getattr(root, field.name) is not None:
-                    self.apply_initial_status(getattr(root, field.name), graph)
+                    self.apply_unmodified_status(getattr(root, field.name), graph)
             elif self.is_list_instance_field(field, root.__class__):
                 if getattr(root, field.name) is not None:
                     for item in getattr(root, field.name):
-                        self.apply_initial_status(item, graph)
+                        self.apply_unmodified_status(item, graph)
         root._mark_unmodified()
 
     def decode_root(self,
                     root: dict[str, Any],
                     cls: type[T],
-                    graph: Optional[MGraph] = None) -> T:
+                    graph: MGraph | None = None,
+                    query: BaseQuery | None = None) -> T:
         if graph is None:
             graph = MGraph()
         types = Types().instanceof(cls)
-        decoded = self.decode_instance(root, cls, types, graph)
-        self.apply_initial_status(decoded)
+        decoded = self.decode_instance(root, cls, types, graph, query)
+        self.apply_unmodified_status(decoded)
         return decoded
 
     def decode_root_list(self,
                          root_list: list[dict[str, Any]],
                          cls: type[T],
-                         graph: Optional[MGraph] = None) -> list[T]:
+                         graph: MGraph | None = None,
+                         query: BaseQuery | None = None) -> list[T]:
         if graph is None:
             graph = MGraph()
         types = Types().instanceof(cls)
         results: list[T] = []
         for root in root_list:
-            decoded = self.decode_instance(root, cls, types, graph)
+            if cls.__name__ == 'SimpleORecord':
+                print("ROOT IS", root)
+            decoded = self.decode_instance(root, cls, types, graph, query)
             results.append(decoded)
         for result in results:
-            self.apply_initial_status(result)
+            self.apply_unmodified_status(result)
         return results
