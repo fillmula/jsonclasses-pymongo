@@ -203,6 +203,23 @@ class Encoder(Coder):
                             self.list_instance_type(field),
                             ObjectId(item._id))
                         commands.append(unlink_command)
+                if value._link_keys.get(field.name) is not None:
+                    for k in value._link_keys.get(field.name):
+                        join_command = self._join_command(
+                            value,
+                            field,
+                            self.list_instance_type(field),
+                            ObjectId(k))
+                        commands.append(join_command)
+                if value._unlink_keys.get(field.name) is not None:
+                    for k in value._unlink_keys.get(field.name):
+                        unlink_command = self._unlink_command(
+                            value,
+                            field,
+                            self.list_instance_type(field),
+                            ObjectId(k))
+                        commands.append(unlink_command)
+
             elif self.is_local_key_reference_field(field):
                 if fvalue is None:
                     tsfm = value.__class__.cdef.jconf.ref_key_encoding_strategy
