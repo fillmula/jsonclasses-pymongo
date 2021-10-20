@@ -245,6 +245,12 @@ class BaseListQuery(BaseQuery[T]):
             self._skip = result['_skip']
         if result.get('_limit') is not None:
             self._limit = result['_limit']
+        if result.get('_pick') is not None:
+            self._use_pick = True
+            self._pick = result['_pick']
+        if result.get('_omit') is not None:
+            self._use_omit = True
+            self._omit = result['_omit']
         if result.get('_includes') is not None:
             for item in result['_includes']:
                 if type(item) is str:
@@ -286,6 +292,16 @@ class BaseListQuery(BaseQuery[T]):
 
     def page_size(self: V, n: int) -> V:
         self._page_size = n
+        return self
+
+    def pick(self: V, names: list[str]) -> V:
+        self._use_pick = True
+        self._pick = names
+        return self
+
+    def omit(self: V, names: list[str]) -> V:
+        self._use_omit = True
+        self._omit = names
         return self
 
     def _build_aggregate_pipeline(self: V) -> list[dict[str, Any]]:
