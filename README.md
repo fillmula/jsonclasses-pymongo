@@ -1,4 +1,4 @@
-# jsonclasses-pymongo
+# JSONClasses Pymongo
 JSONClasses integration with Pymongo.
 
 ## Prerequisites
