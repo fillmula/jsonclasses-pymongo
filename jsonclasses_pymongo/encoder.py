@@ -195,14 +195,15 @@ class Encoder(Coder):
                             self.list_instance_type(field),
                             list_item['_id'])
                         commands.append(join_command)
-                for item in value.unlinked_objects[field.name]:
-                    if item._id is not None:
-                        unlink_command = self._unlink_command(
-                            value,
-                            field,
-                            self.list_instance_type(field),
-                            ObjectId(item._id))
-                        commands.append(unlink_command)
+                if value.unlinked_objects.get(field.name) is not None:
+                    for item in value.unlinked_objects[field.name]:
+                        if item._id is not None:
+                            unlink_command = self._unlink_command(
+                                value,
+                                field,
+                                self.list_instance_type(field),
+                                ObjectId(item._id))
+                            commands.append(unlink_command)
                 if value._link_keys.get(field.name) is not None:
                     for k in value._link_keys.get(field.name):
                         join_command = self._join_command(

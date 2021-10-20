@@ -10,6 +10,7 @@ from tests.classes.linked_post import LinkedPost
 from tests.classes.linked_profile_user import LinkedProfile, LinkedUser
 from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
 from tests.classes.simple_record import SimpleRecord
+from tests.classes.linked_album import LinkedAlbum, LinkedArtist
 
 
 class TestSave(TestCase):
@@ -43,7 +44,6 @@ class TestSave(TestCase):
         collection.delete_many({})
         collection = Connection.get_collection(LinkedUser)
         collection.delete_many({})
-        collection.delete_many({})
         collection = Connection.get_collection(LinkedStudent)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedCourse)
@@ -52,6 +52,10 @@ class TestSave(TestCase):
                                                      'linkedstudentscourses')
         collection.delete_many({})
         collection = Connection.get_collection(SimpleRecord)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedAlbum)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedArtist)
         collection.delete_many({})
 
     def test_object_is_saved_into_database(self):
@@ -320,6 +324,23 @@ class TestSave(TestCase):
         collname = 'linkedcoursesstudentslinkedstudentscourses'
         collection = Connection('linked').collection(collname)
         self.assertEqual(collection.count_documents({}), 3)
+
+    def test_many_many_set_with_atomic_operation_is_saved(self):
+        a = LinkedArtist(name='A').save()
+        LinkedArtist(name='B').save()
+        LinkedAlbum(name='C', artists=[{'_add': a.id}]).save()
+        album = LinkedAlbum.one().include('artists').exec()
+        self.assertEqual(len(album.artists), 1)
+        self.assertEqual(album.artists[0].name, 'A')
+
+    def test_many_many_unset_with_atomic_operation_is_saved(self):
+        a = LinkedArtist(name='A').save()
+        b = LinkedArtist(name='B').save()
+        LinkedAlbum(name='C', artists=[{'_add': a.id}, {'_add': b.id}]).save()
+        album = LinkedAlbum.one().exec()
+        album.set(artists=[{'_del': a.id}, {'_del': b.id}]).save()
+        album = LinkedAlbum.one().include('artists').exec()
+        self.assertEqual(album.artists, [])
 
     def test_partial_nones_are_not_saved(self):
         SimpleRecord(name='a', desc='b', age=1, score=2).save()
