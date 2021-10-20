@@ -343,3 +343,34 @@ class TestSave(TestCase):
         self.assertEqual(students[1].courses[1].is_new, False)
         self.assertEqual(students[1].courses[1].is_modified, False)
         self.assertEqual(students[1].courses[1].modified_fields, ())
+
+    def test_fetched_objects_are_sorted_many_many(self):
+        student1 = LinkedStudent(name='S1')
+        student2 = LinkedStudent(name='S2')
+        course1 = LinkedCourse(name='C1')
+        course2 = LinkedCourse(name='C2')
+        student1.courses = [course1, course2]
+        student2.courses = [course1, course2]
+        student1.save()
+        students = LinkedStudent.find().include('courses', LinkedCourse.find().order('name', -1)).exec()
+        self.assertEqual(students[0].courses[0].name, 'C2')
+        self.assertEqual(students[0].courses[1].name, 'C1')
+        self.assertEqual(students[1].courses[0].name, 'C2')
+        self.assertEqual(students[1].courses[1].name, 'C1')
+        students = LinkedStudent.find().include('courses', LinkedCourse.find().order('name', 1)).exec()
+        self.assertEqual(students[0].courses[0].name, 'C1')
+        self.assertEqual(students[0].courses[1].name, 'C2')
+        self.assertEqual(students[1].courses[0].name, 'C1')
+        self.assertEqual(students[1].courses[1].name, 'C2')
+
+    def test_fetched_objects_are_filtered_many_many(self):
+        student1 = LinkedStudent(name='S1')
+        student2 = LinkedStudent(name='S2')
+        course1 = LinkedCourse(name='C1')
+        course2 = LinkedCourse(name='C2')
+        student1.courses = [course1, course2]
+        student2.courses = [course1, course2]
+        student1.save()
+        students = LinkedStudent.find().include('courses', LinkedCourse.find(name='C1')).exec()
+        self.assertEqual(len(students[0].courses), 1)
+        self.assertEqual(len(students[1].courses), 1)

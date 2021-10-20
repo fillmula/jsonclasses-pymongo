@@ -183,6 +183,8 @@ class BaseQuery(Generic[T]):
                         pipeline.append(unwind)
                         pipeline.append(replace)
                         result.append(outer_lookup)
+                        from pprint import pprint
+                        pprint(result)
                     else:
                         fk = cast(str, field.fdef.foreign_key)
                         key = ref_db_field_key(fk, it)
