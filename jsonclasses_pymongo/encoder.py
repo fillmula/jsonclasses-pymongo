@@ -148,7 +148,7 @@ class Encoder(Coder):
         matcher = {}
         commands = []
         for field in value.__class__.cdef.fields:
-            if field.fdef.is_temp_field:
+            if field.fdef.fstore == FStore.TEMP:
                 continue
             if field.fdef.fstore == FStore.CALCULATED:
                 continue

@@ -4,7 +4,7 @@ from math import ceil
 from jsonclasses_pymongo.query_to_object import query_to_object
 from jsonclasses_pymongo.query_reader import QueryReader
 from typing import (Iterator, Union, TypeVar, Generator, Optional, Any,
-                    Generic, NamedTuple, cast)
+                    Generic, NamedTuple, cast, final)
 from datetime import date, datetime
 from bson import ObjectId
 from inflection import camelize
@@ -313,11 +313,42 @@ class BaseListQuery(BaseQuery[T]):
             result.append({'$sort': dict(self._sort)})
         if self._page_number is not None and self._page_size is not None:
             result.append({'$skip': (self._page_number - 1) * self._page_size})
+            result.append({'$limit': self._page_size})
         else:
             if self._skip is not None:
                 result.append({'$skip': self._skip})
             if self._limit is not None:
                 result.append({'$limit': self._limit})
+        if self._use_omit or self._use_pick:
+            kds = self._cls.cdef.jconf.key_decoding_strategy
+            if self._omit and self._pick:
+                finalpick = list(set(self._pick) - set(self._omit))
+                finalpick = [kds(k) for k in finalpick]
+            elif self._pick:
+                finalpick = self._pick
+                finalpick = [kds(k) for k in finalpick]
+            else:
+                omits = [kds(k) for k in self._omit]
+                finalpick: list[str] = []
+                for field in self._cls.cdef.fields:
+                    if field.fstore == FStore.EMBEDDED:
+                        if field.name not in omits:
+                            finalpick.append(field.name)
+                    elif field.fstore == FStore.LOCAL_KEY:
+                        rkes = self._cls.cdef.jconf.ref_key_encoding_strategy
+                        rk = rkes(field)
+                        if rk not in omits:
+                            finalpick.append(rk)
+            if self._cls.cdef.primary_field.name not in finalpick:
+                omit_primary = True
+            else:
+                omit_primary = False
+            if self._cls.pconf.camelize_db_keys:
+                finalpick = [camelize(k, False) for k in finalpick]
+            pdict = {k: 1 for k in finalpick}
+            if omit_primary:
+                pdict['_id'] = 0
+            result.append({'$project': pdict})
         result.extend(lookups)
         return result
 

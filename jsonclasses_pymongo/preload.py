@@ -58,8 +58,7 @@ def seedobject(cls: type[PymongoObject], obj: dict[str, Any], oid: str | int, or
         if field.fdef.primary:
             continue
         elif field.fdef.fstore == FStore.EMBEDDED:
-            if not field.fdef.is_temp_field:
-                result[field.name] = getfieldvalue(obj, field)
+            result[field.name] = getfieldvalue(obj, field)
         elif field.fdef.fstore == FStore.LOCAL_KEY:
             frcls = field.foreign_class
             field_ref_name = cls.cdef.jconf.ref_key_encoding_strategy(field)
