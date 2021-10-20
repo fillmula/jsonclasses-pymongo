@@ -684,7 +684,7 @@ class TestQuery(TestCase):
         results = SimpleScore.find(**{'_pageSize': 10}).pages().exec()
         self.assertEqual(results, ceil(100/10))
 
-    def test_query_omit_specific_fields(self):
+    def test_query_omits_specific_fields(self):
         SimpleRecord(name='n', desc='d', age=1, score=5.0).save()
         result = SimpleRecord.one().omit(['age', 'score']).exec()
         self.assertEqual(result.age, None)
@@ -695,3 +695,17 @@ class TestQuery(TestCase):
         self.assertIsNotNone(result.created_at)
         self.assertIsNotNone(result.updated_at)
         self.assertEqual(result.is_partial, True)
+        self.assertEqual(result._partial_picks, ['id', 'name', 'desc', 'created_at', 'updated_at'])
+
+    def test_query_picks_specific_fields(self):
+        SimpleRecord(name='n', desc='d', age=1, score=5.0).save()
+        result = SimpleRecord.one().pick(['age', 'score']).exec()
+        self.assertEqual(result.age, 1)
+        self.assertEqual(result.score, 5.0)
+        self.assertEqual(result.name, None)
+        self.assertEqual(result.desc, None)
+        self.assertIsNone(result.id)
+        self.assertIsNone(result.created_at)
+        self.assertIsNone(result.updated_at)
+        self.assertEqual(result.is_partial, True)
+        self.assertEqual(result._partial_picks, ['age', 'score'])

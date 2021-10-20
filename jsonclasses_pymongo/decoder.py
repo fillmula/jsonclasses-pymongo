@@ -79,7 +79,7 @@ class Decoder(Coder):
                         types: Types,
                         graph: MGraph,
                         query: BaseQuery | None = None) -> Any:
-        inst_id = str(value.get('_id'))
+        inst_id = str(value.get('_id')) if value.get('_id') is not None else None
         dest = graph.getp(cls, inst_id)
         exist = True
         if dest is None:
@@ -96,33 +96,42 @@ class Decoder(Coder):
                     graph.put(dest)
             elif self.is_foreign_key_storage(field):
                 if value.get(key) is not None:
+                    subquery = None
+                    if query:
+                        subquery = next((s for s in query.subqueries if s.name == field.name), None)
                     if isinstance(value.get(key), list):
                         t = field.fdef.item_types
                         new_cls = t.fdef.raw_inst_types
                         setattr(dest, field.name,
                                 self.decode_list(
-                                    value[key], new_cls, field.types, graph))
+                                    value[key], new_cls, field.types, graph, subquery))
                     else:
                         new_cls = field.fdef.inst_cls
                         setattr(dest, field.name,
                                 self.decode_instance(
                                     cast(dict[str, Any], value.get(key)),
-                                    new_cls, field.types, graph))
+                                    new_cls, field.types, graph, subquery))
             elif self.is_local_key_reference_field(field):
                 if value.get(key) is not None:
+                    subquery = None
+                    if query:
+                        subquery = next((s for s in query.subqueries if s.name == field.name), None)
                     new_cls = field.fdef.inst_cls
                     inst = self.decode_item(
                         value=value.get(key), types=field.types, cls=new_cls,
-                        graph=graph)
+                        graph=graph, query=subquery)
                     setattr(dest, field.name, inst)
                 ref_id = value.get(ref_db_field_key(field.name, cls=cls))
                 setattr(dest, ref_field_key(field.name), str(ref_id))
             elif self.is_local_keys_reference_field(field):
                 if value.get(key) is not None:
+                    subquery = None
+                    if query:
+                        subquery = next((s for s in query.subqueries if s.name == field.name), None)
                     new_cls = field.fdef.inst_cls
                     setattr(dest, field.name,
                             self.decode_list(
-                                value[key], new_cls, field.types, graph))
+                                value[key], new_cls, field.types, graph, subquery))
                 saved_keys = value.get(ref_db_field_keys(field.name, cls))
                 setattr(dest, ref_field_keys(field.name),
                         [str(k) for k in saved_keys])
