@@ -9,6 +9,7 @@ from tests.classes.linked_author import LinkedAuthor
 from tests.classes.linked_post import LinkedPost
 from tests.classes.linked_profile_user import LinkedProfile, LinkedUser
 from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
+from tests.classes.simple_record import SimpleRecord
 
 
 class TestSave(TestCase):
@@ -49,6 +50,8 @@ class TestSave(TestCase):
         collection.delete_many({})
         collection = Connection('linked').collection('linkedcoursesstudents'
                                                      'linkedstudentscourses')
+        collection.delete_many({})
+        collection = Connection.get_collection(SimpleRecord)
         collection.delete_many({})
 
     def test_object_is_saved_into_database(self):
@@ -317,3 +320,15 @@ class TestSave(TestCase):
         collname = 'linkedcoursesstudentslinkedstudentscourses'
         collection = Connection('linked').collection(collname)
         self.assertEqual(collection.count_documents({}), 3)
+
+    def test_partial_nones_are_not_saved(self):
+        SimpleRecord(name='a', desc='b', age=1, score=2).save()
+        record = SimpleRecord.one().omit(['name', 'desc', 'age']).exec()
+        record.score = 3.0
+        record.name = 'q'
+        record.save()
+        record = SimpleRecord.one().exec()
+        self.assertEqual(record.name, 'q')
+        self.assertEqual(record.desc, 'b')
+        self.assertEqual(record.age, 1)
+        self.assertEqual(record.score, 3.0)
