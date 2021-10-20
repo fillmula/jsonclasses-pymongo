@@ -188,6 +188,25 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
     setattr(self, '_is_deleted', True)
 
 
+def _orm_complete(self: T) -> None:
+    this_pick = []
+    mfields = self.modified_fields
+    for field in self.__class__.cdef.fields:
+        if field.fdef.fstore == FStore.EMBEDDED:
+            if field.name not in self._partial_picks:
+                this_pick.append(field.name)
+        elif field.fdef.fstore == FStore.LOCAL_KEY:
+            kr = self.__class__.cdef.jconf.ref_key_encoding_strategy
+            ref_key = kr(field)
+            if ref_key not in self._partial_picks:
+                this_pick.append(ref_key)
+    result = self.__class__.id(self._id, {'_pick': this_pick}).exec()
+    for k in this_pick:
+        if k not in mfields:
+            setattr(self, k, getattr(result, k))
+    setattr(self, '_is_partial', False)
+
+
 def _orm_restore(self: T) -> None:
     pass
 
@@ -209,6 +228,7 @@ def pymongofy(class_: type) -> PymongoObject:
     class_._database_write = _database_write
     class_._orm_delete = _orm_delete
     class_._orm_restore = _orm_restore
+    class_._orm_complete = _orm_complete
     connection = Connection.from_class(class_)
     if class_.cdef.jconf.abstract:
         return class_
