@@ -263,10 +263,10 @@ class BaseListQuery(BaseQuery[T]):
                         field = tcls.cdef.field_named(decoded_key)
                         fcls = field.foreign_class
                         if field.fdef.ftype == FType.LIST:
-                            v = fcls.find(**v)
+                            q = fcls.find(**v)
                         else:
-                            v = fcls.linked(**v)
-                        self.subqueries.append(Subquery(k, v))
+                            q = fcls.linked(**v)
+                        self.subqueries.append(Subquery(k, q))
 
     def order(self: V, field: str, sort: Optional[int] = None) -> V:
         if self._sort is None:
@@ -387,9 +387,6 @@ class ListQuery(BaseListQuery[T]):
 
     def pages(self) -> PagesQuery:
         return PagesQuery(self)
-
-
-
 
 
 class SingleQuery(BaseListQuery[T]):

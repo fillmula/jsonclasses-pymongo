@@ -98,7 +98,7 @@ class Decoder(Coder):
                 if value.get(key) is not None:
                     subquery = None
                     if query:
-                        subquery = next((s for s in query.subqueries if s.name == field.name), None)
+                        subquery = next((s.query for s in query.subqueries if s.name == field.name), None)
                     if isinstance(value.get(key), list):
                         t = field.fdef.item_types
                         new_cls = t.fdef.raw_inst_types
@@ -115,19 +115,23 @@ class Decoder(Coder):
                 if value.get(key) is not None:
                     subquery = None
                     if query:
-                        subquery = next((s for s in query.subqueries if s.name == field.name), None)
+                        subquery = next((s.query for s in query.subqueries if s.name == field.name), None)
                     new_cls = field.fdef.inst_cls
                     inst = self.decode_item(
                         value=value.get(key), types=field.types, cls=new_cls,
                         graph=graph, query=subquery)
                     setattr(dest, field.name, inst)
                 ref_id = value.get(ref_db_field_key(field.name, cls=cls))
-                setattr(dest, ref_field_key(field.name), str(ref_id))
+                rfk = ref_field_key(field.name)
+                setattr(dest, rfk, str(ref_id))
+                if query and hasattr(query, '_final_pick'):
+                    if rfk not in query._final_pick:
+                        setattr(dest, rfk, None)
             elif self.is_local_keys_reference_field(field):
                 if value.get(key) is not None:
                     subquery = None
                     if query:
-                        subquery = next((s for s in query.subqueries if s.name == field.name), None)
+                        subquery = next((s.query for s in query.subqueries if s.name == field.name), None)
                     new_cls = field.fdef.inst_cls
                     setattr(dest, field.name,
                             self.decode_list(
@@ -193,8 +197,6 @@ class Decoder(Coder):
         types = Types().instanceof(cls)
         results: list[T] = []
         for root in root_list:
-            if cls.__name__ == 'SimpleORecord':
-                print("ROOT IS", root)
             decoded = self.decode_instance(root, cls, types, graph, query)
             results.append(decoded)
         for result in results:

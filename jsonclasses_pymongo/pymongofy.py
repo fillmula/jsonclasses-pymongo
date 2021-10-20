@@ -43,7 +43,10 @@ def pymongo_id(cls: type[T], id: str | ObjectId, *args, **kwargs: Any) -> IDQuer
 
 
 def linked(cls: type[T], *args, **kwargs: Any) -> BaseQuery[T]:
-    return BaseQuery(cls=cls)
+    if len(args) > 0:
+        return SingleQuery(cls=cls, filter=args[0])
+    else:
+        return SingleQuery(cls=cls, filter=kwargs)
 
 
 def exist(cls: type[T], **kwargs: Any) -> ExistQuery[T]:

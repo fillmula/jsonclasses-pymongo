@@ -51,6 +51,10 @@ class QueryReader:
                 result['_sort'] = self.readorders(value)
             elif key == '_includes':
                 result['_includes'] = value
+            elif key == '_omit':
+                result['_omit'] = value
+            elif key == '_pick':
+                result['_pick'] = value
         return result
 
     def readorders(self: QueryReader, val: Any) -> list[tuple[str, int]]:

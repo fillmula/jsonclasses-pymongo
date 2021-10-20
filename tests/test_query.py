@@ -16,6 +16,7 @@ from tests.classes.simple_persona import SimplePersona
 from tests.classes.simple_sex import SimpleSex, Gender
 from tests.classes.simple_str import SimpleString
 from tests.classes.simple_record import SimpleRecord, SimpleORecord
+from tests.classes.linked_record import LinkedRecord, LinkedContent
 
 
 class TestQuery(TestCase):
@@ -62,6 +63,10 @@ class TestQuery(TestCase):
         collection = Connection.get_collection(SimpleRecord)
         collection.delete_many({})
         collection = Connection.get_collection(SimpleORecord)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedRecord)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedContent)
         collection.delete_many({})
 
     def test_query_objects_from_database(self):
@@ -697,6 +702,43 @@ class TestQuery(TestCase):
         self.assertEqual(result.is_partial, True)
         self.assertEqual(result._partial_picks, ['id', 'name', 'desc', 'created_at', 'updated_at'])
 
+    def test_query_can_omit_ref_ids(self):
+        lr = LinkedRecord(name='n', desc='d', age=1, score=5.0).save()
+        LinkedContent(record=lr, title='t', count=1).save()
+        content = LinkedContent.one({'_omit': ['recordId']}).exec()
+        self.assertEqual(content.is_partial, True)
+        self.assertEqual(content.record_id, None)
+
+    def test_query_omits_specific_fields_in_list_subqueries(self):
+        lr = LinkedRecord(name='n', desc='d', age=1, score=5.0).save()
+        LinkedContent(record=lr, title='t', count=1).save()
+        record = LinkedRecord.one({'_includes': [{'contents': {'_omit': ['createdAt', 'updatedAt', 'title']}}]}).exec()
+        content = record.contents[0]
+        self.assertIsNotNone(content.id)
+        self.assertEqual(content.title, None)
+        self.assertEqual(content.paper, None)
+        self.assertEqual(content.count, 1)
+        self.assertIsNone(content.created_at)
+        self.assertIsNone(content.updated_at)
+        self.assertIsNotNone(content.record_id)
+        self.assertEqual(content.is_partial, True)
+        self.assertEqual(content._partial_picks, ['id', 'paper', 'count', 'record_id'])
+
+    def test_query_omits_specific_fields_in_obj_subqueries(self):
+        lr = LinkedRecord(name='n', desc='d', age=1, score=5.0).save()
+        LinkedContent(record=lr, title='t', count=1).save()
+        content = LinkedContent.one({'_includes': [{'record': {'_omit': ['name', 'desc', 'age']}}]}).exec()
+        record = content.record
+        self.assertIsNotNone(record.id)
+        self.assertIsNone(record.name)
+        self.assertIsNone(record.desc)
+        self.assertIsNone(record.age)
+        self.assertEqual(record.score, 5)
+        self.assertIsNotNone(record.created_at)
+        self.assertIsNotNone(record.updated_at)
+        self.assertTrue(record.is_partial)
+        self.assertEqual(record._partial_picks, ['id', 'score', 'created_at', 'updated_at'])
+
     def test_query_picks_specific_fields(self):
         SimpleRecord(name='n', desc='d', age=1, score=5.0).save()
         result = SimpleRecord.one().pick(['age', 'score']).exec()
@@ -709,3 +751,33 @@ class TestQuery(TestCase):
         self.assertIsNone(result.updated_at)
         self.assertEqual(result.is_partial, True)
         self.assertEqual(result._partial_picks, ['age', 'score'])
+
+    def test_query_picks_specific_fields_in_list_subqueries(self):
+        lr = LinkedRecord(name='n', desc='d', age=1, score=5.0).save()
+        LinkedContent(record=lr, title='t', count=1).save()
+        record = LinkedRecord.one({'_includes': [{'contents': {'_pick': ['count']}}]}).exec()
+        content = record.contents[0]
+        self.assertIsNone(content.id)
+        self.assertEqual(content.title, None)
+        self.assertEqual(content.paper, None)
+        self.assertEqual(content.count, 1)
+        self.assertIsNone(content.created_at)
+        self.assertIsNone(content.updated_at)
+        self.assertIsNotNone(content.record_id)
+        self.assertEqual(content.is_partial, True)
+        self.assertEqual(content._partial_picks, ['count'])
+
+    def test_query_picks_specific_fields_in_obj_subqueries(self):
+        lr = LinkedRecord(name='n', desc='d', age=1, score=5.0).save()
+        LinkedContent(record=lr, title='t', count=1).save()
+        content = LinkedContent.one({'_includes': [{'record': {'_pick': ['id', 'score', 'createdAt', 'updatedAt']}}]}).exec()
+        record = content.record
+        self.assertIsNotNone(record.id)
+        self.assertIsNone(record.name)
+        self.assertIsNone(record.desc)
+        self.assertIsNone(record.age)
+        self.assertEqual(record.score, 5)
+        self.assertIsNotNone(record.created_at)
+        self.assertIsNotNone(record.updated_at)
+        self.assertTrue(record.is_partial)
+        self.assertEqual(record._partial_picks, ['id', 'score', 'created_at', 'updated_at'])
