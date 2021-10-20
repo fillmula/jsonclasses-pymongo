@@ -88,10 +88,13 @@ class Connection:
     def connected(self: Collection) -> bool:
         return self._connected
 
-    def collection(self: Connection, name: str) -> Collection:
+    def collection(self: Connection, name: str, index_keys: list[str] | None = None) -> Collection:
         if self._collections.get(name):
             return self._collections[name]
         coll = self.database.get_collection(name)
+        if index_keys is not None:
+            ukeys = [(k, 1) for k in index_keys]
+            coll.create_index(ukeys, name='ref', unique=True)
         self._collections[name] = coll
         return coll
 

@@ -88,7 +88,7 @@ class Encoder(Coder):
             this_field.name,
             that_cls,
             cast(str, this_field.fdef.foreign_key))
-        collection = connection.collection(join_table_name)
+        collection = connection.collection(join_table_name, [this_field_name, that_field_name])
         this_id = ObjectId(this_instance._id)
         matcher = {
             this_field_name: this_id,
@@ -114,7 +114,7 @@ class Encoder(Coder):
             this_field.name,
             that_cls,
             cast(str, this_field.fdef.foreign_key))
-        collection = connection.collection(join_table_name)
+        collection = connection.collection(join_table_name, [this_field_name, that_field_name])
         this_id = ObjectId(this_instance._id)
         matcher = {
             this_field_name: this_id,
