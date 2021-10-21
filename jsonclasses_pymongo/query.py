@@ -149,8 +149,17 @@ class BaseQuery(Generic[T]):
                         matcher['$expr']['$and'].append({
                             '$eq': ['$_id', '$$' + that_key]
                         })
-                        if not has_match:
+                        if (not has_match) and matcher:
                             subpipeline.insert(0, {'$match': matcher})
+                        subpipeline_moveout: list[Any] = []
+                        filtered_subpipeline: list[Any] = []
+                        for item in subpipeline:
+                            if item.get('$match'):
+                                filtered_subpipeline.append(item)
+                            elif item.get('$project'):
+                                filtered_subpipeline.append(item)
+                            else:
+                                subpipeline_moveout.append(item)
                         outer_lookup = {'$lookup': {
                             'from': jt_name,
                             'as': field.name,
@@ -168,7 +177,7 @@ class BaseQuery(Generic[T]):
                             'from': it.pconf.collection_name,
                             'as': field.name,
                             'let': {that_key: '$'+that_key},
-                            'pipeline': subpipeline
+                            'pipeline': filtered_subpipeline
                         }}
                         unwind = {
                             '$unwind': {
@@ -182,9 +191,8 @@ class BaseQuery(Generic[T]):
                         pipeline.append(lookup)
                         pipeline.append(unwind)
                         pipeline.append(replace)
+                        pipeline.extend(subpipeline_moveout)
                         result.append(outer_lookup)
-                        from pprint import pprint
-                        pprint(result)
                     else:
                         fk = cast(str, field.fdef.foreign_key)
                         key = ref_db_field_key(fk, it)
