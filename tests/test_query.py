@@ -17,6 +17,7 @@ from tests.classes.simple_sex import SimpleSex, Gender
 from tests.classes.simple_str import SimpleString
 from tests.classes.simple_record import SimpleRecord, SimpleORecord
 from tests.classes.linked_record import LinkedRecord, LinkedContent
+from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
 
 
 class TestQuery(TestCase):
@@ -67,6 +68,13 @@ class TestQuery(TestCase):
         collection = Connection.get_collection(LinkedRecord)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedContent)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedStudent)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedCourse)
+        collection.delete_many({})
+        collection = Connection('linked').collection('linkedcoursesstudents'
+                                                     'linkedstudentscourses')
         collection.delete_many({})
 
     def test_query_objects_from_database(self):
@@ -588,6 +596,67 @@ class TestQuery(TestCase):
         results = SimpleSex.find('gender=1').exec()
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].gender, d.gender)
+
+    def test_query_on_many_many_relationship_by_single_id_without_filter(self):
+        s1 = LinkedStudent(name='S1').save()
+        s2 = LinkedStudent(name='S2').save()
+        s3 = LinkedStudent(name='S3').save()
+        c1 = LinkedCourse(name='C1', students=[s1, s2, s3]).save()
+        c2 = LinkedCourse(name='C2-Q', students=[s1, s2, s3]).save()
+        c3 = LinkedCourse(name='C3', students=[s1, s2, s3]).save()
+        c4 = LinkedCourse(name='C4-Q', students=[s1, s2, s3]).save()
+        c5 = LinkedCourse(name='C5', students=[s1, s2]).save()
+        c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
+        c7 = LinkedCourse(name='C7', students=[s1]).save()
+        c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
+        courses = LinkedCourse.find(studentIds=[s3.id]).exec()
+        names = [course.name for course in courses]
+        self.assertEqual(names, ['C1', 'C2-Q', 'C3', 'C4-Q'])
+
+    def test_query_on_many_many_relationship_by_list_ids_without_filter(self):
+        s1 = LinkedStudent(name='S1').save()
+        s2 = LinkedStudent(name='S2').save()
+        s3 = LinkedStudent(name='S3').save()
+        c1 = LinkedCourse(name='C1', students=[s1, s2, s3]).save()
+        c2 = LinkedCourse(name='C2-Q', students=[s1, s2, s3]).save()
+        c3 = LinkedCourse(name='C3', students=[s1, s2, s3]).save()
+        c4 = LinkedCourse(name='C4-Q', students=[s1, s2, s3]).save()
+        c5 = LinkedCourse(name='C5', students=[s1, s2]).save()
+        c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
+        c7 = LinkedCourse(name='C7', students=[s1]).save()
+        c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
+        LinkedCourse.find(studentIds=[s1.id, s2.id]).exec()
+
+    def test_query_on_many_many_relationship_by_or_without_filter(self):
+        s1 = LinkedStudent(name='S1').save()
+        s2 = LinkedStudent(name='S2').save()
+        s3 = LinkedStudent(name='S3').save()
+        c1 = LinkedCourse(name='C1', students=[s1, s2, s3]).save()
+        c2 = LinkedCourse(name='C2-Q', students=[s1, s2, s3]).save()
+        c3 = LinkedCourse(name='C3', students=[s1, s2, s3]).save()
+        c4 = LinkedCourse(name='C4-Q', students=[s1, s2, s3]).save()
+        c5 = LinkedCourse(name='C5', students=[s1, s2]).save()
+        c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
+        c7 = LinkedCourse(name='C7', students=[s1]).save()
+        c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
+        LinkedCourse.find(studentIds={'_or': [s1.id, s2.id]}).exec()
+
+    def test_query_on_many_many_relationship_by_and_without_filter(self):
+        s1 = LinkedStudent(name='S1').save()
+        s2 = LinkedStudent(name='S2').save()
+        s3 = LinkedStudent(name='S3').save()
+        c1 = LinkedCourse(name='C1', students=[s1, s2, s3]).save()
+        c2 = LinkedCourse(name='C2-Q', students=[s1, s2, s3]).save()
+        c3 = LinkedCourse(name='C3', students=[s1, s2, s3]).save()
+        c4 = LinkedCourse(name='C4-Q', students=[s1, s2, s3]).save()
+        c5 = LinkedCourse(name='C5', students=[s1, s2]).save()
+        c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
+        c7 = LinkedCourse(name='C7', students=[s1]).save()
+        c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
+        LinkedCourse.find(studentIds={'_and': [s1.id, s2.id]}).exec()
+
+    def test_query_by_many_many_relationship_with_filter_sort_and_page(self):
+        pass
 
     def test_query_avg_with_all_list_of_number(self):
         SimpleScore(name="a", score=1.3).save()

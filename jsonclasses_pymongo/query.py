@@ -11,6 +11,7 @@ from bson import ObjectId
 from inflection import camelize
 from pymongo.cursor import Cursor
 from jsonclasses.fdef import FStore, FType
+from jsonclasses.jfield import JField
 from jsonclasses.mgraph import MGraph
 from jsonclasses.excs import ObjectNotFoundException
 from .coder import Coder
@@ -237,6 +238,7 @@ class BaseListQuery(BaseQuery[T]):
         self._pick: Optional[dict[str, Any]] = None
         self._use_omit: bool = False
         self._omit: Optional[dict[str, Any]] = None
+        self._virtual: Optional[list[tuple[str, JField, Any]]] = None
         if filter is not None:
             if type(filter) is str:
                 filter = query_to_object(filter)
@@ -244,6 +246,8 @@ class BaseListQuery(BaseQuery[T]):
 
     def _set_matcher(self: V, matcher: dict[str, Any]) -> None:
         result = QueryReader(query=matcher, cls=self._cls).result()
+        if result.get('_virtual') is not None:
+            self._virtual = result['_virtual']
         if result.get('_match') is not None:
             self._match = result['_match']
         if result.get('_sort') is not None:
@@ -318,6 +322,44 @@ class BaseListQuery(BaseQuery[T]):
     def _build_aggregate_pipeline(self: V) -> list[dict[str, Any]]:
         lookups = super()._build_aggregate_pipeline()
         result: list[dict[str, Any]] = []
+        if self._virtual is not None:
+            for virtual in self._virtual:
+                _, field, obj = virtual
+                jtname = Coder().join_table_name(
+                    self._cls,
+                    field.name,
+                    field.foreign_class,
+                    field.foreign_field.name)
+                thisref = ref_db_field_key(self._cls.__name__, self._cls)
+                thatref = ref_db_field_key(field.foreign_class.__name__, field.foreign_class)
+                if isinstance(obj, list):
+                    pass
+                elif obj.get('_and'):
+                    obj = obj['_and']
+                elif obj.get('_or'):
+                    obj = obj['_or']
+                ids = [ObjectId(o) for o in obj]
+                result.append({'$lookup': {
+                    'as': field.name,
+                    'from': jtname,
+                    'let': {thisref: '$_id'},
+                    'pipeline': [
+                        {
+                            '$match': {
+                                '$expr': {
+                                    '$and': [
+                                        {
+                                            '$eq': [f'${thisref}', f'$${thisref}']
+                                        }
+                                    ]
+                                },
+                                thatref: {'$in': ids}
+                            }
+                        }
+                    ]
+                }})
+                result.append({'$unwind': f'${field.name}'})
+                result.append({'$unset': field.name})
         if self._match is not None:
             result.append({'$match': self._match})
         if self._sort is not None:

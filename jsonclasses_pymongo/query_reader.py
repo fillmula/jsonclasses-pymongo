@@ -30,6 +30,10 @@ class QueryReader:
                 fields[key] = value
         iresult = self.instructors_result(instructors)
         fresult = self.fields_result(fields)
+        if '_virtual' in fresult:
+            virtual = fresult['_virtual']
+            fresult.pop('_virtual')
+            iresult['_virtual'] = virtual
         return {'_match': fresult, **iresult}
 
     def instructors_result(self: QueryReader,
@@ -89,10 +93,19 @@ class QueryReader:
                 dbkey = camelize(key, False)
             else:
                 dbkey = key
+            # handle local key query
             if key in self.cls.cdef.reference_names:
                 idval = readstr(value)
                 result[dbkey] = ObjectId(idval) if idval is not None else None
                 continue
+            # handle local keys or virtual local keys
+            if key in self.cls.cdef.virtual_reference_names:
+                if result.get('_virtual') is None:
+                    result['_virtual'] = []
+                f = self.cls.cdef.virtual_reference_fields[key]
+                result['_virtual'].append((key, f, value))
+                continue
+            # handle embedded fields
             field = self.cls.cdef.field_named(key)
             if field is None:
                 raise ValueError(f'unexist field {key}')
