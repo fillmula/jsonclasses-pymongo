@@ -354,8 +354,11 @@ class BaseListQuery(BaseQuery[T]):
                                     ]
                                 },
                                 thatref: {'$in': ids}
-                            }
-                        }
+                            },
+                        },
+                        {
+                            '$limit': 1
+                        },
                     ]
                 }})
                 result.append({'$unwind': f'${field.name}'})

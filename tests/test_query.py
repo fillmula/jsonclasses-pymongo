@@ -625,7 +625,9 @@ class TestQuery(TestCase):
         c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
         c7 = LinkedCourse(name='C7', students=[s1]).save()
         c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
-        LinkedCourse.find(studentIds=[s1.id, s2.id]).exec()
+        courses = LinkedCourse.find(studentIds=[s2.id, s3.id]).exec()
+        names = [course.name for course in courses]
+        self.assertEqual(names, ['C1', 'C2-Q', 'C3', 'C4-Q', 'C5', 'C6-Q'])
 
     def test_query_on_many_many_relationship_by_or_without_filter(self):
         s1 = LinkedStudent(name='S1').save()
@@ -639,7 +641,9 @@ class TestQuery(TestCase):
         c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
         c7 = LinkedCourse(name='C7', students=[s1]).save()
         c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
-        LinkedCourse.find(studentIds={'_or': [s1.id, s2.id]}).exec()
+        courses = LinkedCourse.find(studentIds={'_or': [s2.id, s3.id]}).exec()
+        names = [course.name for course in courses]
+        self.assertEqual(names, ['C1', 'C2-Q', 'C3', 'C4-Q', 'C5', 'C6-Q'])
 
     def test_query_on_many_many_relationship_by_and_without_filter(self):
         s1 = LinkedStudent(name='S1').save()
@@ -653,7 +657,9 @@ class TestQuery(TestCase):
         c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
         c7 = LinkedCourse(name='C7', students=[s1]).save()
         c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
-        LinkedCourse.find(studentIds={'_and': [s1.id, s2.id]}).exec()
+        courses = LinkedCourse.find(studentIds={'_and': [s1.id, s3.id]}).exec()
+        names = [course.name for course in courses]
+        self.assertEqual(names, ['C1', 'C2-Q', 'C3', 'C4-Q'])
 
     def test_query_by_many_many_relationship_with_filter_sort_and_page(self):
         pass
