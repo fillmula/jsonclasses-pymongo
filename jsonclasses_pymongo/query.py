@@ -332,13 +332,16 @@ class BaseListQuery(BaseQuery[T]):
                     field.foreign_field.name)
                 thisref = ref_db_field_key(self._cls.__name__, self._cls)
                 thatref = ref_db_field_key(field.foreign_class.__name__, field.foreign_class)
+                and_mode = False
                 if isinstance(obj, list):
                     pass
                 elif obj.get('_and'):
                     obj = obj['_and']
+                    and_mode = True
                 elif obj.get('_or'):
                     obj = obj['_or']
                 ids = [ObjectId(o) for o in obj]
+                idslength = len(ids)
                 result.append({'$lookup': {
                     'as': field.name,
                     'from': jtname,
@@ -357,11 +360,18 @@ class BaseListQuery(BaseQuery[T]):
                             },
                         },
                         {
-                            '$limit': 1
+                            '$limit': 1 if not and_mode else idslength
                         },
                     ]
                 }})
-                result.append({'$unwind': f'${field.name}'})
+                if and_mode:
+                    result.append({
+                        '$match': {
+                            f'{field.name}.{idslength - 1}': {'$exists': True}
+                        }
+                    })
+                else:
+                    result.append({'$unwind': f'${field.name}'})
                 result.append({'$unset': field.name})
         if self._match is not None:
             result.append({'$match': self._match})

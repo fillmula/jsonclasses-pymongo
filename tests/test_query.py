@@ -661,8 +661,69 @@ class TestQuery(TestCase):
         names = [course.name for course in courses]
         self.assertEqual(names, ['C1', 'C2-Q', 'C3', 'C4-Q'])
 
-    def test_query_by_many_many_relationship_with_filter_sort_and_page(self):
-        pass
+    def test_query_by_many_many_relationship_with_filter_by_single_id_with_filter_sort_and_page(self):
+        s1 = LinkedStudent(name='S1').save()
+        s2 = LinkedStudent(name='S2').save()
+        s3 = LinkedStudent(name='S3').save()
+        c1 = LinkedCourse(name='C1', students=[s1, s2, s3]).save()
+        c2 = LinkedCourse(name='C2-Q', students=[s1, s2, s3]).save()
+        c3 = LinkedCourse(name='C3', students=[s1, s2, s3]).save()
+        c4 = LinkedCourse(name='C4-Q', students=[s1, s2, s3]).save()
+        c5 = LinkedCourse(name='C5', students=[s1, s2]).save()
+        c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
+        c7 = LinkedCourse(name='C7', students=[s1]).save()
+        c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
+        courses = LinkedCourse.find(studentIds=[s2.id], name={'_suffix': 'Q'}).order('name', -1).limit(2).exec()
+        names = [course.name for course in courses]
+        self.assertEqual(names, ['C6-Q', 'C4-Q'])
+
+    def test_query_by_many_many_relationship_with_filter_by_list_ids_with_filter_sort_and_page(self):
+        s1 = LinkedStudent(name='S1').save()
+        s2 = LinkedStudent(name='S2').save()
+        s3 = LinkedStudent(name='S3').save()
+        c1 = LinkedCourse(name='C1', students=[s1, s2, s3]).save()
+        c2 = LinkedCourse(name='C2-Q', students=[s1, s2, s3]).save()
+        c3 = LinkedCourse(name='C3', students=[s1, s2, s3]).save()
+        c4 = LinkedCourse(name='C4-Q', students=[s1, s2, s3]).save()
+        c5 = LinkedCourse(name='C5', students=[s1, s2]).save()
+        c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
+        c7 = LinkedCourse(name='C7', students=[s1]).save()
+        c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
+        courses = LinkedCourse.find(studentIds=[s2.id, s3.id], name={'_suffix': 'Q'}).order('name', -1).limit(2).exec()
+        names = [course.name for course in courses]
+        self.assertEqual(names, ['C6-Q', 'C4-Q'])
+
+    def test_query_by_many_many_relationship_with_filter_by_or_with_filter_sort_and_page(self):
+        s1 = LinkedStudent(name='S1').save()
+        s2 = LinkedStudent(name='S2').save()
+        s3 = LinkedStudent(name='S3').save()
+        c1 = LinkedCourse(name='C1', students=[s1, s2, s3]).save()
+        c2 = LinkedCourse(name='C2-Q', students=[s1, s2, s3]).save()
+        c3 = LinkedCourse(name='C3', students=[s1, s2, s3]).save()
+        c4 = LinkedCourse(name='C4-Q', students=[s1, s2, s3]).save()
+        c5 = LinkedCourse(name='C5', students=[s1, s2]).save()
+        c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
+        c7 = LinkedCourse(name='C7', students=[s1]).save()
+        c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
+        courses = LinkedCourse.find(studentIds={'_or': [s2.id, s3.id]}, name={'_suffix': 'Q'}).order('name', -1).limit(2).exec()
+        names = [course.name for course in courses]
+        self.assertEqual(names, ['C6-Q', 'C4-Q'])
+
+    def test_query_by_many_many_relationship_with_filter_by_and_with_filter_sort_and_page(self):
+        s1 = LinkedStudent(name='S1').save()
+        s2 = LinkedStudent(name='S2').save()
+        s3 = LinkedStudent(name='S3').save()
+        c1 = LinkedCourse(name='C1', students=[s1, s2, s3]).save()
+        c2 = LinkedCourse(name='C2-Q', students=[s1, s2, s3]).save()
+        c3 = LinkedCourse(name='C3', students=[s1, s2, s3]).save()
+        c4 = LinkedCourse(name='C4-Q', students=[s1, s2, s3]).save()
+        c5 = LinkedCourse(name='C5', students=[s1, s2]).save()
+        c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
+        c7 = LinkedCourse(name='C7', students=[s1]).save()
+        c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
+        courses = LinkedCourse.find(studentIds={'_and': [s2.id, s3.id]}, name={'_suffix': 'Q'}).order('name', -1).limit(2).exec()
+        names = [course.name for course in courses]
+        self.assertEqual(names, ['C4-Q', 'C2-Q'])
 
     def test_query_avg_with_all_list_of_number(self):
         SimpleScore(name="a", score=1.3).save()
