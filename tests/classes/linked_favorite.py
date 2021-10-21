@@ -9,6 +9,7 @@ from jsonclasses_pymongo import pymongo
 class LinkedCourse:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
+    score: int | None = 1
     students: list[LinkedStudent] = types.nonnull.listof('LinkedStudent') \
                                          .linkedthru('courses')
     created_at: datetime = types.readonly.datetime.tscreated.required

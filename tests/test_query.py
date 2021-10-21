@@ -761,6 +761,21 @@ class TestQuery(TestCase):
         results = SimpleScore.find(**{'name': {'_prefix': 'S'}}).sum("score").exec()
         self.assertEqual(results, sum([4, 2.5, 33, 43]))
 
+    def test_query_sum_by_many_many(self):
+        s1 = LinkedStudent(name='S1').save()
+        s2 = LinkedStudent(name='S2').save()
+        s3 = LinkedStudent(name='S3').save()
+        c1 = LinkedCourse(name='C1', students=[s1, s2, s3]).save()
+        c2 = LinkedCourse(name='C2-Q', students=[s1, s2, s3]).save()
+        c3 = LinkedCourse(name='C3', students=[s1, s2, s3]).save()
+        c4 = LinkedCourse(name='C4-Q', students=[s1, s2, s3]).save()
+        c5 = LinkedCourse(name='C5', students=[s1, s2]).save()
+        c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
+        c7 = LinkedCourse(name='C7', students=[s1]).save()
+        c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
+        scores = LinkedCourse.find(studentIds={'_and': [s2.id, s3.id]}, name={'_suffix': 'Q'}).order('name', -1).limit(2).sum("score").exec()
+        self.assertEqual(scores, 2)
+
     def test_query_min_with_all_list_of_number(self):
         SimpleScore(name="a", score=1.3).save()
         SimpleScore(name="b", score=2.2).save()
