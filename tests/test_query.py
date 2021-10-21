@@ -932,3 +932,22 @@ class TestQuery(TestCase):
         self.assertIsNotNone(record.updated_at)
         self.assertTrue(record.is_partial)
         self.assertEqual(record._partial_picks, ['id', 'score', 'created_at', 'updated_at'])
+
+    def test_query_picks_specific_fields_in_many_many_subqueries(self):
+        s1 = LinkedStudent(name='S1').save()
+        s2 = LinkedStudent(name='S2').save()
+        s3 = LinkedStudent(name='S3').save()
+        c1 = LinkedCourse(name='C1', students=[s1, s2, s3]).save()
+        c2 = LinkedCourse(name='C2-Q', students=[s1, s2, s3]).save()
+        c3 = LinkedCourse(name='C3', students=[s1, s2, s3]).save()
+        c4 = LinkedCourse(name='C4-Q', students=[s1, s2, s3]).save()
+        c5 = LinkedCourse(name='C5', students=[s1, s2]).save()
+        c6 = LinkedCourse(name='C6-Q', students=[s1, s2]).save()
+        c7 = LinkedCourse(name='C7', students=[s1]).save()
+        c8 = LinkedCourse(name='C8-Q', students=[s1]).save()
+        course = LinkedCourse.one(name='C1').include('students', LinkedStudent.find().pick(['id', 'name'])).exec()
+        for student in course.students:
+            self.assertIsNotNone(student.name)
+            self.assertIsNone(student.created_at)
+            self.assertIsNone(student.updated_at)
+            self.assertTrue(student.is_partial)
