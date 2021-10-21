@@ -374,3 +374,19 @@ class TestSave(TestCase):
         students = LinkedStudent.find().include('courses', LinkedCourse.find(name='C1')).exec()
         self.assertEqual(len(students[0].courses), 1)
         self.assertEqual(len(students[1].courses), 1)
+
+    def test_fetched_objects_are_paged_many_many(self):
+        student = LinkedStudent(name='S1')
+        for i in range(100):
+            course = LinkedCourse(name=f's{str(i).zfill(3)}')
+            student.courses.append(course)
+        student.save()
+        student = LinkedStudent.one().include('courses', LinkedCourse.find().order('name', -1).page_size(10).page_number(2)).exec()
+        course_names = [course.name for course in student.courses]
+        self.assertEqual(course_names, ['s089', 's088', 's087', 's086', 's085', 's084', 's083', 's082', 's081', 's080'])
+        student = LinkedStudent.one().include('courses', LinkedCourse.find().order('name', -1).page_size(10).page_number(4)).exec()
+        course_names = [course.name for course in student.courses]
+        self.assertEqual(course_names, ['s069', 's068', 's067', 's066', 's065', 's064', 's063', 's062', 's061', 's060'])
+        student = LinkedStudent.one().include('courses', LinkedCourse.find().order('name', 1).page_size(8).page_number(1)).exec()
+        course_names = [course.name for course in student.courses]
+        self.assertEqual(course_names, ['s000', 's001', 's002', 's003', 's004', 's005', 's006', 's007'])

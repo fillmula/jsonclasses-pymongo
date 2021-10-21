@@ -9,7 +9,7 @@ from jsonclasses_pymongo import pymongo
 class LinkedCourse:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    students: list[LinkedStudent] = types.listof('LinkedStudent') \
+    students: list[LinkedStudent] = types.nonnull.listof('LinkedStudent') \
                                          .linkedthru('courses')
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required
@@ -20,7 +20,7 @@ class LinkedCourse:
 class LinkedStudent:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    courses: list[LinkedCourse] = types.listof('LinkedCourse') \
+    courses: list[LinkedCourse] = types.nonnull.listof('LinkedCourse') \
                                        .linkedthru('students')
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required
