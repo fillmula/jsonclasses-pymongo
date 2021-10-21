@@ -137,8 +137,9 @@ class Decoder(Coder):
                             self.decode_list(
                                 value[key], new_cls, field.types, graph, subquery))
                 saved_keys = value.get(ref_db_field_keys(field.name, cls))
-                setattr(dest, ref_field_keys(field.name),
-                        [str(k) for k in saved_keys])
+                if saved_keys:
+                    setattr(dest, ref_field_keys(field.name),
+                            [str(k) for k in saved_keys])
             elif self.is_instance_field(field):
                 new_cls = field.fdef.inst_cls
                 setattr(dest, field.name, self.decode_item(

@@ -303,7 +303,7 @@ class TestEncoder(TestCase):
         address_0_data = commands[0].object
         address_1_data = commands[1].object
         owner_data = commands[2].object
-        self.assertEqual(owner_data['addressesIds'], [
+        self.assertEqual(owner_data['addressIds'], [
                          address_0_data['_id'], address_1_data['_id']])
 
     def test_encode_dict_keep_keys(self):

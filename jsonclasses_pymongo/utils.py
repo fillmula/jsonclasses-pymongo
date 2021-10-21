@@ -29,7 +29,8 @@ def ref_db_field_key(key: str, cls: type[PymongoObject]) -> str:
 
 
 def ref_field_keys(key: str) -> str:
-    return key + '_ids'
+    from inflection import singularize
+    return singularize(key) + '_ids'
 
 
 def ref_db_field_keys(key: str, cls: type[PymongoObject]) -> str:

@@ -161,14 +161,14 @@ class TestDecoder(TestCase):
             '_id': ObjectId(),
             'createdAt': datetime.now(),
             'updatedAt': datetime.now(),
-            'addressesIds': [ObjectId(), ObjectId()]
+            'addressIds': [ObjectId(), ObjectId()]
         }
         instance = Decoder().decode_root(data, SimpleDecodeLocalKeyList)
         self.assertEqual(instance.id, str(data['_id']))
-        self.assertEqual(getattr(instance, 'addresses_ids')
-                         [0], str(data['addressesIds'][0]))
-        self.assertEqual(getattr(instance, 'addresses_ids')
-                         [1], str(data['addressesIds'][1]))
+        self.assertEqual(getattr(instance, 'address_ids')
+                         [0], str(data['addressIds'][0]))
+        self.assertEqual(getattr(instance, 'address_ids')
+                         [1], str(data['addressIds'][1]))
 
     def test_decode_embedded_dict(self):
         @pymongo

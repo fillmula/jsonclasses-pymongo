@@ -11,6 +11,7 @@ from tests.classes.linked_profile_user import LinkedProfile, LinkedUser
 from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
 from tests.classes.simple_record import SimpleRecord
 from tests.classes.linked_album import LinkedAlbum, LinkedArtist
+from tests.classes.linked_song import LinkedSinger, LinkedSong
 
 
 class TestSave(TestCase):
@@ -56,6 +57,10 @@ class TestSave(TestCase):
         collection = Connection.get_collection(LinkedAlbum)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedArtist)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedSong)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedSinger)
         collection.delete_many({})
 
     def test_object_is_saved_into_database(self):
@@ -242,6 +247,15 @@ class TestSave(TestCase):
         post.save()
         for item in collection.find({}):
             self.assertEqual(item['authorId'], ObjectId(a2.id))
+
+    def test_fl_many_many_is_saved(self):
+        song1 = LinkedSong(name='song1')
+        song2 = LinkedSong(name='song2')
+        singer1 = LinkedSinger(name='singer1')
+        singer2 = LinkedSinger(name='singer2')
+        song1.singers = [singer1, singer2]
+        song2.singers = [singer1, singer2]
+
 
     def test_1l_1f_object_unlink_is_saved(self):
         profile = LinkedProfile(name='p')
