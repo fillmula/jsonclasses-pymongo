@@ -99,13 +99,6 @@ class BaseQuery(Generic[T]):
                         })
                     else:
                         subpipeline = subquery.query._build_aggregate_pipeline()
-                        subpipeline.insert(0, {
-                            '$match': {
-                                '$expr': {
-                                    '$and': [{'$eq': ['$_id', '$$'+key]}]
-                                }
-                            }
-                        })
                         result.append({
                             '$lookup': {
                                 'from': it.pconf.collection_name,
