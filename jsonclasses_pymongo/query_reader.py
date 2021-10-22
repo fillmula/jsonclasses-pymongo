@@ -98,7 +98,21 @@ class QueryReader:
                 idval = readstr(value)
                 result[dbkey] = ObjectId(idval) if idval is not None else None
                 continue
-            # handle local keys or virtual local keys
+            # handle local keys
+            if key in self.cls.cdef.list_reference_names:
+                and_mode = False
+                if isinstance(value, dict):
+                    if value.get('_or'):
+                        value = value['_or']
+                    elif value.get('_and'):
+                        value = value['_and']
+                        and_mode = True
+                if not and_mode:
+                    result[dbkey] = {'$in': [ObjectId(v) for v in value]}
+                else:
+                    result[dbkey] = {'$all': [ObjectId(v) for v in value]}
+                continue
+            # handle virtual local keys
             if key in self.cls.cdef.virtual_reference_names:
                 if result.get('_virtual') is None:
                     result['_virtual'] = []

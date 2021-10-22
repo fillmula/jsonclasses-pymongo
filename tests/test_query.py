@@ -18,6 +18,7 @@ from tests.classes.simple_str import SimpleString
 from tests.classes.simple_record import SimpleRecord, SimpleORecord
 from tests.classes.linked_record import LinkedRecord, LinkedContent
 from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
+from tests.classes.linked_song import LinkedSong, LinkedSinger
 
 
 class TestQuery(TestCase):
@@ -75,6 +76,10 @@ class TestQuery(TestCase):
         collection.delete_many({})
         collection = Connection('linked').collection('linkedcoursesstudents'
                                                      'linkedstudentscourses')
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedSong)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedSinger)
         collection.delete_many({})
 
     def test_query_objects_from_database(self):
@@ -724,6 +729,126 @@ class TestQuery(TestCase):
         courses = LinkedCourse.find(studentIds={'_and': [s2.id, s3.id]}, name={'_suffix': 'Q'}).order('name', -1).limit(2).exec()
         names = [course.name for course in courses]
         self.assertEqual(names, ['C4-Q', 'C2-Q'])
+
+    def test_query_on_fl_many_many_relationship_on_l_side_by_single_id_without_filter(self):
+        song1 = LinkedSong(name='1')
+        song2 = LinkedSong(name='2')
+        singer1 = LinkedSinger(name='1')
+        singer2 = LinkedSinger(name='2')
+        singer3 = LinkedSinger(name='3')
+        singer4 = LinkedSinger(name='4')
+        song1.singers = [singer1, singer2]
+        song1.save()
+        song2.singers = [singer1, singer3, singer4]
+        song2.save()
+        result = LinkedSong.find(f'singerIds[0]={singer1.id}').exec()
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].name, '1')
+        self.assertEqual(result[1].name, '2')
+        result = LinkedSong.find(f'singerIds[0]={singer2.id}').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, '1')
+
+    def test_query_on_fl_many_many_relationship_on_l_side_by_list_ids_without_filter(self):
+        song1 = LinkedSong(name='1')
+        song2 = LinkedSong(name='2')
+        song3 = LinkedSong(name='3')
+        song4 = LinkedSong(name='4')
+        singer1 = LinkedSinger(name='1')
+        singer2 = LinkedSinger(name='2')
+        singer3 = LinkedSinger(name='3')
+        singer4 = LinkedSinger(name='4')
+        song1.singers = [singer1, singer2]
+        song1.save()
+        song2.singers = [singer1, singer3, singer4]
+        song2.save()
+        song3.singers = [singer3, singer4]
+        song3.save()
+        song4.singers = [singer3]
+        song4.save()
+        result = LinkedSong.find(f'singerIds[0]={singer1.id}&singerIds[1]={singer2.id}').exec()
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].name, '1')
+        self.assertEqual(result[1].name, '2')
+        result = LinkedSong.find(f'singerIds[0]={singer3.id}&singerIds[1]={singer4.id}').exec()
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[0].name, '2')
+        self.assertEqual(result[1].name, '3')
+        self.assertEqual(result[2].name, '4')
+
+    def test_query_on_fl_many_many_relationship_on_l_side_by_or_without_filter(self):
+        song1 = LinkedSong(name='1')
+        song2 = LinkedSong(name='2')
+        song3 = LinkedSong(name='3')
+        song4 = LinkedSong(name='4')
+        singer1 = LinkedSinger(name='1')
+        singer2 = LinkedSinger(name='2')
+        singer3 = LinkedSinger(name='3')
+        singer4 = LinkedSinger(name='4')
+        song1.singers = [singer1, singer2]
+        song1.save()
+        song2.singers = [singer1, singer3, singer4]
+        song2.save()
+        song3.singers = [singer3, singer4]
+        song3.save()
+        song4.singers = [singer3]
+        song4.save()
+        result = LinkedSong.find(singer_ids={'_or': [singer1.id, singer2.id]}).exec()
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].name, '1')
+        self.assertEqual(result[1].name, '2')
+        result = LinkedSong.find(singer_ids={'_or': [singer3.id, singer4.id]}).exec()
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[0].name, '2')
+        self.assertEqual(result[1].name, '3')
+        self.assertEqual(result[2].name, '4')
+
+    def test_query_on_fl_many_many_relationship_on_l_side_by_and_without_filter(self):
+        song1 = LinkedSong(name='1')
+        song2 = LinkedSong(name='2')
+        song3 = LinkedSong(name='3')
+        song4 = LinkedSong(name='4')
+        singer1 = LinkedSinger(name='1')
+        singer2 = LinkedSinger(name='2')
+        singer3 = LinkedSinger(name='3')
+        singer4 = LinkedSinger(name='4')
+        song1.singers = [singer1, singer2]
+        song1.save()
+        song2.singers = [singer1, singer3, singer4]
+        song2.save()
+        song3.singers = [singer3, singer4]
+        song3.save()
+        song4.singers = [singer3]
+        song4.save()
+        result = LinkedSong.find(singer_ids={'_and': [singer1.id, singer2.id]}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, '1')
+        result = LinkedSong.find(singer_ids={'_and': [singer3.id, singer4.id]}).exec()
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].name, '2')
+        self.assertEqual(result[1].name, '3')
+
+
+
+    # def test_query_on_fl_many_many_relationship_on_f_side_by_single_id_without_filter(self):
+    #     song1 = LinkedSong(name='1')
+    #     song2 = LinkedSong(name='2')
+    #     song3 = LinkedSong(name='3')
+    #     song4 = LinkedSong(name='4')
+    #     singer1 = LinkedSinger(name='1')
+    #     singer2 = LinkedSinger(name='2')
+    #     singer3 = LinkedSinger(name='3')
+    #     singer4 = LinkedSinger(name='4')
+    #     song1.singers = [singer1, singer2]
+    #     song1.save()
+    #     song2.singers = [singer1, singer3, singer4]
+    #     song2.save()
+    #     song3.singers = [singer3, singer4]
+    #     song3.save()
+    #     song4.singers = [singer3]
+    #     song4.save()
+    #     result = LinkedSinger.find(f'songIds[0]={song1.id}').exec()
+    #     print(result)
 
     def test_query_avg_with_all_list_of_number(self):
         SimpleScore(name="a", score=1.3).save()
