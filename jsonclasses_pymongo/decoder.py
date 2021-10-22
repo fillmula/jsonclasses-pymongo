@@ -181,6 +181,8 @@ class Decoder(Coder):
                     cls: type[T],
                     graph: MGraph | None = None,
                     query: BaseQuery | None = None) -> T:
+        if cls.__name__ == 'LinkedSinger':
+            print(root)
         if graph is None:
             graph = MGraph()
         types = Types().instanceof(cls)

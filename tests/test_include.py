@@ -406,7 +406,7 @@ class TestSave(TestCase):
         song3 = LinkedSong(name='Siao Thiang Go', singers=[singer1]).save()
 
         result = LinkedSinger.id(singer2.id).include('songs').exec()
-        print(result)
+        #print(result)
 
     def test_fl_many_many_are_included_from_l_side(self):
         singer1 = LinkedSinger(name='Teh Khim Leng')

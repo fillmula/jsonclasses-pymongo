@@ -224,28 +224,52 @@ class BaseQuery(Generic[T]):
                         pipeline.extend(subpipeline_moveout)
                         result.append(outer_lookup)
                     else:
-                        fk = cast(str, field.fdef.foreign_key)
-                        key = ref_db_field_key(fk, it)
-                        item = {
-                            '$lookup': {
-                                'from': it.pconf.collection_name,
-                                'as': fname,
-                                'let': {key: '$_id'},
-                                'pipeline': subpipeline
+                        if field.foreign_field.fdef.ftype == FType.INSTANCE:
+                            fk = cast(str, field.fdef.foreign_key)
+                            key = ref_db_field_key(fk, it)
+                            item = {
+                                '$lookup': {
+                                    'from': it.pconf.collection_name,
+                                    'as': fname,
+                                    'let': {key: '$_id'},
+                                    'pipeline': subpipeline
+                                }
                             }
-                        }
-                        if matcher is None:
-                            matcher = {}
-                        if not matcher.get('$expr'):
-                            matcher['$expr'] = {}
-                        if not matcher['$expr'].get('$and'):
-                            matcher['$expr']['$and'] = []
-                        matcher['$expr']['$and'].append({
-                            '$eq': ['$' + key, '$$' + key]
-                        })
-                        if not has_match:
-                            subpipeline.insert(0, {'$match': matcher})
-                        result.append(item)
+                            if matcher is None:
+                                matcher = {}
+                            if not matcher.get('$expr'):
+                                matcher['$expr'] = {}
+                            if not matcher['$expr'].get('$and'):
+                                matcher['$expr']['$and'] = []
+                            matcher['$expr']['$and'].append({
+                                '$eq': ['$' + key, '$$' + key]
+                            })
+                            if not has_match:
+                                subpipeline.insert(0, {'$match': matcher})
+                            result.append(item)
+                        elif field.foreign_field.fdef.ftype == FType.LIST:
+                            fk = cast(str, field.fdef.foreign_key)
+                            key = ref_db_field_keys(fk, it)
+                            item = {
+                                '$lookup': {
+                                    'from': it.pconf.collection_name,
+                                    'as': fname,
+                                    'let': {key: '$_id'},
+                                    'pipeline': subpipeline
+                                }
+                            }
+                            if matcher is None:
+                                matcher = {}
+                            if not matcher.get('$expr'):
+                                matcher['$expr'] = {}
+                            if not matcher['$expr'].get('$and'):
+                                matcher['$expr']['$and'] = []
+                            matcher['$expr']['$and'].append({
+                                '$eq': ['$' + key, '$$' + key]
+                            })
+                            if not has_match:
+                                subpipeline.insert(0, {'$match': matcher})
+                            result.append(item)
         return result
 
 
