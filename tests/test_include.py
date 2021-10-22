@@ -443,7 +443,30 @@ class TestSave(TestCase):
         self.assertEqual(result.singers[0].id, singer2.id)
 
     def test_fl_many_many_are_included_from_f_side_with_sort(self):
-        pass
+        singer1 = LinkedSinger(name='Teh Khim Leng')
+        singer2 = LinkedSinger(name='M Teh Khim Leng')
+        song1 = LinkedSong(name='Lu Bo To Teo Yeo', singers=[singer1, singer2]).save()
+        song2 = LinkedSong(name='Lw Bo To Teo Yeo', singers=[singer1, singer2]).save()
+        song3 = LinkedSong(name='Li Bo To Teo Yeo', singers=[singer1, singer2]).save()
+        song4 = LinkedSong(name='Teo Sua Si Gueh Hai', singers=[singer1, singer2]).save()
+        song5 = LinkedSong(name='Siao Thiang Go', singers=[singer1]).save()
+        result = LinkedSinger.id(singer2.id).include('songs', LinkedSong.find(name={'_prefix': 'L'}).order('name', -1)).exec()
+        self.assertEqual(len(result.songs), 3)
+        self.assertEqual([song.name for song in result.songs], ['Lw Bo To Teo Yeo', 'Lu Bo To Teo Yeo', 'Li Bo To Teo Yeo'])
+        result = LinkedSinger.id(singer2.id).include('songs', LinkedSong.find(name={'_prefix': 'L'}).order('name', 1)).exec()
+        self.assertEqual(len(result.songs), 3)
+        self.assertEqual([song.name for song in result.songs], ['Li Bo To Teo Yeo', 'Lu Bo To Teo Yeo', 'Lw Bo To Teo Yeo'])
 
-    def test_fl_many_many_are_included_from_l_side_with_sort(self):
-        pass
+    def test_fl_many_many_are_included_from_l_side_with_sort_and_sort_will_not_work(self):
+        singer1 = LinkedSinger(name='AQ')
+        singer2 = LinkedSinger(name='BQ')
+        singer3 = LinkedSinger(name='CC')
+        singer4 = LinkedSinger(name='DD')
+        song1 = LinkedSong(name='Lu Bo To Teo Yeo', singers=[singer2, singer1, singer3, singer4]).save()
+        LinkedSong(name='Teo Sua Nang To Cim Tsung Ci', singers=[singer3, singer4]).save()
+        result = LinkedSong.one(name='Lu Bo To Teo Yeo').include('singers', LinkedSinger.find(name={'_suffix': 'Q'}).order('name', -1)).exec()
+        self.assertEqual(len(result.singers), 2)
+        self.assertEqual([singer.name for singer in result.singers], ['BQ', 'AQ'])
+        result = LinkedSong.one(name='Lu Bo To Teo Yeo').include('singers', LinkedSinger.find(name={'_suffix': 'Q'}).order('name', 1)).exec()
+        self.assertEqual([singer.name for singer in result.singers], ['BQ', 'AQ'])
+        self.assertEqual(len(result.singers), 2)
