@@ -7,8 +7,11 @@ from tests.classes.linked_author import LinkedAuthor
 from tests.classes.linked_post import LinkedPost
 from tests.classes.linked_profile_user import LinkedProfile, LinkedUser
 from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
-from tests.classes.chained_user import (ChainedAddress, ChainedProfile,
-                                        ChainedUser)
+from tests.classes.chained_user import (
+    ChainedAddress, ChainedProfile, ChainedUser
+)
+from tests.classes.linked_song import LinkedSong, LinkedSinger
+
 
 
 class TestSave(TestCase):
@@ -59,6 +62,10 @@ class TestSave(TestCase):
         collection = Connection.get_collection(ChainedProfile)
         collection.delete_many({})
         collection = Connection.get_collection(ChainedAddress)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedSong)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedSinger)
         collection.delete_many({})
 
     def test_1f_1l_ref_lookup_fetches_linked_object(self):
@@ -390,3 +397,37 @@ class TestSave(TestCase):
         student = LinkedStudent.one().include('courses', LinkedCourse.find().order('name', 1).page_size(8).page_number(1)).exec()
         course_names = [course.name for course in student.courses]
         self.assertEqual(course_names, ['s000', 's001', 's002', 's003', 's004', 's005', 's006', 's007'])
+
+    def test_fl_many_many_are_included_from_f_side(self):
+        singer1 = LinkedSinger(name='Teh Khim Leng')
+        singer2 = LinkedSinger(name='M Teh Khim Leng')
+        song1 = LinkedSong(name='Lu Bo To Teo Yeo', singers=[singer1, singer2]).save()
+        song2 = LinkedSong(name='Teo Sua Si Gueh Hai', singers=[singer1, singer2]).save()
+        song3 = LinkedSong(name='Siao Thiang Go', singers=[singer1]).save()
+
+        result = LinkedSinger.id(singer2.id).include('songs').exec()
+        print(result)
+
+    def test_fl_many_many_are_included_from_l_side(self):
+        singer1 = LinkedSinger(name='Teh Khim Leng')
+        singer2 = LinkedSinger(name='M Teh Khim Leng')
+        song1 = LinkedSong(name='Lu Bo To Teo Yeo', singers=[singer1, singer2]).save()
+        singer3 = LinkedSinger(name='Phua Kheng Lim')
+        singer4 = LinkedSinger(name='M Phua Kheng Lim')
+        LinkedSong(name='Teo Sua Nang To Cim Tsung Ci', singers=[singer3, singer4]).save()
+        result = LinkedSong.one(name='Lu Bo To Teo Yeo').include('singers').exec()
+        self.assertEqual(result.singer_ids, [singer1.id, singer2.id])
+        self.assertEqual(result.singers[0].id, singer1.id)
+        self.assertEqual(result.singers[1].id, singer2.id)
+
+    def test_fl_many_many_are_included_from_f_side_with_filter(self):
+        pass
+
+    def test_fl_many_many_are_included_from_l_side_with_filter(self):
+        pass
+
+    def test_fl_many_many_are_included_from_f_side_with_sort(self):
+        pass
+
+    def test_fl_many_many_are_included_from_l_side_with_sort(self):
+        pass

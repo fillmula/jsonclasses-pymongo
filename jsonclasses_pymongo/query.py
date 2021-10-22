@@ -18,7 +18,7 @@ from .coder import Coder
 from .decoder import Decoder
 from .connection import Connection
 from .pymongo_object import PymongoObject
-from .utils import ref_db_field_key
+from .utils import ref_db_field_key, ref_db_field_keys
 T = TypeVar('T', bound=PymongoObject)
 U = TypeVar('U', bound='BaseQuery')
 V = TypeVar('V', bound='BaseListQuery')
@@ -52,39 +52,68 @@ class BaseQuery(Generic[T]):
             else:
                 it = field.fdef.inst_cls
             if field.fdef.fstore == FStore.LOCAL_KEY:
-                key = ref_db_field_key(fname, cls)
-                if subquery.query is None:
-                    result.append({
-                        '$lookup': {
-                            'from': it.pconf.collection_name,
-                            'localField': key,
-                            'foreignField': '_id',
-                            'as': fname
-                        }
-                    })
-                else:
-                    subpipeline = subquery.query._build_aggregate_pipeline()
-                    subpipeline.insert(0, {
-                        '$match': {
-                            '$expr': {
-                                '$and': [{'$eq': ['$_id', '$$'+key]}]
+                if field.fdef.ftype == FType.INSTANCE:
+                    key = ref_db_field_key(fname, cls)
+                    if subquery.query is None:
+                        result.append({
+                            '$lookup': {
+                                'from': it.pconf.collection_name,
+                                'localField': key,
+                                'foreignField': '_id',
+                                'as': fname
                             }
-                        }
-                    })
+                        })
+                    else:
+                        subpipeline = subquery.query._build_aggregate_pipeline()
+                        subpipeline.insert(0, {
+                            '$match': {
+                                '$expr': {
+                                    '$and': [{'$eq': ['$_id', '$$'+key]}]
+                                }
+                            }
+                        })
+                        result.append({
+                            '$lookup': {
+                                'from': it.pconf.collection_name,
+                                'as': fname,
+                                'let': {key: '$' + key},
+                                'pipeline': subpipeline
+                            }
+                        })
                     result.append({
-                        '$lookup': {
-                            'from': it.pconf.collection_name,
-                            'as': fname,
-                            'let': {key: '$' + key},
-                            'pipeline': subpipeline
+                        '$unwind': {
+                            "path": '$' + fname,
+                            "preserveNullAndEmptyArrays": True
                         }
                     })
-                result.append({
-                    '$unwind': {
-                        "path": '$' + fname,
-                        "preserveNullAndEmptyArrays": True
-                    }
-                })
+                elif field.fdef.ftype == FType.LIST:
+                    key = ref_db_field_keys(fname, cls)
+                    if subquery.query is None:
+                        result.append({
+                            '$lookup': {
+                                'from': it.pconf.collection_name,
+                                'localField': key,
+                                'foreignField': '_id',
+                                'as': fname
+                            }
+                        })
+                    else:
+                        subpipeline = subquery.query._build_aggregate_pipeline()
+                        subpipeline.insert(0, {
+                            '$match': {
+                                '$expr': {
+                                    '$and': [{'$eq': ['$_id', '$$'+key]}]
+                                }
+                            }
+                        })
+                        result.append({
+                            '$lookup': {
+                                'from': it.pconf.collection_name,
+                                'as': fname,
+                                'let': {key: '$' + key},
+                                'pipeline': subpipeline
+                            }
+                        })
             elif field.fdef.fstore == FStore.FOREIGN_KEY:
                 if field.fdef.ftype == FType.INSTANCE:
                     fk = cast(str, field.fdef.foreign_key)
