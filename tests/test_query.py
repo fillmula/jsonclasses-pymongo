@@ -828,7 +828,20 @@ class TestQuery(TestCase):
         self.assertEqual(result[0].name, '2')
         self.assertEqual(result[1].name, '3')
 
-
+    def test_query_on_fl_many_many_relationship_on_l_side_by_single_id_with_filter(self):
+        song1 = LinkedSong(name='noukia')
+        song2 = LinkedSong(name='naokia')
+        singer1 = LinkedSinger(name='1')
+        singer2 = LinkedSinger(name='2')
+        singer3 = LinkedSinger(name='3')
+        singer4 = LinkedSinger(name='4')
+        song1.singers = [singer1, singer2]
+        song1.save()
+        song2.singers = [singer1, singer3, singer4]
+        song2.save()
+        result = LinkedSong.find(f'singerIds[0]={singer1.id}&name[_contains]=u').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'noukia')
 
     # def test_query_on_fl_many_many_relationship_on_f_side_by_single_id_without_filter(self):
     #     song1 = LinkedSong(name='1')
