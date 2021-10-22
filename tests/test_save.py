@@ -255,7 +255,10 @@ class TestSave(TestCase):
         singer2 = LinkedSinger(name='singer2')
         song1.singers = [singer1, singer2]
         song2.singers = [singer1, singer2]
-
+        song1.save()
+        collection = Connection.get_collection(LinkedSong)
+        for item in collection.find({}):
+            self.assertEqual(item['singerIds'], [ObjectId(singer1.id), ObjectId(singer2.id)])
 
     def test_1l_1f_object_unlink_is_saved(self):
         profile = LinkedProfile(name='p')
