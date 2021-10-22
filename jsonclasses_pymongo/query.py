@@ -249,12 +249,13 @@ class BaseQuery(Generic[T]):
                             result.append(item)
                         elif field.foreign_field.fdef.ftype == FType.LIST:
                             fk = cast(str, field.fdef.foreign_key)
-                            key = ref_db_field_keys(fk, it)
+                            pkey = ref_db_field_keys(fk, it)
+                            skey = ref_db_field_key(fk, it)
                             item = {
                                 '$lookup': {
                                     'from': it.pconf.collection_name,
                                     'as': fname,
-                                    'let': {key: '$_id'},
+                                    'let': {skey: '$_id'},
                                     'pipeline': subpipeline
                                 }
                             }
@@ -265,7 +266,7 @@ class BaseQuery(Generic[T]):
                             if not matcher['$expr'].get('$and'):
                                 matcher['$expr']['$and'] = []
                             matcher['$expr']['$and'].append({
-                                '$eq': ['$' + key, '$$' + key]
+                                '$in': ['$$' + skey, '$' + pkey]
                             })
                             if not has_match:
                                 subpipeline.insert(0, {'$match': matcher})

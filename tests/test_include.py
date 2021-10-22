@@ -404,9 +404,10 @@ class TestSave(TestCase):
         song1 = LinkedSong(name='Lu Bo To Teo Yeo', singers=[singer1, singer2]).save()
         song2 = LinkedSong(name='Teo Sua Si Gueh Hai', singers=[singer1, singer2]).save()
         song3 = LinkedSong(name='Siao Thiang Go', singers=[singer1]).save()
-
         result = LinkedSinger.id(singer2.id).include('songs').exec()
-        #print(result)
+        self.assertEqual(len(result.songs), 2)
+        self.assertEqual(result.songs[0].id, song1.id)
+        self.assertEqual(result.songs[1].id, song2.id)
 
     def test_fl_many_many_are_included_from_l_side(self):
         singer1 = LinkedSinger(name='Teh Khim Leng')
@@ -421,10 +422,25 @@ class TestSave(TestCase):
         self.assertEqual(result.singers[1].id, singer2.id)
 
     def test_fl_many_many_are_included_from_f_side_with_filter(self):
-        pass
+        singer1 = LinkedSinger(name='Teh Khim Leng')
+        singer2 = LinkedSinger(name='M Teh Khim Leng')
+        song1 = LinkedSong(name='Lu Bo To Teo Yeo', singers=[singer1, singer2]).save()
+        song2 = LinkedSong(name='Teo Sua Si Gueh Hai', singers=[singer1, singer2]).save()
+        song3 = LinkedSong(name='Siao Thiang Go', singers=[singer1]).save()
+        result = LinkedSinger.id(singer2.id).include('songs', LinkedSong.find(name={'_prefix': 'L'})).exec()
+        self.assertEqual(len(result.songs), 1)
+        self.assertEqual(result.songs[0].id, song1.id)
 
     def test_fl_many_many_are_included_from_l_side_with_filter(self):
-        pass
+        singer1 = LinkedSinger(name='Teh Khim Leng')
+        singer2 = LinkedSinger(name='M Teh Khim Leng')
+        song1 = LinkedSong(name='Lu Bo To Teo Yeo', singers=[singer1, singer2]).save()
+        singer3 = LinkedSinger(name='Phua Kheng Lim')
+        singer4 = LinkedSinger(name='M Phua Kheng Lim')
+        LinkedSong(name='Teo Sua Nang To Cim Tsung Ci', singers=[singer3, singer4]).save()
+        result = LinkedSong.one(name='Lu Bo To Teo Yeo').include('singers', LinkedSinger.find(name={'_prefix': 'M'})).exec()
+        self.assertEqual(len(result.singers), 1)
+        self.assertEqual(result.singers[0].id, singer2.id)
 
     def test_fl_many_many_are_included_from_f_side_with_sort(self):
         pass
