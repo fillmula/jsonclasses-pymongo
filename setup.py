@@ -22,6 +22,5 @@ setup(name='jsonclasses-pymongo',
       include_package_data=True,
       python_requires='>=3.10',
       install_requires=[
-            'jsonclasses-orm>=2.8.0,<4.0.0',
             'pymongo>=3.12.0,<4.0.0'
       ])
