@@ -148,7 +148,7 @@ class TestDecoder(TestCase):
         class SimpleDecodeLocalKeyListAddress:
             id: str = types.readonly.str.primary.mongoid.required
             city: str
-            owner: SimpleDecodeLocalKeyList = types.instanceof(
+            owner: SimpleDecodeLocalKeyList = types.objof(
                 'SimpleDecodeLocalKeyList').linkedby('address')
 
         @pymongo
@@ -220,7 +220,7 @@ class TestDecoder(TestCase):
         class SimpleDecodeLocalKeyInstanceAddress:
             id: str = types.readonly.str.primary.mongoid.required
             city: str
-            owner: SimpleDecodeLocalKeyInstance = types.instanceof(
+            owner: SimpleDecodeLocalKeyInstance = types.objof(
                 'SimpleDecodeLocalKeyInstance').linkedby('address')
 
         @pymongo
@@ -228,7 +228,7 @@ class TestDecoder(TestCase):
         class SimpleDecodeLocalKeyInstance:
             id: str = types.readonly.str.primary.mongoid.required
             address: SimpleDecodeLocalKeyInstanceAddress = (types
-                    .linkto.instanceof(
+                    .linkto.objof(
                         SimpleDecodeLocalKeyInstanceAddress))
         data = {
             '_id': ObjectId(),

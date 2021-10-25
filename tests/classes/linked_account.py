@@ -9,7 +9,7 @@ from jsonclasses_pymongo import pymongo
 class LinkedAccount:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    balance: LinkedBalance = types.instanceof('LinkedBalance').linkto.cascade
+    balance: LinkedBalance = types.objof('LinkedBalance').linkto.cascade
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required
 
@@ -19,7 +19,7 @@ class LinkedAccount:
 class LinkedBalance:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    account: LinkedAccount = types.instanceof('LinkedAccount') \
+    account: LinkedAccount = types.objof('LinkedAccount') \
                                   .linkedby('balance').cascade
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required

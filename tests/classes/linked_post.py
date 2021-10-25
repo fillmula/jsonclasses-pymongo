@@ -13,6 +13,6 @@ class LinkedPost:
     id: str = types.readonly.str.primary.mongoid.required
     title: str
     content: str
-    author: LinkedAuthor = types.linkto.instanceof('LinkedAuthor')
+    author: LinkedAuthor = types.linkto.objof('LinkedAuthor')
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required

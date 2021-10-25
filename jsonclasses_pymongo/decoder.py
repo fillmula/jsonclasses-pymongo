@@ -183,7 +183,7 @@ class Decoder(Coder):
                     query: BaseQuery | None = None) -> T:
         if graph is None:
             graph = MGraph()
-        types = Types().instanceof(cls)
+        types = Types().objof(cls)
         decoded = self.decode_instance(root, cls, types, graph, query)
         self.apply_unmodified_status(decoded)
         return decoded
@@ -195,7 +195,7 @@ class Decoder(Coder):
                          query: BaseQuery | None = None) -> list[T]:
         if graph is None:
             graph = MGraph()
-        types = Types().instanceof(cls)
+        types = Types().objof(cls)
         results: list[T] = []
         for root in root_list:
             decoded = self.decode_instance(root, cls, types, graph, query)

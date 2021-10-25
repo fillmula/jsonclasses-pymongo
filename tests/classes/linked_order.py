@@ -9,7 +9,7 @@ from jsonclasses_pymongo import pymongo
 class LinkedOrder:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    user: LinkedBuyer = types.instanceof('LinkedBuyer').linkto
+    user: LinkedBuyer = types.objof('LinkedBuyer').linkto
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required
 
@@ -30,7 +30,7 @@ class LinkedBuyer:
 class LinkedCOrder:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    user: LinkedCBuyer = types.instanceof('LinkedCBuyer').linkto.cascade
+    user: LinkedCBuyer = types.objof('LinkedCBuyer').linkto.cascade
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required
 

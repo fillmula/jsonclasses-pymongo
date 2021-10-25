@@ -187,14 +187,14 @@ class TestEncoder(TestCase):
         class SimpleEncodeForeignKeyInstanceAddress:
             id: str = types.readonly.str.primary.mongoid.required
             line1: str
-            owner: SimpleEncodeForeignKeyInstance = types.linkto.instanceof(
+            owner: SimpleEncodeForeignKeyInstance = types.linkto.objof(
                 'SimpleEncodeForeignKeyInstance')
 
         @pymongo
         @jsonclass
         class SimpleEncodeForeignKeyInstance:
             id: str = types.readonly.str.primary.mongoid.required
-            address: SimpleEncodeForeignKeyInstanceAddress = types.instanceof(
+            address: SimpleEncodeForeignKeyInstanceAddress = types.objof(
                 SimpleEncodeForeignKeyInstanceAddress).linkedby('owner')
         simple_object = SimpleEncodeForeignKeyInstance(
             address={'line1': 'Flam Road'})
@@ -211,14 +211,14 @@ class TestEncoder(TestCase):
         class SimpleEncodeLocalKeyInstanceAddress:
             id: str = types.readonly.str.primary.mongoid.required
             line1: str
-            owner: SimpleEncodeLocalKeyInstance = types.instanceof(
+            owner: SimpleEncodeLocalKeyInstance = types.objof(
                 'SimpleEncodeLocalKeyInstance').linkedby('address')
 
         @pymongo
         @jsonclass
         class SimpleEncodeLocalKeyInstance:
             id: str = types.readonly.str.primary.mongoid.required
-            address: SimpleEncodeLocalKeyInstanceAddress = types.linkto.instanceof(SimpleEncodeLocalKeyInstanceAddress)
+            address: SimpleEncodeLocalKeyInstanceAddress = types.linkto.objof(SimpleEncodeLocalKeyInstanceAddress)
         simple_object = SimpleEncodeLocalKeyInstance(
             address={'line1': 'Flam Road'})
         batch_command = Encoder().encode_root(simple_object)
@@ -260,7 +260,7 @@ class TestEncoder(TestCase):
         class MediumEncodeForeignKeyInstanceAddress:
             id: str = types.readonly.str.primary.mongoid.required
             line1: str
-            owner: MediumEncodeForeignKeyInstance = types.linkto.instanceof(
+            owner: MediumEncodeForeignKeyInstance = types.linkto.objof(
                 'MediumEncodeForeignKeyInstance')
 
         @pymongo
@@ -287,7 +287,7 @@ class TestEncoder(TestCase):
             id: str = types.readonly.str.primary.mongoid.required
             line1: str
             owner: MediumEncodeLocalKeyInstance = types.linkedby(
-                'address').instanceof('SimpleEncodeLocalKeyInstance')
+                'address').objof('SimpleEncodeLocalKeyInstance')
 
         @pymongo
         @jsonclass

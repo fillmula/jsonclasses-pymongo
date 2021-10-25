@@ -336,7 +336,7 @@ class Encoder(Coder):
     def encode_root(self, root: T) -> BatchCommand:
         commands = self.encode_instance(EncodingContext(
             value=root,
-            types=types.instanceof(root.__class__),
+            types=types.objof(root.__class__),
             keypath_root='',
             root=root,
             keypath_owner='',

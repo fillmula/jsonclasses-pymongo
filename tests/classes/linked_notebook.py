@@ -9,7 +9,7 @@ from jsonclasses_pymongo import pymongo
 class LinkedNote:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    notebook: LinkedNotebook = types.instanceof('LinkedNotebook').linkto
+    notebook: LinkedNotebook = types.objof('LinkedNotebook').linkto
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required
 
@@ -29,7 +29,7 @@ class LinkedNotebook:
 class LinkedRNote:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    notebook: LinkedRNotebook = types.instanceof('LinkedRNotebook').linkto.deny
+    notebook: LinkedRNotebook = types.objof('LinkedRNotebook').linkto.deny
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required
 

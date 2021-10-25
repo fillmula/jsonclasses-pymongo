@@ -9,7 +9,7 @@ from jsonclasses_pymongo import pymongo
 class ChainedProfile:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    user: ChainedUser = types.instanceof('ChainedUser').linkto
+    user: ChainedUser = types.objof('ChainedUser').linkto
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required
 
@@ -19,8 +19,8 @@ class ChainedProfile:
 class ChainedUser:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    profile: ChainedProfile = types.instanceof('ChainedProfile').linkedby('user')
-    address: ChainedAddress = types.instanceof('ChainedAddress').linkedby('user')
+    profile: ChainedProfile = types.objof('ChainedProfile').linkedby('user')
+    address: ChainedAddress = types.objof('ChainedAddress').linkedby('user')
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required
 
@@ -30,6 +30,6 @@ class ChainedUser:
 class ChainedAddress:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    user: ChainedUser = types.instanceof('ChainedUser').linkto
+    user: ChainedUser = types.objof('ChainedUser').linkto
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required
