@@ -146,7 +146,7 @@ class Decoder(Coder):
                     value=value.get(key), types=field.types, cls=new_cls,
                     graph=graph))
             else:
-                if not exist:
+                if not exist and field.fdef.fstore != FStore.CALCULATED:
                     setattr(
                         dest,
                         field.name,
