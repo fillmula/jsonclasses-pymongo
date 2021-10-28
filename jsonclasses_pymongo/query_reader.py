@@ -180,6 +180,14 @@ class QueryReader:
                     result['$regex'] = compile(escape(value) + '$', IGNORECASE)
                 elif key == '_matchi':
                     result['$regex'] = compile(value, IGNORECASE)
+                elif key == '_gt':
+                    result['$gt'] = value
+                elif key == '_gte':
+                    result['$gte'] = value
+                elif key == '_lt':
+                    result['$lt'] = value
+                elif key == '_lte':
+                    result['$lte'] = value
                 elif key == '_equal':
                     result['$eq'] = value
                 elif key == '_field_exists':

@@ -406,6 +406,24 @@ class TestQuery(TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Lucy')
 
+    def test_query_object_with_gt_str_object(self):
+        song = SimpleSong(name='a', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='c', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_gt': 'b'}).exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'c')
+
+    def test_query_object_with_gt_str_object_str(self):
+        song = SimpleSong(name='a', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='c', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_gt]=b').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'c')
+
     def test_query_object_with_equal_str_object(self):
         song = SimpleSong(name='Lucy', year=2020, artist='Thao')
         song.save()
