@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import cast, TYPE_CHECKING
 from jsonclasses.jfield import JField
 from jsonclasses.fdef import FType, FStore
-from inflection import camelize
+from .utils import check_and_install_inflection
 from .connection import Connection
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
@@ -66,6 +66,8 @@ class Coder():
                         field_a: str,
                         cls_b: type[PymongoObject],
                         field_b: str) -> str:
+        check_and_install_inflection()
+        from inflection import camelize
         connection = Connection.from_class(cls_a)
         cabase = connection.collection_from(cls_a).name
         cbbase = connection.collection_from(cls_b).name
