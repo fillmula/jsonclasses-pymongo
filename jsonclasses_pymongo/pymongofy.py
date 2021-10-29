@@ -9,11 +9,12 @@ from pymongo import ASCENDING
 from jsonclasses.fdef import FStore, FType
 from jsonclasses.excs import UniqueConstraintException
 from jsonclasses.excs import DeletionDeniedException
+from inflection import underscore, camelize
 from .pymongo_object import PymongoObject
 from .query import BaseQuery, ExistQuery, IterateQuery, ListQuery, SingleQuery, IDQuery
 from .encoder import Encoder
 from .connection import Connection
-from .utils import check_and_install_inflection, ref_db_field_key
+from .utils import ref_db_field_key
 from .coder import Coder
 
 
@@ -57,8 +58,6 @@ def iterate(cls: type[T], **kwargs: Any) -> IterateQuery[T]:
 
 
 def _database_write(self: T) -> None:
-    check_and_install_inflection()
-    from inflection import underscore
     try:
         Encoder().encode_root(self).execute()
     except DuplicateKeyError as exception:
@@ -213,8 +212,6 @@ def _orm_restore(self: T) -> None:
 
 
 def pymongofy(class_: type) -> PymongoObject:
-    check_and_install_inflection()
-    from inflection import camelize
     # do not install methods for subclasses
     if hasattr(class_, '__is_pymongo__'):
         return cast(PymongoObject, class_)

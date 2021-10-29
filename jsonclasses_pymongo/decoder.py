@@ -4,9 +4,9 @@ from datetime import date
 from jsonclasses.types import Types
 from jsonclasses.fdef import FStore, FType
 from jsonclasses.mgraph import MGraph
+from inflection import camelize
 from .utils import (
-    check_and_install_inflection, ref_field_key, ref_field_keys,
-    ref_db_field_key, ref_db_field_keys
+    ref_field_key, ref_field_keys, ref_db_field_key, ref_db_field_keys
 )
 from .coder import Coder
 from .pconf import PConf
@@ -79,8 +79,6 @@ class Decoder(Coder):
                         types: Types,
                         graph: MGraph,
                         query: BaseQuery | None = None) -> Any:
-        check_and_install_inflection()
-        from inflection import camelize
         inst_id = str(value.get('_id')) if value.get('_id') is not None else None
         dest = graph.getp(cls, inst_id)
         exist = True

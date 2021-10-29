@@ -7,10 +7,10 @@ from jsonclasses.fdef import FStore, FType
 from jsonclasses.keypath import concat_keypath
 from jsonclasses.mgraph import MGraph
 from jsonclasses.types import types
+from inflection import camelize
 from .coder import Coder
 from .utils import (
-    check_and_install_inflection, ref_db_field_key, ref_db_field_keys,
-    ref_field_key
+    ref_db_field_key, ref_db_field_keys, ref_field_key
 )
 from .context import EncodingContext
 from .command import (Command, InsertOneCommand, UpdateOneCommand,
@@ -127,8 +127,6 @@ class Encoder(Coder):
     def encode_instance(self,
                         context: EncodingContext,
                         root: bool = False) -> EncodingResult:
-        check_and_install_inflection()
-        from inflection import camelize
         from .pymongo_object import PymongoObject
         if context.value is None:
             return EncodingResult(result=None, commands=[])

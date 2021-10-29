@@ -13,13 +13,12 @@ from jsonclasses.fdef import FStore, FType
 from jsonclasses.jfield import JField
 from jsonclasses.mgraph import MGraph
 from jsonclasses.excs import ObjectNotFoundException
+from inflection import camelize
 from .coder import Coder
 from .decoder import Decoder
 from .connection import Connection
 from .pymongo_object import PymongoObject
-from .utils import (
-    check_and_install_inflection, ref_db_field_key, ref_db_field_keys
-)
+from .utils import ref_db_field_key, ref_db_field_keys
 T = TypeVar('T', bound=PymongoObject)
 U = TypeVar('U', bound='BaseQuery')
 V = TypeVar('V', bound='BaseListQuery')
@@ -459,8 +458,6 @@ class BaseListQuery(BaseQuery[T]):
             else:
                 omit_primary = False
             if self._cls.pconf.camelize_db_keys:
-                check_and_install_inflection()
-                from inflection import camelize
                 finalpick = [camelize(k, False) for k in finalpick]
             pdict = {k: 1 for k in finalpick}
             if omit_primary:

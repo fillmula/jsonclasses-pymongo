@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Optional
 from jsonclasses.jconf import JConf
-from .utils import check_and_install_inflection
+from inflection import pluralize
 
 
 class PConf:
@@ -11,8 +11,6 @@ class PConf:
                  config: JConf,
                  collection_name: Optional[str],
                  camelize_db_keys: Optional[bool]) -> None:
-        check_and_install_inflection()
-        from inflection import pluralize
         self._cls = cls
         self._config = config
         self._collection_name = (collection_name or

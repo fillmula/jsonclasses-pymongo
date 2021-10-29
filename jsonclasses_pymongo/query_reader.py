@@ -4,7 +4,7 @@ from datetime import datetime, date, timedelta
 from re import compile, escape, IGNORECASE
 from bson.objectid import ObjectId
 from jsonclasses.fdef import FStore, FType, Fdef
-from .utils import check_and_install_inflection
+from inflection import camelize
 from .pymongo_object import PymongoObject
 from .readers import (
     readstr, readbool, readdate, readdatetime, readenum, readfloat, readint,
@@ -90,8 +90,6 @@ class QueryReader:
         for raw_key, value in query.items():
             key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
             if self.cls.pconf.camelize_db_keys:
-                check_and_install_inflection()
-                from inflection import camelize
                 dbkey = camelize(key, False)
             else:
                 dbkey = key

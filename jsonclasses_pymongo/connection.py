@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import Callable, ClassVar, Optional, TYPE_CHECKING, TypeVar
 from os import getcwd, path
+from inflection import parameterize, camelize
 from pymongo.mongo_client import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
-from .utils import check_and_install_inflection
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
     T = TypeVar('T', bound=PymongoObject, covariant=True)
@@ -49,8 +49,6 @@ class Connection:
         self._url = url
 
     def _generate_default_url(self: Connection) -> str:
-        check_and_install_inflection()
-        from inflection import parameterize, camelize
         base = 'mongodb://localhost:27017/'
         cwd = getcwd()
         proj = camelize(parameterize(path.basename(cwd))).lower()
