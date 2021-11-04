@@ -11,7 +11,7 @@ from tests.classes.chained_user import (
     ChainedAddress, ChainedProfile, ChainedUser
 )
 from tests.classes.linked_song import LinkedSong, LinkedSinger
-
+from tests.classes.linked_todo_list import TodoListOwner, TodoList
 
 
 class TestSave(TestCase):
@@ -66,6 +66,10 @@ class TestSave(TestCase):
         collection = Connection.get_collection(LinkedSong)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedSinger)
+        collection.delete_many({})
+        collection = Connection.get_collection(TodoList)
+        collection.delete_many({})
+        collection = Connection.get_collection(TodoListOwner)
         collection.delete_many({})
 
     def test_1f_1l_ref_lookup_fetches_linked_object(self):
@@ -470,3 +474,41 @@ class TestSave(TestCase):
         result = LinkedSong.one(name='Lu Bo To Teo Yeo').include('singers', LinkedSinger.find(name={'_suffix': 'Q'}).order('name', 1)).exec()
         self.assertEqual([singer.name for singer in result.singers], ['BQ', 'AQ'])
         self.assertEqual(len(result.singers), 2)
+
+    def test_multiwords_name_are_included_for_1l_manyf_on_manyf(self):
+        owner = TodoListOwner()
+        tl1 = TodoList(name='1', todo_list_owner=owner)
+        tl2 = TodoList(name='2', todo_list_owner=owner)
+        tl3 = TodoList(name='3', todo_list_owner=owner)
+        tl4 = TodoList(name='4', todo_list_owner=owner)
+        owner.save()
+        result = TodoListOwner.one({'_includes': ['todo_lists']}).exec()
+        self.assertEqual(len(result.todo_lists), 4)
+        result = TodoListOwner.one({'_includes': ['todoLists']}).exec()
+        self.assertEqual(len(result.todo_lists), 4)
+        result = TodoListOwner.one().include('todoLists').exec()
+        self.assertEqual(len(result.todo_lists), 4)
+        result = TodoListOwner.one().include('todo_lists').exec()
+        self.assertEqual(len(result.todo_lists), 4)
+
+    def test_multiwords_name_are_included_for_1l_manyf_on_1l(self):
+        owner = TodoListOwner()
+        tl1 = TodoList(name='1', todo_list_owner=owner)
+        tl2 = TodoList(name='2', todo_list_owner=owner)
+        tl3 = TodoList(name='3', todo_list_owner=owner)
+        tl4 = TodoList(name='4', todo_list_owner=owner)
+        owner.save()
+        result = TodoList.one({'_includes': ['todo_list_owner']}).exec()
+        self.assertIsNotNone(result.todo_list_owner)
+        result = TodoList.one({'_includes': ['todoListOwner']}).exec()
+        self.assertIsNotNone(result.todo_list_owner)
+        result = TodoList.one().include('todo_list_owner').exec()
+        self.assertIsNotNone(result.todo_list_owner)
+        result = TodoList.one().include('todoListOwner').exec()
+        self.assertIsNotNone(result.todo_list_owner)
+
+    def test_multiwords_name_are_included_for_1f_1l_on_1l():
+        pass
+
+    def test_multiwords_name_are_included_for_1f_1l_on_1f():
+        pass

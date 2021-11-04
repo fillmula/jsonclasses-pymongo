@@ -38,7 +38,9 @@ class BaseQuery(Generic[T]):
         self.subqueries: list[Subquery] = []
 
     def include(self: U, name: str, query: Optional[BaseQuery] = None) -> U:
-        self.subqueries.append(Subquery(name, query))
+        tcls = cast(type[PymongoObject], self._cls)
+        decoded_name = tcls.cdef.jconf.key_decoding_strategy(name)
+        self.subqueries.append(Subquery(decoded_name, query))
         return self
 
     def _build_aggregate_pipeline(self: U) -> list[dict[str, Any]]:
@@ -46,6 +48,9 @@ class BaseQuery(Generic[T]):
         result: list[dict[str, Any]] = []
         for subquery in self.subqueries:
             fname = subquery.name
+            dbfname = fname
+            if cls.pconf.camelize_db_keys:
+                dbfname = camelize(dbfname, False)
             field = cls.cdef.field_named(fname)
             if field.fdef.ftype == FType.LIST:
                 it = field.fdef.item_types.fdef.inst_cls
@@ -60,7 +65,7 @@ class BaseQuery(Generic[T]):
                                 'from': it.pconf.collection_name,
                                 'localField': key,
                                 'foreignField': '_id',
-                                'as': fname
+                                'as': dbfname
                             }
                         })
                     else:
@@ -75,14 +80,14 @@ class BaseQuery(Generic[T]):
                         result.append({
                             '$lookup': {
                                 'from': it.pconf.collection_name,
-                                'as': fname,
+                                'as': dbfname,
                                 'let': {key: '$' + key},
                                 'pipeline': subpipeline
                             }
                         })
                     result.append({
                         '$unwind': {
-                            "path": '$' + fname,
+                            "path": '$' + dbfname,
                             "preserveNullAndEmptyArrays": True
                         }
                     })
@@ -94,7 +99,7 @@ class BaseQuery(Generic[T]):
                                 'from': it.pconf.collection_name,
                                 'localField': key,
                                 'foreignField': '_id',
-                                'as': fname
+                                'as': dbfname
                             }
                         })
                     else:
@@ -102,7 +107,7 @@ class BaseQuery(Generic[T]):
                         result.append({
                             '$lookup': {
                                 'from': it.pconf.collection_name,
-                                'as': fname,
+                                'as': dbfname,
                                 'let': {key: '$' + key},
                                 'pipeline': subpipeline
                             }
@@ -223,7 +228,7 @@ class BaseQuery(Generic[T]):
                             item = {
                                 '$lookup': {
                                     'from': it.pconf.collection_name,
-                                    'as': fname,
+                                    'as': dbfname,
                                     'let': {key: '$_id'},
                                     'pipeline': subpipeline
                                 }
@@ -247,7 +252,7 @@ class BaseQuery(Generic[T]):
                             item = {
                                 '$lookup': {
                                     'from': it.pconf.collection_name,
-                                    'as': fname,
+                                    'as': dbfname,
                                     'let': {skey: '$_id'},
                                     'pipeline': subpipeline
                                 }
@@ -316,7 +321,9 @@ class BaseListQuery(BaseQuery[T]):
         if result.get('_includes') is not None:
             for item in result['_includes']:
                 if type(item) is str:
-                    self.subqueries.append(Subquery(item, None))
+                    tcls = cast(type[PymongoObject], self._cls)
+                    decoded_name = tcls.cdef.jconf.key_decoding_strategy(item)
+                    self.subqueries.append(Subquery(decoded_name, None))
                 elif isinstance(item, dict):
                     for k, v in item.items():
                         tcls = cast(type[PymongoObject], self._cls)
@@ -327,12 +334,16 @@ class BaseListQuery(BaseQuery[T]):
                             q = fcls.find(**v)
                         else:
                             q = fcls.linked(**v)
-                        self.subqueries.append(Subquery(k, q))
+                        self.subqueries.append(Subquery(decoded_key, q))
 
-    def order(self: V, field: str, sort: Optional[int] = None) -> V:
+    def order(self: V, field_name: str, sort: Optional[int] = None) -> V:
         if self._sort is None:
             self._sort = []
-        self._sort.append((field, sort or 1))
+        tcls = cast(type[PymongoObject], self._cls)
+        decoded_name = tcls.cdef.jconf.key_decoding_strategy(field_name)
+        if tcls.pconf.camelize_db_keys:
+            decoded_name = camelize(decoded_name, False)
+        self._sort.append((decoded_name, sort or 1))
         return self
 
     def skip(self: V, n: int) -> V:
