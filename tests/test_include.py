@@ -12,6 +12,7 @@ from tests.classes.chained_user import (
 )
 from tests.classes.linked_song import LinkedSong, LinkedSinger
 from tests.classes.linked_todo_list import TodoListOwner, TodoList
+from tests.classes.linked_pop_singer import PopSinger, PopSong
 
 
 class TestSave(TestCase):
@@ -70,6 +71,10 @@ class TestSave(TestCase):
         collection = Connection.get_collection(TodoList)
         collection.delete_many({})
         collection = Connection.get_collection(TodoListOwner)
+        collection.delete_many({})
+        collection = Connection.get_collection(PopSong)
+        collection.delete_many({})
+        collection = Connection.get_collection(PopSinger)
         collection.delete_many({})
 
     def test_1f_1l_ref_lookup_fetches_linked_object(self):
@@ -507,8 +512,24 @@ class TestSave(TestCase):
         result = TodoList.one().include('todoListOwner').exec()
         self.assertIsNotNone(result.todo_list_owner)
 
-    def test_multiwords_name_are_included_for_1f_1l_on_1l():
-        pass
+    def test_multiwords_name_are_included_for_1f_1l_on_1l(self):
+        PopSinger(pop_song=PopSong(name='song')).save()
+        result = PopSong.one({'_includes': ['pop_singer']}).exec()
+        self.assertIsNotNone(result.pop_singer)
+        result = PopSong.one({'_includes': ['popSinger']}).exec()
+        self.assertIsNotNone(result.pop_singer)
+        result = PopSong.one().include('pop_singer').exec()
+        self.assertIsNotNone(result.pop_singer)
+        result = PopSong.one().include('popSinger').exec()
+        self.assertIsNotNone(result.pop_singer)
 
-    def test_multiwords_name_are_included_for_1f_1l_on_1f():
-        pass
+    def test_multiwords_name_are_included_for_1f_1l_on_1f(self):
+        PopSinger(pop_song=PopSong(name='song')).save()
+        result = PopSinger.one({'_includes': ['pop_song']}).exec()
+        self.assertIsNotNone(result.pop_song)
+        result = PopSinger.one({'_includes': ['popSong']}).exec()
+        self.assertIsNotNone(result.pop_song)
+        result = PopSinger.one().include('pop_song').exec()
+        self.assertIsNotNone(result.pop_song)
+        result = PopSinger.one().include('popSong').exec()
+        self.assertIsNotNone(result.pop_song)

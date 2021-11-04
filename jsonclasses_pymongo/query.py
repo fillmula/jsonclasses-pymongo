@@ -121,7 +121,7 @@ class BaseQuery(Generic[T]):
                                 'from': it.pconf.collection_name,
                                 'localField': '_id',
                                 'foreignField': ref_db_field_key(fk, it),
-                                'as': fname
+                                'as': dbfname
                             }
                         })
                     else:
@@ -138,14 +138,14 @@ class BaseQuery(Generic[T]):
                         result.append({
                             '$lookup': {
                                 'from': it.pconf.collection_name,
-                                'as': fname,
+                                'as': dbfname,
                                 'let': {key: '$_id'},
                                 'pipeline': subp
                             }
                         })
                     result.append({
                         '$unwind': {
-                            'path': '$' + fname,
+                            'path': '$' + dbfname,
                             "preserveNullAndEmptyArrays": True
                         }
                     })
