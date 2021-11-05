@@ -13,6 +13,8 @@ from tests.classes.chained_user import (
 from tests.classes.linked_song import LinkedSong, LinkedSinger
 from tests.classes.linked_todo_list import TodoListOwner, TodoList
 from tests.classes.linked_pop_singer import PopSinger, PopSong
+from tests.classes.linked_hiphop_song import HiphopSinger, HiphopSong
+from tests.classes.linked_music_product import MusicProduct, MusicUser
 
 
 class TestSave(TestCase):
@@ -75,6 +77,14 @@ class TestSave(TestCase):
         collection = Connection.get_collection(PopSong)
         collection.delete_many({})
         collection = Connection.get_collection(PopSinger)
+        collection.delete_many({})
+        collection = Connection.get_collection(HiphopSong)
+        collection.delete_many({})
+        collection = Connection.get_collection(HiphopSinger)
+        collection.delete_many({})
+        collection = Connection.get_collection(MusicProduct)
+        collection.delete_many({})
+        collection = Connection.get_collection(MusicUser)
         collection.delete_many({})
 
     def test_1f_1l_ref_lookup_fetches_linked_object(self):
@@ -533,3 +543,36 @@ class TestSave(TestCase):
         self.assertIsNotNone(result.pop_song)
         result = PopSinger.one().include('popSong').exec()
         self.assertIsNotNone(result.pop_song)
+
+    def test_multiwords_name_are_included_for_manyf_manyl_on_manyl(self):
+        HiphopSinger(hiphop_songs=[HiphopSong(name='song')]).save()
+        result = HiphopSong.one({'_includes': ['hiphop_singers']}).exec()
+        self.assertEqual(len(result.hiphop_singers), 1)
+        result = HiphopSong.one({'_includes': ['hiphopSingers']}).exec()
+        self.assertEqual(len(result.hiphop_singers), 1)
+        result = HiphopSong.one().include('hiphop_singers').exec()
+        self.assertEqual(len(result.hiphop_singers), 1)
+        result = HiphopSong.one().include('hiphopSingers').exec()
+        self.assertEqual(len(result.hiphop_singers), 1)
+
+    def test_multiwords_name_are_included_for_manyf_manyl_on_manyf(self):
+        HiphopSinger(hiphop_songs=[HiphopSong(name='song')]).save()
+        result = HiphopSinger.one({'_includes': ['hiphop_songs']}).exec()
+        self.assertEqual(len(result.hiphop_songs), 1)
+        result = HiphopSinger.one({'_includes': ['hiphopSongs']}).exec()
+        self.assertEqual(len(result.hiphop_songs), 1)
+        result = HiphopSinger.one().include('hiphop_songs').exec()
+        self.assertEqual(len(result.hiphop_songs), 1)
+        result = HiphopSinger.one().include('hiphopSongs').exec()
+        self.assertEqual(len(result.hiphop_songs), 1)
+
+    def test_multiwords_name_are_included_for_many_ff(self):
+        MusicProduct(music_users=[MusicUser(name='song')]).save()
+        result = MusicProduct.one({'_includes': ['music_users']}).exec()
+        self.assertEqual(len(result.music_users), 1)
+        result = MusicProduct.one({'_includes': ['musicUsers']}).exec()
+        self.assertEqual(len(result.music_users), 1)
+        result = MusicProduct.one().include('music_users').exec()
+        self.assertEqual(len(result.music_users), 1)
+        result = MusicProduct.one().include('musicUsers').exec()
+        self.assertEqual(len(result.music_users), 1)
