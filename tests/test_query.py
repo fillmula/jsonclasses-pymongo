@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import date, datetime
-from math import ceil
 from unittest import TestCase
+from math import ceil
 from statistics import mean
 from jsonclasses_pymongo import Connection
 from tests.classes.simple_animal import SimpleAnimal
@@ -19,6 +19,7 @@ from tests.classes.simple_record import SimpleRecord, SimpleORecord
 from tests.classes.linked_record import LinkedRecord, LinkedContent
 from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
 from tests.classes.linked_song import LinkedSong, LinkedSinger
+from tests.classes.simple_hiphop_album import SimpleHiphopAlbum
 
 
 class TestQuery(TestCase):
@@ -80,6 +81,8 @@ class TestQuery(TestCase):
         collection = Connection.get_collection(LinkedSong)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedSinger)
+        collection.delete_many({})
+        collection = Connection.get_collection(SimpleHiphopAlbum)
         collection.delete_many({})
 
     def test_query_objects_from_database(self):
@@ -1173,3 +1176,48 @@ class TestQuery(TestCase):
             self.assertIsNone(student.created_at)
             self.assertIsNone(student.updated_at)
             self.assertTrue(student.is_partial)
+
+    def test_multiword_order_returns_correct_result(self):
+        SimpleHiphopAlbum(release_year=2019).save()
+        SimpleHiphopAlbum(release_year=2030).save()
+        SimpleHiphopAlbum(release_year=2015).save()
+        SimpleHiphopAlbum(release_year=2040).save()
+        SimpleHiphopAlbum(release_year=1997).save()
+        SimpleHiphopAlbum(release_year=2021).save()
+        results = SimpleHiphopAlbum.find().order('release_year', 1).exec()
+        years = [result.release_year for result in results]
+        self.assertEqual(years, [1997, 2015, 2019, 2021, 2030, 2040])
+        results = SimpleHiphopAlbum.find().order('release_year', -1).exec()
+        years = [result.release_year for result in results]
+        self.assertEqual(years, [2040, 2030, 2021, 2019, 2015, 1997])
+        results = SimpleHiphopAlbum.find().order('releaseYear', 1).exec()
+        years = [result.release_year for result in results]
+        self.assertEqual(years, [1997, 2015, 2019, 2021, 2030, 2040])
+        results = SimpleHiphopAlbum.find().order('releaseYear', -1).exec()
+        years = [result.release_year for result in results]
+        self.assertEqual(years, [2040, 2030, 2021, 2019, 2015, 1997])
+        results = SimpleHiphopAlbum.find({'_order': {'release_year': 1}}).exec()
+        years = [result.release_year for result in results]
+        self.assertEqual(years, [1997, 2015, 2019, 2021, 2030, 2040])
+        results = SimpleHiphopAlbum.find({'_order': {'release_year': -1}}).exec()
+        years = [result.release_year for result in results]
+        self.assertEqual(years, [2040, 2030, 2021, 2019, 2015, 1997])
+        results = SimpleHiphopAlbum.find({'_order': {'releaseYear': 1}}).exec()
+        years = [result.release_year for result in results]
+        self.assertEqual(years, [1997, 2015, 2019, 2021, 2030, 2040])
+        results = SimpleHiphopAlbum.find({'_order': {'releaseYear': -1}}).exec()
+        years = [result.release_year for result in results]
+        self.assertEqual(years, [2040, 2030, 2021, 2019, 2015, 1997])
+
+        results = SimpleHiphopAlbum.find({'_order': 'release_year'}).exec()
+        years = [result.release_year for result in results]
+        self.assertEqual(years, [1997, 2015, 2019, 2021, 2030, 2040])
+        results = SimpleHiphopAlbum.find({'_order': '-release_year'}).exec()
+        years = [result.release_year for result in results]
+        self.assertEqual(years, [2040, 2030, 2021, 2019, 2015, 1997])
+        results = SimpleHiphopAlbum.find({'_order': 'releaseYear'}).exec()
+        years = [result.release_year for result in results]
+        self.assertEqual(years, [1997, 2015, 2019, 2021, 2030, 2040])
+        results = SimpleHiphopAlbum.find({'_order': '-releaseYear'}).exec()
+        years = [result.release_year for result in results]
+        self.assertEqual(years, [2040, 2030, 2021, 2019, 2015, 1997])
