@@ -1208,7 +1208,6 @@ class TestQuery(TestCase):
         results = SimpleHiphopAlbum.find({'_order': {'releaseYear': -1}}).exec()
         years = [result.release_year for result in results]
         self.assertEqual(years, [2040, 2030, 2021, 2019, 2015, 1997])
-
         results = SimpleHiphopAlbum.find({'_order': 'release_year'}).exec()
         years = [result.release_year for result in results]
         self.assertEqual(years, [1997, 2015, 2019, 2021, 2030, 2040])

@@ -359,6 +359,31 @@ class TestSave(TestCase):
         album = LinkedAlbum.one().include('artists').exec()
         self.assertEqual(album.artists, [])
 
+    def test_fl_many_many_set_with_atomic_operation_is_saved_on_l_side(self):
+        s1 = LinkedSinger(name='s1').save()
+        s2 = LinkedSinger(name='s2').save()
+        song = LinkedSong(name='song')
+        song.set(singers=[{'_add': s1.id}, {'_add': s2.id}])
+        song.save()
+        song = LinkedSong.one().include('singers').exec()
+        names = [s.name for s in song.singers]
+        self.assertEqual(names, ['s1', 's2'])
+
+    def test_fl_many_many_unset_with_atomic_operation_is_saved_on_l_side(self):
+        s1 = LinkedSinger(name='s1').save()
+        s2 = LinkedSinger(name='s2').save()
+        song = LinkedSong(name='song')
+        song.set(singers=[{'_add': s1.id}, {'_add': s2.id}])
+        song.save()
+        song.set(singers=[{'_del': s1.id}])
+        song = LinkedSong.one().include('singers').exec()
+
+    # def test_fl_many_many_set_with_atomic_operation_is_saved_on_f_side(self):
+    #     pass
+
+    # def test_fl_many_many_unset_with_atomic_operation_is_saved_on_f_side(self):
+    #     pass
+
     def test_partial_nones_are_not_saved(self):
         SimpleRecord(name='a', desc='b', age=1, score=2).save()
         record = SimpleRecord.one().omit(['name', 'desc', 'age']).exec()

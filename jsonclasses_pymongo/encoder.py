@@ -264,7 +264,9 @@ class Encoder(Coder):
                     keypath_parent=fname,
                     parent=value))
                 if use_insert_command or fname in fields_need_update:
-                    id_list = [result['_id'] for result in item_result]
+                    tsfm = value.__class__.cdef.jconf.ref_key_encoding_strategy
+                    field_id_name = tsfm(field)
+                    id_list = [ObjectId(v) for v in getattr(value, field_id_name)]
                     fname_ref = ref_db_field_keys(fname, cls)
                     if use_insert_command:
                         result_set[fname_ref] = id_list
