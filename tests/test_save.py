@@ -58,6 +58,8 @@ class TestSave(TestCase):
         collection.delete_many({})
         collection = Connection.get_collection(LinkedArtist)
         collection.delete_many({})
+        collection = Connection('linked').collection('linkedalbumsartistslinkedartistsalbums')
+        collection.delete_many({})
         collection = Connection.get_collection(LinkedSong)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedSinger)

@@ -2,13 +2,13 @@
 jsonclass object should confirm to.
 """
 from __future__ import annotations
-from typing import TypeVar, ClassVar, Any, Union, TYPE_CHECKING
+from typing import TypeVar, ClassVar, Any, TYPE_CHECKING
 from bson.objectid import ObjectId
 from jsonclasses.jobject import JObject
 if TYPE_CHECKING:
     from .pconf import PConf
-    from .query import (BaseQuery, ListQuery, IDQuery, SingleQuery, ExistQuery,
-                        IterateQuery)
+    from .query import (BaseQuery, ListQuery, IDQuery, IDSQuery, SingleQuery,
+                        ExistQuery, IterateQuery)
 
 
 T = TypeVar('T', bound='PymongoObject')
@@ -34,6 +34,10 @@ class PymongoObject(JObject):
 
     @classmethod
     def id(cls: type[T], id: str | ObjectId, *args, **kwargs: Any) -> IDQuery[T]:
+        ...
+
+    @classmethod
+    def ids(cls: type[T], ids: list[str | ObjectId], *args, **kwargs: Any) -> IDSQuery[T]:
         ...
 
     @classmethod

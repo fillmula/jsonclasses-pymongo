@@ -17,7 +17,7 @@ from tests.classes.linked_hiphop_song import HiphopSinger, HiphopSong
 from tests.classes.linked_music_product import MusicProduct, MusicUser
 
 
-class TestSave(TestCase):
+class TestQueryInclude(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:

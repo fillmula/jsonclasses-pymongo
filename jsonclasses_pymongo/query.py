@@ -586,7 +586,6 @@ class BaseIDQuery(BaseQuery[T]):
                 result.append(v)
         return result
 
-
     def _exec(self) -> Optional[T]:
         pipeline = self._build_aggregate_pipeline()
         collection = Connection.get_collection(self._cls)
@@ -628,6 +627,45 @@ class OptionalIDQuery(BaseIDQuery[T]):
         return self._exec()
 
     def __await__(self) -> Generator[None, None, Optional[T]]:
+        yield
+        return self.exec()
+
+
+class IDSQuery(BaseQuery[T]):
+
+    def __init__(self: U, cls: type[T],
+                 ids: list[str | ObjectId],
+                 matcher: Union[dict[str, Any], str, None] = None) -> None:
+        super().__init__(cls)
+        self.list_query = ListQuery(cls=cls, filter=matcher)
+        self._ids = ids
+
+    def include(self: U, name: str, query: Optional[BaseQuery] = None) -> U:
+        self.list_query.include(name, query)
+        return self
+
+    def _build_aggregate_pipeline(self: BaseIDQuery) -> list[dict[str, Any]]:
+        list_query_results = self.list_query._build_aggregate_pipeline()
+        ids = [ObjectId(id) for id in self._ids]
+        result = [{'$match': {'_id': {'$in': ids}}}]
+        for v in list_query_results:
+            if '$match' in v.keys():
+                continue
+            else:
+                result.append(v)
+        return result
+
+    def exec(self) -> list[T]:
+        return self._exec()
+
+    def _exec(self) -> list[T]:
+        pipeline = self._build_aggregate_pipeline()
+        collection = Connection.get_collection(self._cls)
+        cursor = collection.aggregate(pipeline)
+        results = [result for result in cursor]
+        return Decoder().decode_root_list(results, self._cls, None, self)
+
+    def __await__(self) -> Generator[None, None, list[T]]:
         yield
         return self.exec()
 
