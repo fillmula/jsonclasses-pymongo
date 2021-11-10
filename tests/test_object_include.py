@@ -82,4 +82,14 @@ class TestObjectInclude(TestCase):
         self.assertEqual(singer.songs[1].name, 'heaven')
 
     def test_include_fetches_and_sets_foreign_list_value_with_join_table(self):
-        pass
+        artist = LinkedArtist(name='a')
+        album1 = LinkedAlbum(name='a1')
+        album2 = LinkedAlbum(name='a2')
+        artist.albums = [album1, album2]
+        artist.save()
+        artist = LinkedArtist.one().exec()
+        result = artist.include('albums')
+        self.assertEqual(result, artist)
+        self.assertEqual(len(artist.albums), 2)
+        self.assertEqual(artist.albums[0].name, 'a1')
+        self.assertEqual(artist.albums[1].name, 'a2')
