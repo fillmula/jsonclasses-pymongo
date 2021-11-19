@@ -168,7 +168,13 @@ class QueryReader:
                     result[raw_key] = value
                     continue
                 key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
-                if key == '_contains':
+                if key == '_eq':
+                    result['$eq'] = value
+                elif key == '_neq':
+                    result['$ne'] = value
+                elif key == '_null':
+                    result['$exists'] = not readbool(value)
+                elif key == '_contains':
                     result['$regex'] = compile(escape(value))
                 elif key == '_prefix':
                     result['$regex'] = compile('^' + escape(value))
@@ -194,8 +200,6 @@ class QueryReader:
                     result['$lte'] = value
                 elif key == '_equal':
                     result['$eq'] = value
-                elif key == '_field_exists':
-                    result['$exists'] = readbool(value)
                 elif key == '_not':
                     if type(value) is str:
                         result['$ne'] = value
@@ -223,6 +227,10 @@ class QueryReader:
                 key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
                 if key == '_eq':
                     result['$eq'] = readfloat(value) if float else readint(value)
+                elif key == '_neq':
+                    result['$ne'] = readfloat(value) if float else readint(value)
+                elif key == '_null':
+                    result['$exists'] = not readbool(value)
                 elif key == '_gt':
                     result['$gt'] = readfloat(value) if float else readint(value)
                 elif key == '_gte':
@@ -254,12 +262,12 @@ class QueryReader:
                     result[raw_key] = value
                     continue
                 key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
-                if key == '_ne':
+                if key == '_neq':
                     result['$ne'] = readbool(value)
                 elif key == '_eq':
                     result['$eq'] = readbool(value)
-                elif key == '_is':
-                    result['$eq'] = readbool(value)
+                elif key == '_null':
+                    result['$exists'] = not readbool(value)
             return result
 
     def date_descriptor(self: QueryReader, val: Any, is_date: bool) -> Any:
@@ -284,6 +292,10 @@ class QueryReader:
                 key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
                 if key == '_eq':
                     result['$eq'] = readdate(value) if is_date else readdatetime(value)
+                elif key == '_neq':
+                    result['$ne'] = readdate(value) if is_date else readdatetime(value)
+                elif key == '_null':
+                    result['$exists'] = not readbool(value)
                 elif key == '_gt':
                     result['$gt'] = readdate(value) if is_date else readdatetime(value)
                 elif key == '_gte':
@@ -324,7 +336,11 @@ class QueryReader:
                 key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
                 if key == '_eq':
                     result['$eq'] = [self.readval(item, fdef.item_types.fdef) for item in value]
-                elif key == '_contains':
+                elif key == '_neq':
+                    result['$ne'] = [self.readval(item, fdef.item_types.fdef) for item in value]
+                elif key == '_null':
+                    result['$exists'] = not readbool(value)
+                elif (key == '_contains') or (key == '_has'):
                     if isinstance(value, list):
                         result['$all'] = [self.readval(item, fdef.item_types.fdef) for item in value]
                     else:

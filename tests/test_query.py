@@ -532,14 +532,14 @@ class TestQuery(TestCase):
     def test_query_object_with_field_exists_str_object(self):
         song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
         song2.save()
-        result = SimpleSong.find(name={'_field_exists': 'True'}).exec()
+        result = SimpleSong.find(name={'_null': 'False'}).exec()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Lieng')
 
     def test_query_object_with_field_exists_str_object_str(self):
         song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
         song2.save()
-        result = SimpleSong.find('name[_field_exists]=True').exec()
+        result = SimpleSong.find('name[_null]=False').exec()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Lieng')
 
