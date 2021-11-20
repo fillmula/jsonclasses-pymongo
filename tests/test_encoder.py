@@ -2,7 +2,7 @@ from __future__ import annotations
 from jsonclasses_pymongo.connection import Connection
 from unittest import TestCase
 from typing import List, Dict, cast
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from bson import ObjectId
 from jsonclasses import jsonclass, types
 from jsonclasses_pymongo import pymongo
@@ -98,16 +98,16 @@ class TestEncoder(TestCase):
         self.assertEqual(set(serialized.keys()), set(
             ['_id', 'd1', 'd2']))
         self.assertIsInstance(serialized['_id'], ObjectId)
-        self.assertEqual(serialized['d1'], datetime(2012, 9, 15, 0, 0, 0))
-        self.assertEqual(serialized['d2'], datetime(2020, 9, 14, 0, 0, 0))
+        self.assertEqual(serialized['d1'], datetime(2012, 9, 15, 0, 0, 0, tzinfo=timezone.utc))
+        self.assertEqual(serialized['d2'], datetime(2020, 9, 14, 0, 0, 0, tzinfo=timezone.utc))
 
     def test_encode_datetime_into_datetime(self):
         @pymongo
         @jsonclass
         class SimpleEncodeDatetime:
             id: str = types.readonly.str.primary.mongoid.required
-            d1: date = datetime(2012, 9, 15, 0, 0, 0)
-            d2: date = datetime(2020, 9, 14, 0, 0, 0)
+            d1: date = datetime(2012, 9, 15, 0, 0, 0, tzinfo=timezone.utc)
+            d2: date = datetime(2020, 9, 14, 0, 0, 0, tzinfo=timezone.utc)
         simple_object = SimpleEncodeDatetime()
         batch_command = Encoder().encode_root(simple_object)
         insert_command = cast(InsertOneCommand, batch_command.commands[0])
@@ -115,8 +115,8 @@ class TestEncoder(TestCase):
         self.assertEqual(set(serialized.keys()), set(
             ['_id', 'd1', 'd2']))
         self.assertIsInstance(serialized['_id'], ObjectId)
-        self.assertEqual(serialized['d1'], datetime(2012, 9, 15, 0, 0, 0))
-        self.assertEqual(serialized['d2'], datetime(2020, 9, 14, 0, 0, 0))
+        self.assertEqual(serialized['d1'], datetime(2012, 9, 15, 0, 0, 0, tzinfo=timezone.utc))
+        self.assertEqual(serialized['d2'], datetime(2020, 9, 14, 0, 0, 0, tzinfo=timezone.utc))
 
     def test_encode_embedded_list(self):
         @pymongo

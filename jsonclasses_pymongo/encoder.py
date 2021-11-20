@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any, NamedTuple, TypeVar, Union, cast, TYPE_CHECKING
-from datetime import datetime
+from datetime import datetime, timezone, tzinfo
 from bson.objectid import ObjectId
 from jsonclasses.jfield import JField
 from jsonclasses.fdef import FStore, FType
@@ -330,7 +330,9 @@ class Encoder(Coder):
             return self.encode_instance(context)
         elif ftype == FType.DATE:
             return EncodingResult(
-                result=datetime.fromisoformat(context.value.isoformat()),
+                result=datetime.fromisoformat(
+                    context.value.isoformat(),
+                ).replace(tzinfo=timezone.utc),
                 commands=[])
         elif ftype == FType.ENUM:
             return EncodingResult(result=context.value.value, commands=[])

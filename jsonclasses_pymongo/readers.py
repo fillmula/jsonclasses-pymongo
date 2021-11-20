@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any, Optional
-from datetime import date, datetime
+from datetime import date, datetime, timezone, tzinfo
 from enum import Enum
 
 
@@ -45,17 +45,17 @@ def readdate(val: Any) -> Optional[datetime]:
     if val in ['null', 'NULL', 'nil', 'None', 'NONE']:
         return None
     if type(val) is date:
-        return datetime(val.year, val.month, val.day)
+        return datetime(val.year, val.month, val.day, tzinfo=timezone.utc)
     if type(val) is datetime:
         d = date(val.year, val.month, val.day)
-        return datetime(d.year, d.month, d.day)
+        return datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
     if type(val) is str:
         d = date.fromisoformat(val[:10])
-        return datetime(d.year, d.month, d.day)
+        return datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
     if type(val) is float or type(val) is int:
         dt = datetime.fromtimestamp(val)
         d = date(dt.year, dt.month, dt.day)
-        return datetime(d.year, d.month, d.day)
+        return datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
     raise ValueError('value is not valid date value')
 
 
@@ -63,13 +63,13 @@ def readdatetime(val: Any) -> Optional[datetime]:
     if val in ['null', 'NULL', 'nil', 'None', 'NONE']:
         return None
     if type(val) is date:
-        return datetime(val.year, val.month, val.day)
+        return datetime(val.year, val.month, val.day, tzinfo=timezone.utc)
     if type(val) is datetime:
         return val
     if type(val) is str:
-        return datetime.fromisoformat(val.replace('Z', ''))
+        return datetime.fromisoformat(val.replace('Z', '')).replace(tzinfo=timezone.utc)
     if type(val) is float or type(val) is int:
-        return datetime.fromtimestamp(val)
+        return datetime.fromtimestamp(val, tzinfo=timezone.utc)
     raise ValueError('value is not valid datetime value')
 
 
