@@ -106,3 +106,4 @@ class TestStrId(TestCase):
         obj = SimpleStrId(id='myid', val='myval')
         obj.save()
         results = SimpleStrId.find(id='myid').exec()
+        self.assertEqual(results[0].id, 'myid')
