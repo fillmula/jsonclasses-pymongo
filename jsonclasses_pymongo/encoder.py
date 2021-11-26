@@ -16,8 +16,8 @@ from .command import (Command, InsertOneCommand, UpdateOneCommand,
                       UpsertOneCommand, DeleteOneCommand, BatchCommand)
 from .connection import Connection
 if TYPE_CHECKING:
-    from .pymongo_object import PymongoObject
-    T = TypeVar('T', bound=PymongoObject)
+    from .pobject import PObject
+    T = TypeVar('T', bound=PObject)
 
 
 class EncodingResult(NamedTuple):
@@ -73,9 +73,9 @@ class Encoder(Coder):
         return EncodingResult(result, commands)
 
     def _join_command(self,
-                      this_instance: PymongoObject,
+                      this_instance: PObject,
                       this_field: JField,
-                      that_cls: type[PymongoObject],
+                      that_cls: type[PObject],
                       that_id: ObjectId) -> UpsertOneCommand:
         this_cls = this_instance.__class__
         connection = Connection.from_class(this_instance.__class__)
@@ -99,9 +99,9 @@ class Encoder(Coder):
                                 matcher=matcher)
 
     def _unlink_command(self,
-                        this_instance: PymongoObject,
+                        this_instance: PObject,
                         this_field: JField,
-                        that_cls: type[PymongoObject],
+                        that_cls: type[PObject],
                         that_id: ObjectId) -> DeleteOneCommand:
         this_cls = this_instance.__class__
         connection = Connection.from_class(this_instance.__class__)
@@ -125,10 +125,10 @@ class Encoder(Coder):
     def encode_instance(self,
                         context: EncodingContext,
                         root: bool = False) -> EncodingResult:
-        from .pymongo_object import PymongoObject
+        from .pobject import PObject
         if context.value is None:
             return EncodingResult(result=None, commands=[])
-        value = cast(PymongoObject, context.value)
+        value = cast(PObject, context.value)
         cls = value.__class__
         id = cast(str | int, value._id)
         previous_id = cast(str | int, value._previous_id)

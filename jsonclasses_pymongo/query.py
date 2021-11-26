@@ -16,9 +16,9 @@ from jsonclasses.excs import ObjectNotFoundException
 from .coder import Coder
 from .decoder import Decoder
 from .connection import Connection
-from .pymongo_object import PymongoObject
+from .pobject import PObject
 from .utils import idval, ref_db_field_key, ref_db_field_keys
-T = TypeVar('T', bound=PymongoObject)
+T = TypeVar('T', bound=PObject)
 U = TypeVar('U', bound='BaseQuery')
 V = TypeVar('V', bound='BaseListQuery')
 
@@ -37,13 +37,13 @@ class BaseQuery(Generic[T]):
         self.subqueries: list[Subquery] = []
 
     def include(self: U, name: str, query: Optional[BaseQuery] = None) -> U:
-        tcls = cast(type[PymongoObject], self._cls)
+        tcls = cast(type[PObject], self._cls)
         decoded_name = tcls.cdef.jconf.input_key_strategy(name)
         self.subqueries.append(Subquery(decoded_name, query))
         return self
 
     def _build_aggregate_pipeline(self: U) -> list[dict[str, Any]]:
-        cls = cast(type[PymongoObject], self._cls)
+        cls = cast(type[PObject], self._cls)
         result: list[dict[str, Any]] = []
         for subquery in self.subqueries:
             fname = subquery.name
@@ -318,12 +318,12 @@ class BaseListQuery(BaseQuery[T]):
         if result.get('_includes') is not None:
             for item in result['_includes']:
                 if type(item) is str:
-                    tcls = cast(type[PymongoObject], self._cls)
+                    tcls = cast(type[PObject], self._cls)
                     decoded_name = tcls.cdef.jconf.input_key_strategy(item)
                     self.subqueries.append(Subquery(decoded_name, None))
                 elif isinstance(item, dict):
                     for k, v in item.items():
-                        tcls = cast(type[PymongoObject], self._cls)
+                        tcls = cast(type[PObject], self._cls)
                         decoded_key = tcls.cdef.jconf.input_key_strategy(k)
                         field = tcls.cdef.field_named(decoded_key)
                         fcls = field.foreign_class
@@ -336,7 +336,7 @@ class BaseListQuery(BaseQuery[T]):
     def order(self: V, field_name: str, sort: Optional[int] = None) -> V:
         if self._sort is None:
             self._sort = []
-        tcls = cast(type[PymongoObject], self._cls)
+        tcls = cast(type[PObject], self._cls)
         decoded_name = tcls.cdef.jconf.input_key_strategy(field_name)
         decoded_name = tcls.pconf.to_db_key(decoded_name)
         self._sort.append((decoded_name, sort or 1))

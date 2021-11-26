@@ -4,7 +4,7 @@ from typing import NamedTuple, Any, Union, TYPE_CHECKING
 from jsonclasses.types import Types
 from jsonclasses.mgraph import MGraph
 if TYPE_CHECKING:
-    from .pymongo_object import PymongoObject
+    from .pobject import PObject
 
 
 class EncodingContext(NamedTuple):
@@ -14,11 +14,11 @@ class EncodingContext(NamedTuple):
     value: Any
     types: Types
     keypath_root: str
-    root: PymongoObject
+    root: PObject
     keypath_owner: str
-    owner: PymongoObject
+    owner: PObject
     keypath_parent: str
-    parent: Union[list[Any], dict[str, Any], PymongoObject]
+    parent: Union[list[Any], dict[str, Any], PObject]
     mark_graph: MGraph
 
     def new(self, **kwargs):

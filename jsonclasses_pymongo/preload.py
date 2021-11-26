@@ -9,14 +9,14 @@ from jsonclasses.jfield import JField
 from jsonclasses.fdef import FStore
 from pymongo import ASCENDING
 from pymongo.collection import Collection
-from .pymongo_object import PymongoObject
+from .pobject import PObject
 from .connection import Connection
 
 
 _refkeycolls: dict[str, Collection] = {}
 
 
-def getrefkeycoll(cls: type[PymongoObject]) -> Collection:
+def getrefkeycoll(cls: type[PObject]) -> Collection:
     global _refkeycolls
     gname = cls.cdef.jconf.cgraph.name
     if _refkeycolls.get(gname) is not None:
@@ -30,7 +30,7 @@ def getrefkeycoll(cls: type[PymongoObject]) -> Collection:
     return _refkeycolls[gname]
 
 
-def getidref(cls: type[PymongoObject], id: str | int) -> str | int:
+def getidref(cls: type[PObject], id: str | int) -> str | int:
     coll = getrefkeycoll(cls)
     matcher = {
         'graph': cls.cdef.jconf.cgraph.name, 'cls': cls.__name__, 'sid': id
@@ -52,7 +52,7 @@ def getfieldvalue(obj: dict[str, Any], field: JField) -> Any | None:
     return val
 
 
-def seedobject(cls: type[PymongoObject], obj: dict[str, Any], oid: str | int, original: PymongoObject) -> None:
+def seedobject(cls: type[PObject], obj: dict[str, Any], oid: str | int, original: PObject) -> None:
     result: dict[str, Any] = {}
     for field in cls.cdef.fields:
         if field.fdef.primary:
@@ -71,7 +71,7 @@ def seedobject(cls: type[PymongoObject], obj: dict[str, Any], oid: str | int, or
         pobj.save()
 
 
-def loadobject(cls: type[PymongoObject], obj: dict[str, Any]) -> None:
+def loadobject(cls: type[PObject], obj: dict[str, Any]) -> None:
     fvalues: dict[str, Any] = {}
     behaviors: dict[str, Any] = {}
     for key, value in obj.items():

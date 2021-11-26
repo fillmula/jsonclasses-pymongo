@@ -9,7 +9,7 @@ from pymongo import ASCENDING
 from jsonclasses.fdef import FStore, FType
 from jsonclasses.excs import UniqueConstraintException
 from jsonclasses.excs import DeletionDeniedException
-from .pymongo_object import PymongoObject
+from .pobject import PObject
 from .query import BaseQuery, ExistQuery, IDSQuery, IterateQuery, ListQuery, SingleQuery, IDQuery
 from .encoder import Encoder
 from .connection import Connection
@@ -17,7 +17,7 @@ from .utils import ref_db_field_key
 from .coder import Coder
 
 
-T = TypeVar('T', bound=PymongoObject)
+T = TypeVar('T', bound=PObject)
 
 
 def find(cls: type[T], *args, **kwargs: Any) -> ListQuery[T]:
@@ -215,10 +215,10 @@ def _orm_restore(self: T) -> None:
     pass
 
 
-def pymongofy(class_: type) -> PymongoObject:
+def pymongofy(class_: type) -> PObject:
     # do not install methods for subclasses
     if hasattr(class_, '__is_pymongo__'):
-        return cast(PymongoObject, class_)
+        return cast(PObject, class_)
     # type marks
     setattr(class_, '__is_pymongo__', True)
     # public methods

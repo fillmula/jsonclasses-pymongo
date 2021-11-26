@@ -1,4 +1,4 @@
-"""This module defines `PymongoObject`, the protocol that @pymongo decorated
+"""This module defines `PObject`, the protocol that @pymongo decorated
 jsonclass object should confirm to.
 """
 from __future__ import annotations
@@ -11,11 +11,11 @@ if TYPE_CHECKING:
                         ExistQuery, IterateQuery)
 
 
-T = TypeVar('T', bound='PymongoObject')
+T = TypeVar('T', bound='PObject')
 
 
-class PymongoObject(JObject):
-    """The `PymongoObject` protocol defines methods that @pymongo decorated
+class PObject(JObject):
+    """The `PObject` protocol defines methods that @pymongo decorated
     jsonclass object should confirm to.
     """
 

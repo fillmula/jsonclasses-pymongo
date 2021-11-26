@@ -10,8 +10,8 @@ from .utils import (
 from .coder import Coder
 if TYPE_CHECKING:
     from .query import BaseQuery
-    from .pymongo_object import PymongoObject
-    T = TypeVar('T', bound=PymongoObject)
+    from .pobject import PObject
+    T = TypeVar('T', bound=PObject)
 
 
 class Decoder(Coder):

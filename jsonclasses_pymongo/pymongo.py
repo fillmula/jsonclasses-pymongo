@@ -3,7 +3,7 @@ This module contains `jsonclass`, the decorator for JSON Classes.
 """
 from typing import Union, Callable, TypeVar, overload, cast
 from jsonclasses.jobject import JObject
-from .pymongo_object import PymongoObject
+from .pobject import PObject
 from .pymongofy import pymongofy
 from .pconf import PConf
 
@@ -11,7 +11,7 @@ from .pconf import PConf
 T = TypeVar('T', bound=type[JObject])
 
 @overload
-def pymongo(cls: T) -> T | type[PymongoObject]: ...
+def pymongo(cls: T) -> T | type[PObject]: ...
 
 
 @overload
@@ -21,7 +21,7 @@ def pymongo(
     camelize_db_keys: bool | None = None,
     db_key_encoding_strategy: Callable[[str], str] | None = None,
     db_key_decoding_strategy: Callable[[str], str] | None = None,
-) -> Callable[[T], T | type[PymongoObject]]: ...
+) -> Callable[[T], T | type[PObject]]: ...
 
 
 @overload
@@ -31,7 +31,7 @@ def pymongo(
     camelize_db_keys: bool | None = None,
     db_key_encoding_strategy: Callable[[str], str] | None = None,
     db_key_decoding_strategy: Callable[[str], str] | None = None,
-) -> T | type[PymongoObject]: ...
+) -> T | type[PObject]: ...
 
 
 def pymongo(
@@ -40,7 +40,7 @@ def pymongo(
     camelize_db_keys: bool | None = None,
     db_key_encoding_strategy: Callable[[str], str] | None = None,
     db_key_decoding_strategy: Callable[[str], str] | None = None,
-) -> Union[Callable[[T], T | type[PymongoObject]], T | type[PymongoObject]]:
+) -> Union[Callable[[T], T | type[PObject]], T | type[PObject]]:
     """The pymongo object class decorator. To declare a jsonclass class, use
     this syntax:
 
@@ -59,7 +59,7 @@ def pymongo(
                      db_key_encoding_strategy,
                      db_key_decoding_strategy)
         cls.pconf = conf
-        return cast(type[PymongoObject], pymongofy(cls))
+        return cast(type[PObject], pymongofy(cls))
     else:
         def parametered_jsonclass(cls):
             return pymongo(

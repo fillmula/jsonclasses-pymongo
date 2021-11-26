@@ -81,3 +81,6 @@ class TestStrId(TestCase):
         song.save()
         song = LinkedStrIdSong.one().exec()
         self.assertEqual(song.singer_ids, ['s1', 's2'])
+
+    def test_strid_can_be_saved_into_many_many_join_table(self):
+        pass

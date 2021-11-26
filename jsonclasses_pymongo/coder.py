@@ -8,7 +8,7 @@ from bson.objectid import ObjectId
 from .utils import dbid, idval
 from .connection import Connection
 if TYPE_CHECKING:
-    from .pymongo_object import PymongoObject
+    from .pobject import PObject
 
 
 class Coder():
@@ -26,7 +26,7 @@ class Coder():
         return field.fdef.ftype == FType.LIST
 
     def is_list_instance_field(self, field: JField,
-                                     cls: type[PymongoObject]) -> bool:
+                                     cls: type[PObject]) -> bool:
         if not self.is_list_field(field):
             return False
         t = field.fdef.item_types
@@ -60,17 +60,17 @@ class Coder():
     def is_join_table_field(self, field: JField) -> bool:
         return field.types.fdef.use_join_table is True
 
-    def list_instance_type(self, field: JField) -> type[PymongoObject]:
-        from .pymongo_object import PymongoObject
+    def list_instance_type(self, field: JField) -> type[PObject]:
+        from .pobject import PObject
         fd = field.types.fdef
         item_types = fd.item_types
         item_fd = item_types.fdef
-        return cast(type[PymongoObject], item_fd.raw_inst_types)
+        return cast(type[PObject], item_fd.raw_inst_types)
 
     def join_table_name(self,
-                        cls_a: type[PymongoObject],
+                        cls_a: type[PObject],
                         field_a: str,
-                        cls_b: type[PymongoObject],
+                        cls_b: type[PObject],
                         field_b: str) -> str:
         connection = Connection.from_class(cls_a)
         cabase = connection.collection_from(cls_a).name

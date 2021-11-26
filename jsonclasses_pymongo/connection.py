@@ -7,8 +7,8 @@ from pymongo.mongo_client import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
 if TYPE_CHECKING:
-    from .pymongo_object import PymongoObject
-    T = TypeVar('T', bound=PymongoObject, covariant=True)
+    from .pobject import PObject
+    T = TypeVar('T', bound=PObject, covariant=True)
 
 
 ConnectedCallback = Callable[[Collection], None]

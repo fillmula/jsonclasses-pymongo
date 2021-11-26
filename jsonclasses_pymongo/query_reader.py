@@ -4,7 +4,7 @@ from datetime import datetime, date, timedelta
 from re import compile, escape, IGNORECASE
 from bson.objectid import ObjectId
 from jsonclasses.fdef import FStore, FType, Fdef
-from .pymongo_object import PymongoObject
+from .pobject import PObject
 from .readers import (
     readstr, readbool, readdate, readdatetime, readenum, readfloat, readint,
     readorder
@@ -15,7 +15,7 @@ class QueryReader:
 
     def __init__(self: QueryReader,
                  query: dict[str, Any],
-                 cls: type[PymongoObject]) -> None:
+                 cls: type[PObject]) -> None:
         self.query = query
         self.cls = cls
 
