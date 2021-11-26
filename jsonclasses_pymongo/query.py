@@ -13,11 +13,10 @@ from jsonclasses.fdef import FStore, FType
 from jsonclasses.jfield import JField
 from jsonclasses.mgraph import MGraph
 from jsonclasses.excs import ObjectNotFoundException
-from .coder import Coder
 from .decoder import Decoder
 from .connection import Connection
 from .pobject import PObject
-from .utils import idval, ref_db_field_key, ref_db_field_keys
+from .utils import idval, ref_db_field_key, ref_db_field_keys, join_table_name
 T = TypeVar('T', bound=PObject)
 U = TypeVar('U', bound='BaseQuery')
 V = TypeVar('V', bound='BaseListQuery')
@@ -159,9 +158,7 @@ class BaseQuery(Generic[T]):
                             matcher = item.get('$match')
                             break
                     if field.fdef.use_join_table:
-                        coder = Coder()
-                        jt_name = coder.join_table_name(cls, field.name,
-                                                        it, field.foreign_field.name)
+                        jt_name = join_table_name(field)
                         this_key = ref_db_field_key(cls.__name__, cls)
                         that_key = ref_db_field_key(it.__name__, it)
                         pipeline: list[Any] = []
@@ -379,11 +376,7 @@ class BaseListQuery(BaseQuery[T]):
         if self._virtual is not None:
             for virtual in self._virtual:
                 _, field, obj = virtual
-                jtname = Coder().join_table_name(
-                    self._cls,
-                    field.name,
-                    field.foreign_class,
-                    field.foreign_field.name)
+                jtname = join_table_name(field)
                 thisref = ref_db_field_key(self._cls.__name__, self._cls)
                 thatref = ref_db_field_key(field.foreign_class.__name__, field.foreign_class)
                 and_mode = False

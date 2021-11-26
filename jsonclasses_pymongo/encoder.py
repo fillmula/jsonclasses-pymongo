@@ -7,9 +7,9 @@ from jsonclasses.fdef import FStore, FType
 from jsonclasses.keypath import concat_keypath
 from jsonclasses.mgraph import MGraph
 from jsonclasses.types import types
-from .coder import Coder
 from .utils import (
-    idval, dbid, ref_db_field_key, ref_db_field_keys, ref_field_key
+    idval, dbid, ref_db_field_key, ref_db_field_keys, ref_field_key,
+    list_inst_type, join_table_name
 )
 from .context import EncodingContext
 from .command import (Command, InsertOneCommand, UpdateOneCommand,
@@ -26,7 +26,7 @@ class EncodingResult(NamedTuple):
     commands: list[Command]
 
 
-class Encoder(Coder):
+class Encoder:
     """Write commands encoder."""
 
     def encode_list(self, context: EncodingContext) -> EncodingResult:
@@ -83,12 +83,8 @@ class Encoder(Coder):
         that_cls_name = that_cls.__name__
         this_field_name = ref_db_field_key(this_cls_name, this_cls)
         that_field_name = ref_db_field_key(that_cls_name, that_cls)
-        join_table_name = self.join_table_name(
-            this_cls,
-            this_field.name,
-            that_cls,
-            cast(str, this_field.fdef.foreign_key))
-        collection = connection.collection(join_table_name, [this_field_name, that_field_name])
+        jt_name = join_table_name(this_field)
+        collection = connection.collection(jt_name, [this_field_name, that_field_name])
         this_id = ObjectId(this_instance._id)
         matcher = {
             this_field_name: this_id,
@@ -109,12 +105,8 @@ class Encoder(Coder):
         that_cls_name = that_cls.__name__
         this_field_name = ref_db_field_key(this_cls_name, this_cls)
         that_field_name = ref_db_field_key(that_cls_name, that_cls)
-        join_table_name = self.join_table_name(
-            this_cls,
-            this_field.name,
-            that_cls,
-            cast(str, this_field.fdef.foreign_key))
-        collection = connection.collection(join_table_name, [this_field_name, that_field_name])
+        jt_name = join_table_name(this_field)
+        collection = connection.collection(jt_name, [this_field_name, that_field_name])
         this_id = ObjectId(this_instance._id)
         matcher = {
             this_field_name: this_id,
@@ -193,7 +185,7 @@ class Encoder(Coder):
                         join_command = self._join_command(
                             value,
                             field,
-                            self.list_instance_type(field),
+                            list_inst_type(field),
                             list_item['_id'])
                         commands.append(join_command)
                 if value.unlinked_objects.get(field.name) is not None:
@@ -202,7 +194,7 @@ class Encoder(Coder):
                             unlink_command = self._unlink_command(
                                 value,
                                 field,
-                                self.list_instance_type(field),
+                                list_inst_type(field),
                                 dbid(item))
                             commands.append(unlink_command)
                 if value._link_keys.get(field.name) is not None:
@@ -210,7 +202,7 @@ class Encoder(Coder):
                         join_command = self._join_command(
                             value,
                             field,
-                            self.list_instance_type(field),
+                            list_inst_type(field),
                             ObjectId(k))
                         commands.append(join_command)
                 if value._unlink_keys.get(field.name) is not None:
@@ -218,7 +210,7 @@ class Encoder(Coder):
                         unlink_command = self._unlink_command(
                             value,
                             field,
-                            self.list_instance_type(field),
+                            list_inst_type(field),
                             ObjectId(k))
                         commands.append(unlink_command)
             elif field.is_local_one_ref:

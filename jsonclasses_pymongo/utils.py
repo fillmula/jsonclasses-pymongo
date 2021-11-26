@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 from jsonclasses.fdef import FSubtype
 from jsonclasses.jobject import JObject
 from jsonclasses.jfield import JField
 from inflection import singularize
 from bson.objectid import ObjectId
+from .connection import Connection
 if TYPE_CHECKING:
     from .pobject import PObject
 
@@ -45,3 +46,23 @@ def dbid(obj: JObject) -> str | ObjectId:
     field = obj.__class__.cdef.primary_field
     val = obj._id
     return idval(field, val)
+
+
+def list_inst_type(field: JField) -> type[PObject]:
+    from .pobject import PObject
+    return cast(PObject, field.types.fdef.item_types.fdef.inst_cls)
+
+
+def join_table_name(this: JField) -> str:
+    from .pobject import PObject
+    that = this.foreign_field
+    this_cls = cast(type[PObject], this.cdef.cls)
+    that_cls = cast(type[PObject], that.cdef.cls)
+    this_fname = this_cls.pconf.to_db_key(this.name)
+    that_fname = that_cls.pconf.to_db_key(that.name)
+    connection = Connection.from_class(this_cls)
+    cabase = connection.collection_from(this_cls).name
+    cbbase = connection.collection_from(that_cls).name
+    ca = cabase + this_fname.lower()
+    cb = cbbase + that_fname.lower()
+    return ca + cb if ca < cb else cb + ca

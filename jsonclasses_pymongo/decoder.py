@@ -7,14 +7,13 @@ from jsonclasses.mgraph import MGraph
 from .utils import (
     ref_field_key, ref_field_keys, ref_db_field_key, ref_db_field_keys
 )
-from .coder import Coder
 if TYPE_CHECKING:
     from .query import BaseQuery
     from .pobject import PObject
     T = TypeVar('T', bound=PObject)
 
 
-class Decoder(Coder):
+class Decoder:
 
     def decode_list(self,
                     value: list[Any],

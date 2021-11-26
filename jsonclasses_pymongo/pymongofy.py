@@ -13,8 +13,7 @@ from .pobject import PObject
 from .query import BaseQuery, ExistQuery, IDSQuery, IterateQuery, ListQuery, SingleQuery, IDQuery
 from .encoder import Encoder
 from .connection import Connection
-from .utils import ref_db_field_key
-from .coder import Coder
+from .utils import ref_db_field_key, join_table_name
 
 
 T = TypeVar('T', bound=PObject)
@@ -105,11 +104,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                 oc = field.fdef.inst_cls
             f = cast(JField, field.foreign_field)
             if field.fdef.use_join_table:
-                jtname = Coder().join_table_name(
-                    self.__class__,
-                    field.name,
-                    oc,
-                    f.name)
+                jtname = join_table_name(field)
                 coll = Connection.from_class(self.__class__).collection(jtname)
                 key = ref_db_field_key(self.__class__.__name__, self.__class__)
                 e = coll.count_documents({key: ObjectId(self._id)}, limit=1)
@@ -140,11 +135,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                 oc = field.fdef.inst_cls
             f = cast(JField, field.foreign_field)
             if field.fdef.use_join_table:
-                jtname = Coder().join_table_name(
-                    self.__class__,
-                    field.name,
-                    oc,
-                    f.name)
+                jtname = join_table_name(field)
                 coll = Connection.from_class(self.__class__).collection(jtname)
                 key = ref_db_field_key(self.__class__.__name__, self.__class__)
                 coll.delete_many({key: ObjectId(self._id)})
@@ -170,11 +161,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                     item._orm_delete(no_raise=True)
         elif field.fdef.fstore == FStore.FOREIGN_KEY:
             if field.fdef.use_join_table:
-                jtname = Coder().join_table_name(
-                    self.__class__,
-                    field.name,
-                    oc,
-                    f.name)
+                jtname = join_table_name(field)
                 coll = Connection.from_class(self.__class__).collection(jtname)
                 key = ref_db_field_key(self.__class__.__name__, self.__class__)
                 other_key = ref_db_field_key(oc.__name__, oc)
