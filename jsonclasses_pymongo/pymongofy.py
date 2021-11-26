@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TypeVar, Any, Union, cast
+from typing import TypeVar, Any, cast
 from re import search
 from bson.objectid import ObjectId
 from jsonclasses.jfield import JField

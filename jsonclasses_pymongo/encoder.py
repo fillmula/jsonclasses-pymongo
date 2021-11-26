@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, NamedTuple, TypeVar, Union, cast, TYPE_CHECKING
+from typing import Any, NamedTuple, TypeVar, cast, TYPE_CHECKING
 from datetime import datetime, timezone
 from bson.objectid import ObjectId
 from jsonclasses.jfield import JField

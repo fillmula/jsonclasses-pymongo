@@ -101,3 +101,8 @@ class TestStrId(TestCase):
         for result in results:
             for product in result.products:
                 self.assertIn(product.id, ['p1', 'p2'])
+
+    def test_strid_primary_id_can_be_queried(self):
+        obj = SimpleStrId(id='myid', val='myval')
+        obj.save()
+        results = SimpleStrId.find(id='myid').exec()

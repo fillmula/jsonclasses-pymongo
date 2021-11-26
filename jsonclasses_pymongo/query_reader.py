@@ -4,6 +4,7 @@ from datetime import datetime, date, timedelta
 from re import compile, escape, IGNORECASE
 from bson.objectid import ObjectId
 from jsonclasses.fdef import FStore, FType, Fdef
+from .utils import dbid, idval
 from .pobject import PObject
 from .readers import (
     readstr, readbool, readdate, readdatetime, readenum, readfloat, readint,
@@ -93,8 +94,8 @@ class QueryReader:
             dbkey = self.cls.pconf.to_db_key(key)
             # handle local key query
             if key in self.cls.cdef.reference_names:
-                idval = readstr(value)
-                result[dbkey] = ObjectId(idval) if idval is not None else None
+                id_val = readstr(value)
+                result[dbkey] = ObjectId(id_val) if id_val is not None else None
                 continue
             # handle local keys
             if key in self.cls.cdef.list_reference_names:
@@ -123,7 +124,7 @@ class QueryReader:
                 raise ValueError(f'unexist field {key}')
             fdef = field.fdef
             if fdef.primary is True:
-                result['_id'] = ObjectId(value) if value is not None else None
+                result['_id'] = idval(field, value) if value is not None else None
             else:
                 result[dbkey] = self.readval(value, fdef)
         return result
