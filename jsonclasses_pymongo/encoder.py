@@ -15,7 +15,6 @@ from .context import EncodingContext
 from .command import (Command, InsertOneCommand, UpdateOneCommand,
                       UpsertOneCommand, DeleteOneCommand, BatchCommand)
 from .connection import Connection
-
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
     T = TypeVar('T', bound=PymongoObject)
@@ -133,7 +132,7 @@ class Encoder(Coder):
         cls = value.__class__
         id = cast(Union[str, int], value._id)
         if context.mark_graph.getp(cls, id) is not None:
-            return EncodingResult({'_id': ObjectId(id)}, commands=[])
+            return EncodingResult({'_id': self.dbid(value)}, commands=[])
         context.mark_graph.put(value)
         instance_fd = context.types.fdef
         write_instance = instance_fd.fstore != FStore.EMBEDDED
@@ -204,7 +203,7 @@ class Encoder(Coder):
                                 value,
                                 field,
                                 self.list_instance_type(field),
-                                ObjectId(item._id))
+                                self.dbid(item))
                             commands.append(unlink_command)
                 if value._link_keys.get(field.name) is not None:
                     for k in value._link_keys.get(field.name):

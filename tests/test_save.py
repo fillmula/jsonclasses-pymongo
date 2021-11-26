@@ -12,7 +12,6 @@ from tests.classes.linked_favorite import LinkedCourse, LinkedStudent
 from tests.classes.simple_record import SimpleRecord
 from tests.classes.linked_album import LinkedAlbum, LinkedArtist
 from tests.classes.linked_song import LinkedSinger, LinkedSong
-from tests.classes.simple_strid import SimpleStrId
 
 
 class TestSave(TestCase):
@@ -64,8 +63,6 @@ class TestSave(TestCase):
         collection = Connection.get_collection(LinkedSong)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedSinger)
-        collection.delete_many({})
-        collection = Connection.get_collection(SimpleStrId)
         collection.delete_many({})
 
     def test_object_is_saved_into_database(self):
@@ -400,7 +397,3 @@ class TestSave(TestCase):
         self.assertEqual(record.desc, 'b')
         self.assertEqual(record.age, 1)
         self.assertEqual(record.score, 3.0)
-
-    def test_strid_can_be_saved(self):
-        obj = SimpleStrId(id='myid', val='myval')
-        obj.save()

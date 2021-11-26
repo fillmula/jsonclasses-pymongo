@@ -17,7 +17,7 @@ from .coder import Coder
 from .decoder import Decoder
 from .connection import Connection
 from .pymongo_object import PymongoObject
-from .utils import ref_db_field_key, ref_db_field_keys
+from .utils import idval, ref_db_field_key, ref_db_field_keys
 T = TypeVar('T', bound=PymongoObject)
 U = TypeVar('U', bound='BaseQuery')
 V = TypeVar('V', bound='BaseListQuery')
@@ -573,7 +573,8 @@ class BaseIDQuery(BaseQuery[T]):
 
     def _build_aggregate_pipeline(self: BaseIDQuery) -> list[dict[str, Any]]:
         list_query_results = self.list_query._build_aggregate_pipeline()
-        result = [{'$match': {'_id': ObjectId(self._id)}}]
+        idvalue = idval(self._cls.cdef.primary_field, self._id)
+        result = [{'$match': {'_id': idvalue}}]
         for v in list_query_results:
             if '$match' in v.keys():
                 continue
