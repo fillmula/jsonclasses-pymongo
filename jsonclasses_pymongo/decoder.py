@@ -91,7 +91,7 @@ class Decoder(Coder):
                 if not exist:
                     setattr(dest, field.name, inst_id)
                     graph.put(dest)
-            elif self.is_foreign_key_storage(field):
+            elif field.is_foreign_key_store:
                 if value.get(key) is not None:
                     subquery = None
                     if query:
@@ -108,7 +108,7 @@ class Decoder(Coder):
                                 self.decode_instance(
                                     cast(dict[str, Any], value.get(key)),
                                     new_cls, field.types, graph, subquery))
-            elif self.is_local_key_reference_field(field):
+            elif field.is_local_one_ref:
                 if value.get(key) is not None:
                     subquery = None
                     if query:
@@ -124,7 +124,7 @@ class Decoder(Coder):
                 if query and hasattr(query, '_final_pick'):
                     if rfk not in query._final_pick:
                         setattr(dest, rfk, None)
-            elif self.is_local_keys_reference_field(field):
+            elif field.is_local_many_ref:
                 if value.get(key) is not None:
                     subquery = None
                     if query:
@@ -137,7 +137,7 @@ class Decoder(Coder):
                 if saved_keys:
                     setattr(dest, ref_field_keys(field.name),
                             [str(k) for k in saved_keys])
-            elif self.is_instance_field(field):
+            elif field.is_inst_field:
                 new_cls = field.fdef.inst_cls
                 setattr(dest, field.name, self.decode_item(
                     value=value.get(key), types=field.types, cls=new_cls,
@@ -164,10 +164,10 @@ class Decoder(Coder):
             return
         graph.put(root)
         for field in root.__class__.cdef.fields:
-            if self.is_instance_field(field):
+            if field.is_inst_field:
                 if getattr(root, field.name) is not None:
                     self.apply_unmodified_status(getattr(root, field.name), graph)
-            elif self.is_list_instance_field(field, root.__class__):
+            elif field.is_list_inst_field:
                 if getattr(root, field.name) is not None:
                     for item in getattr(root, field.name):
                         self.apply_unmodified_status(item, graph)

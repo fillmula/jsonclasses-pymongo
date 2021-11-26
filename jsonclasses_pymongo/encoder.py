@@ -9,7 +9,7 @@ from jsonclasses.mgraph import MGraph
 from jsonclasses.types import types
 from .coder import Coder
 from .utils import (
-    idval, ref_db_field_key, ref_db_field_keys, ref_field_key
+    idval, dbid, ref_db_field_key, ref_db_field_keys, ref_field_key
 )
 from .context import EncodingContext
 from .command import (Command, InsertOneCommand, UpdateOneCommand,
@@ -133,7 +133,7 @@ class Encoder(Coder):
         id = cast(str | int, value._id)
         previous_id = cast(str | int, value._previous_id)
         if context.mark_graph.getp(cls, id) is not None:
-            return EncodingResult({'_id': self.dbid(value)}, commands=[])
+            return EncodingResult({'_id': dbid(value)}, commands=[])
         context.mark_graph.put(value)
         instance_fd = context.types.fdef
         write_instance = instance_fd.fstore != FStore.EMBEDDED
@@ -157,12 +157,12 @@ class Encoder(Coder):
             fvalue = getattr(value, fname)
             ftypes = field.types
             if field.is_primary:
-                result_set['_id'] = self.idval(field, fvalue)
+                result_set['_id'] = idval(field, fvalue)
                 if use_insert_command:
                     pass
                 else:
-                    matcher['_id'] = self.idval(field, previous_id)
-            elif self.is_foreign_key_reference_field(field):
+                    matcher['_id'] = idval(field, previous_id)
+            elif field.is_foreign_one_ref:
                 if fvalue is None:
                     continue
                 _, item_commands = self.encode_instance(context.new(
@@ -174,7 +174,7 @@ class Encoder(Coder):
                     keypath_parent=fname,
                     parent=value))
                 commands.extend(item_commands)
-            elif self.is_foreign_keys_reference_field(field):
+            elif field.is_foreign_many_ref:
                 if fvalue is None:
                     continue
                 item_result, item_commands = self.encode_list(context.new(
@@ -186,7 +186,7 @@ class Encoder(Coder):
                     keypath_parent=fname,
                     parent=value))
                 commands.extend(item_commands)
-                if not self.is_join_table_field(field):
+                if not field.is_join_table_ref:
                     continue
                 for list_item in item_result:
                     if list_item.get('_id'):
@@ -203,7 +203,7 @@ class Encoder(Coder):
                                 value,
                                 field,
                                 self.list_instance_type(field),
-                                self.dbid(item))
+                                dbid(item))
                             commands.append(unlink_command)
                 if value._link_keys.get(field.name) is not None:
                     for k in value._link_keys.get(field.name):
@@ -221,7 +221,7 @@ class Encoder(Coder):
                             self.list_instance_type(field),
                             ObjectId(k))
                         commands.append(unlink_command)
-            elif self.is_local_key_reference_field(field):
+            elif field.is_local_one_ref:
                 if fvalue is None:
                     tsfm = value.__class__.cdef.jconf.ref_name_strategy
                     if getattr(value, tsfm(field)) is not None:
@@ -248,7 +248,7 @@ class Encoder(Coder):
                     setattr(value, ref_field_key(fname),
                                    str(item_result['_id']))
                 commands.extend(item_commands)
-            elif self.is_local_keys_reference_field(field):
+            elif field.is_local_many_ref:
                 if fvalue is None:
                     if use_insert_command or fname in fields_need_update:
                         result_set[ref_db_field_keys(fname, cls)] = None

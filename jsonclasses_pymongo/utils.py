@@ -40,6 +40,7 @@ def idval(field: JField, val: str) -> str | ObjectId:
         return ObjectId(val)
     return val
 
+
 def dbid(obj: JObject) -> str | ObjectId:
     field = obj.__class__.cdef.primary_field
     val = obj._id

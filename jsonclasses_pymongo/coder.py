@@ -1,64 +1,14 @@
 from __future__ import annotations
 from typing import cast, TYPE_CHECKING
-from jsonclasses.jobject import JObject
 from jsonclasses.jfield import JField
-from jsonclasses.fdef import FType, FStore, FSubtype
+from jsonclasses.fdef import FStore
 from inflection import camelize
-from bson.objectid import ObjectId
-from .utils import dbid, idval
 from .connection import Connection
 if TYPE_CHECKING:
     from .pobject import PObject
 
 
 class Coder():
-
-    def idval(self, field: JField, val: str) -> str | ObjectId:
-        return idval(field, val)
-
-    def dbid(self, obj: JObject) -> str | ObjectId:
-        return dbid(obj)
-
-    def is_instance_field(self, field: JField) -> bool:
-        return field.fdef.ftype == FType.INSTANCE
-
-    def is_list_field(self, field: JField) -> bool:
-        return field.fdef.ftype == FType.LIST
-
-    def is_list_instance_field(self, field: JField,
-                                     cls: type[PObject]) -> bool:
-        if not self.is_list_field(field):
-            return False
-        t = field.fdef.item_types
-        if t.fdef.raw_inst_types is not None:
-            return True
-        return False
-
-    def is_foreign_key_storage(self, field: JField) -> bool:
-        fstore = field.fdef.fstore
-        return fstore == FStore.FOREIGN_KEY
-
-    def is_local_key_storage(self, field: JField) -> bool:
-        fstore = field.fdef.fstore
-        return fstore == FStore.LOCAL_KEY
-
-    def is_foreign_key_reference_field(self, field: JField) -> bool:
-        return (self.is_instance_field(field) and
-                self.is_foreign_key_storage(field))
-
-    def is_foreign_keys_reference_field(self, field: JField) -> bool:
-        return (self.is_list_field(field) and
-                self.is_foreign_key_storage(field))
-
-    def is_local_key_reference_field(self, field: JField) -> bool:
-        return (self.is_instance_field(field) and
-                self.is_local_key_storage(field))
-
-    def is_local_keys_reference_field(self, field: JField) -> bool:
-        return self.is_list_field(field) and self.is_local_key_storage(field)
-
-    def is_join_table_field(self, field: JField) -> bool:
-        return field.types.fdef.use_join_table is True
 
     def list_instance_type(self, field: JField) -> type[PObject]:
         from .pobject import PObject
