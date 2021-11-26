@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Callable, ClassVar, Optional, TYPE_CHECKING, TypeVar
 from os import getcwd, path
 from inflection import parameterize, camelize
+from jsonclasses.uconf import uconf
 from pymongo.mongo_client import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
@@ -49,9 +50,15 @@ class Connection:
         self._url = url
 
     def _generate_default_url(self: Connection) -> str:
+        if self.graph_name == 'default':
+            user_url = uconf()['pymongo.url'] or uconf()['pymongo.default.url']
+        else:
+            user_url = uconf()[f'pymongo.{self.graph_name}.url']
+        if user_url is not None:
+            self._url = user_url
+            return user_url
         base = 'mongodb://localhost:27017/'
-        cwd = getcwd()
-        proj = camelize(parameterize(path.basename(cwd))).lower()
+        proj = camelize(parameterize(path.basename(getcwd()))).lower()
         self._url = base + proj
         return self._url
 
