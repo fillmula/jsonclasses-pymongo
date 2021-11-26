@@ -40,7 +40,7 @@ class QueryReader:
                            instructors: dict[str, Any]) -> Any:
         result: dict[str, Any] = {}
         for raw_key, value in instructors.items():
-            key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
+            key = self.cls.cdef.jconf.input_key_strategy(raw_key)
             if key == '_skip':
                 result['_skip'] = readint(value)
             elif key == '_limit':
@@ -65,7 +65,7 @@ class QueryReader:
         result = []
         if isinstance(val, dict):
             for raw_key, value in val.items():
-                key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
+                key = self.cls.cdef.jconf.input_key_strategy(raw_key)
                 if self.cls.pconf.camelize_db_keys:
                     key = camelize(key, False)
                 result.append((key, readorder(value)))
@@ -80,7 +80,7 @@ class QueryReader:
                 val = val[1:]
             else:
                 o = 1
-            key = self.cls.cdef.jconf.key_decoding_strategy(val)
+            key = self.cls.cdef.jconf.input_key_strategy(val)
             if self.cls.pconf.camelize_db_keys:
                 key = camelize(key, False)
             result.append((key, o))
@@ -92,7 +92,7 @@ class QueryReader:
                       prefix: list[str] = []) -> Any:
         result = {}
         for raw_key, value in query.items():
-            key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
+            key = self.cls.cdef.jconf.input_key_strategy(raw_key)
             if self.cls.pconf.camelize_db_keys:
                 dbkey = camelize(key, False)
             else:
@@ -167,7 +167,7 @@ class QueryReader:
                 if raw_key.startswith('$'):
                     result[raw_key] = value
                     continue
-                key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
+                key = self.cls.cdef.jconf.input_key_strategy(raw_key)
                 if key == '_eq':
                     result['$eq'] = value
                 elif key == '_neq':
@@ -224,7 +224,7 @@ class QueryReader:
                 if raw_key.startswith('$'):
                     result[raw_key] = value
                     continue
-                key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
+                key = self.cls.cdef.jconf.input_key_strategy(raw_key)
                 if key == '_eq':
                     result['$eq'] = readfloat(value) if float else readint(value)
                 elif key == '_neq':
@@ -261,7 +261,7 @@ class QueryReader:
                 if raw_key.startswith('$'):
                     result[raw_key] = value
                     continue
-                key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
+                key = self.cls.cdef.jconf.input_key_strategy(raw_key)
                 if key == '_neq':
                     result['$ne'] = readbool(value)
                 elif key == '_eq':
@@ -289,7 +289,7 @@ class QueryReader:
                 if raw_key.startswith('$'):
                     result[raw_key] = value
                     continue
-                key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
+                key = self.cls.cdef.jconf.input_key_strategy(raw_key)
                 if key == '_eq':
                     result['$eq'] = readdate(value) if is_date else readdatetime(value)
                 elif key == '_neq':
@@ -333,7 +333,7 @@ class QueryReader:
                 if raw_key.startswith('$'):
                     result[raw_key] = value
                     continue
-                key = self.cls.cdef.jconf.key_decoding_strategy(raw_key)
+                key = self.cls.cdef.jconf.input_key_strategy(raw_key)
                 if key == '_eq':
                     result['$eq'] = [self.readval(item, fdef.item_types.fdef) for item in value]
                 elif key == '_neq':

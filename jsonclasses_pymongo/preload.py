@@ -61,7 +61,7 @@ def seedobject(cls: type[PymongoObject], obj: dict[str, Any], oid: str | int, or
             result[field.name] = getfieldvalue(obj, field)
         elif field.fdef.fstore == FStore.LOCAL_KEY:
             frcls = field.foreign_class
-            field_ref_name = cls.cdef.jconf.ref_key_encoding_strategy(field)
+            field_ref_name = cls.cdef.jconf.ref_name_strategy(field)
             result[field_ref_name] = getidref(frcls, getfieldvalue(obj, field))
     if original:
         original.set(**result).save()

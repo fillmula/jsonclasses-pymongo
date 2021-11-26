@@ -39,7 +39,7 @@ class BaseQuery(Generic[T]):
 
     def include(self: U, name: str, query: Optional[BaseQuery] = None) -> U:
         tcls = cast(type[PymongoObject], self._cls)
-        decoded_name = tcls.cdef.jconf.key_decoding_strategy(name)
+        decoded_name = tcls.cdef.jconf.input_key_strategy(name)
         self.subqueries.append(Subquery(decoded_name, query))
         return self
 
@@ -322,12 +322,12 @@ class BaseListQuery(BaseQuery[T]):
             for item in result['_includes']:
                 if type(item) is str:
                     tcls = cast(type[PymongoObject], self._cls)
-                    decoded_name = tcls.cdef.jconf.key_decoding_strategy(item)
+                    decoded_name = tcls.cdef.jconf.input_key_strategy(item)
                     self.subqueries.append(Subquery(decoded_name, None))
                 elif isinstance(item, dict):
                     for k, v in item.items():
                         tcls = cast(type[PymongoObject], self._cls)
-                        decoded_key = tcls.cdef.jconf.key_decoding_strategy(k)
+                        decoded_key = tcls.cdef.jconf.input_key_strategy(k)
                         field = tcls.cdef.field_named(decoded_key)
                         fcls = field.foreign_class
                         if field.fdef.ftype == FType.LIST:
@@ -340,7 +340,7 @@ class BaseListQuery(BaseQuery[T]):
         if self._sort is None:
             self._sort = []
         tcls = cast(type[PymongoObject], self._cls)
-        decoded_name = tcls.cdef.jconf.key_decoding_strategy(field_name)
+        decoded_name = tcls.cdef.jconf.input_key_strategy(field_name)
         if tcls.pconf.camelize_db_keys:
             decoded_name = camelize(decoded_name, False)
         self._sort.append((decoded_name, sort or 1))
@@ -444,7 +444,7 @@ class BaseListQuery(BaseQuery[T]):
             if self._limit is not None:
                 result.append({'$limit': self._limit})
         if self._use_omit or self._use_pick:
-            kds = self._cls.cdef.jconf.key_decoding_strategy
+            kds = self._cls.cdef.jconf.input_key_strategy
             if self._omit and self._pick:
                 finalpick = list(set(self._pick) - set(self._omit))
                 finalpick = [kds(k) for k in finalpick]
@@ -459,7 +459,7 @@ class BaseListQuery(BaseQuery[T]):
                         if field.name not in omits:
                             finalpick.append(field.name)
                     elif field.fdef.fstore == FStore.LOCAL_KEY:
-                        rkes = self._cls.cdef.jconf.ref_key_encoding_strategy
+                        rkes = self._cls.cdef.jconf.ref_name_strategy
                         rk = rkes(field)
                         if rk not in omits:
                             finalpick.append(rk)

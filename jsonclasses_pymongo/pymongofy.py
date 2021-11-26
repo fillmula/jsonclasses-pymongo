@@ -88,14 +88,14 @@ def _database_write(self: T) -> None:
             for field in self.__class__.cdef.fields:
                 if field.fdef.cindex and db_key in field.fdef.cindex_names:
                     results.append(field.name)
-            ek = self.__class__.cdef.jconf.key_encoding_strategy
+            ek = self.__class__.cdef.jconf.output_key_strategy
             raise UniqueConstraintException([ek(r) for r in results], f'voilated unique compound index \'{index_key}\'')
 
 def _orm_delete(self: T, no_raise: bool = False) -> None:
     # deny test
     for field in self.__class__.cdef.deny_fields:
         if field.fdef.fstore == FStore.LOCAL_KEY:
-            key = self.__class__.cdef.jconf.ref_key_encoding_strategy(field)
+            key = self.__class__.cdef.jconf.ref_name_strategy(field)
             if hasattr(self, key) and getattr(self, key) is not None:
                 if no_raise:
                     return
@@ -123,7 +123,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                     else:
                         raise DeletionDeniedException()
             else:
-                key = oc.cdef.jconf.ref_key_encoding_strategy(f)
+                key = oc.cdef.jconf.ref_name_strategy(f)
                 exist = oc.exist(**{key: ObjectId(self._id)}).exec()
                 if exist:
                     if no_raise:
@@ -152,7 +152,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                 key = ref_db_field_key(self.__class__.__name__, self.__class__)
                 coll.delete_many({key: ObjectId(self._id)})
             else:
-                key = oc.cdef.jconf.ref_key_encoding_strategy(f)
+                key = oc.cdef.jconf.ref_name_strategy(f)
                 for o in oc.iterate(**{key: ObjectId(self._id)}).exec():
                     setattr(o, f.name, None)
                     setattr(o, key, None)
@@ -166,7 +166,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
             oc = field.fdef.inst_cls
         f = cast(JField, field.foreign_field)
         if field.fdef.fstore == FStore.LOCAL_KEY:
-            key = self.__class__.cdef.jconf.ref_key_encoding_strategy(field)
+            key = self.__class__.cdef.jconf.ref_name_strategy(field)
             if getattr(self, key) is not None:
                 item = oc.id(getattr(self, key)).optional.exec()
                 if item is not None:
@@ -188,7 +188,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                         item._orm_delete(no_raise=True)
                 coll.delete_many({key: ObjectId(self._id)})
             else:
-                key = oc.cdef.jconf.ref_key_encoding_strategy(f)
+                key = oc.cdef.jconf.ref_name_strategy(f)
                 for o in oc.iterate(**{key: ObjectId(self._id)}).exec():
                     o._orm_delete(no_raise=True)
 
@@ -203,7 +203,7 @@ def _orm_complete(self: T) -> None:
             if field.name not in self._partial_picks:
                 this_pick.append(field.name)
         elif field.fdef.fstore == FStore.LOCAL_KEY:
-            kr = self.__class__.cdef.jconf.ref_key_encoding_strategy
+            kr = self.__class__.cdef.jconf.ref_name_strategy
             ref_key = kr(field)
             if ref_key not in self._partial_picks:
                 this_pick.append(ref_key)
@@ -272,7 +272,7 @@ def pymongofy(class_: type) -> PymongoObject:
                     if ciname not in compound_fields:
                         compound_fields[ciname] = []
                     if field.fdef.fstore == FStore.LOCAL_KEY:
-                        res = field.fdef.cdef.jconf.ref_key_encoding_strategy
+                        res = field.fdef.cdef.jconf.ref_name_strategy
                         compound_fields[ciname].append(field)
                     else:
                         compound_fields[ciname].append(field)
@@ -281,7 +281,7 @@ def pymongofy(class_: type) -> PymongoObject:
                     if cuname not in compound_ufields:
                         compound_ufields[cuname] = []
                     if field.fdef.fstore == FStore.LOCAL_KEY:
-                        res = field.fdef.cdef.jconf.ref_key_encoding_strategy
+                        res = field.fdef.cdef.jconf.ref_name_strategy
                         compound_ufields[cuname].append(field)
                     else:
                         compound_ufields[cuname].append(field)
@@ -290,7 +290,7 @@ def pymongofy(class_: type) -> PymongoObject:
             keys: list[tuple[str, Any]] = []
             for field in fields:
                 if field.fdef.fstore == FStore.LOCAL_KEY:
-                    res = field.fdef.cdef.jconf.ref_key_encoding_strategy
+                    res = field.fdef.cdef.jconf.ref_name_strategy
                     key = res(field)
                 else:
                     key = field.name
@@ -307,7 +307,7 @@ def pymongofy(class_: type) -> PymongoObject:
             keys: list[tuple[str, Any]] = []
             for field in fields:
                 if field.fdef.fstore == FStore.LOCAL_KEY:
-                    res = field.fdef.cdef.jconf.ref_key_encoding_strategy
+                    res = field.fdef.cdef.jconf.ref_name_strategy
                     key = res(field)
                 else:
                     key = field.name

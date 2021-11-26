@@ -225,7 +225,7 @@ class Encoder(Coder):
 
             elif self.is_local_key_reference_field(field):
                 if fvalue is None:
-                    tsfm = value.__class__.cdef.jconf.ref_key_encoding_strategy
+                    tsfm = value.__class__.cdef.jconf.ref_name_strategy
                     if getattr(value, tsfm(field)) is not None:
                         if use_insert_command or fname in fields_need_update:
                             result_set[ref_db_field_key(fname, cls)] = \
@@ -264,7 +264,7 @@ class Encoder(Coder):
                     keypath_parent=fname,
                     parent=value))
                 if use_insert_command or fname in fields_need_update:
-                    tsfm = value.__class__.cdef.jconf.ref_key_encoding_strategy
+                    tsfm = value.__class__.cdef.jconf.ref_name_strategy
                     field_id_name = tsfm(field)
                     id_list = [ObjectId(v) for v in getattr(value, field_id_name)]
                     fname_ref = ref_db_field_keys(fname, cls)
