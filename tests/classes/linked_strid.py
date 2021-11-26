@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Annotated
-from jsonclasses import jsonclass, types, linkto, linkedby
+from jsonclasses import jsonclass, types, linkto, linkedby, linkedthru
 from jsonclasses_pymongo import pymongo
 
 
@@ -32,3 +32,17 @@ class LinkedStrIdSong:
 class LinkedStrIdSinger:
     id: str = types.str.primary.required
     songs: Annotated[list[LinkedStrIdSong], linkedby('singers')]
+
+
+@pymongo
+@jsonclass(class_graph='linked')
+class LinkedStrIdProduct:
+    id: str = types.str.primary.required
+    users: Annotated[list[LinkedStrIdUser], linkedthru('products')]
+
+
+@pymongo
+@jsonclass(class_graph='linked')
+class LinkedStrIdUser:
+    id: str = types.str.primary.required
+    products: Annotated[list[LinkedStrIdProduct], linkedthru('users')]

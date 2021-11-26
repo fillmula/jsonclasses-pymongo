@@ -1,10 +1,11 @@
 from __future__ import annotations
-from datetime import datetime
 from unittest import TestCase
 from jsonclasses_pymongo.connection import Connection
+from jsonclasses_pymongo.utils import join_table_name
 from tests.classes.simple_strid import SimpleStrId
 from tests.classes.linked_strid import (
-    LinkedStrIdAuthor, LinkedStrIdArticle, LinkedStrIdSong, LinkedStrIdSinger
+    LinkedStrIdAuthor, LinkedStrIdArticle, LinkedStrIdSong, LinkedStrIdSinger,
+    LinkedStrIdProduct, LinkedStrIdUser
 )
 
 
@@ -36,6 +37,12 @@ class TestStrId(TestCase):
         collection = Connection.get_collection(LinkedStrIdSinger)
         collection.delete_many({})
         collection = Connection.get_collection(LinkedStrIdSong)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedStrIdUser)
+        collection.delete_many({})
+        collection = Connection.get_collection(LinkedStrIdProduct)
+        collection.delete_many({})
+        collection = Connection('linked').collection(join_table_name(LinkedStrIdUser.cdef.field_named('products')))
         collection.delete_many({})
 
     def test_strid_can_be_saved(self):
@@ -83,4 +90,14 @@ class TestStrId(TestCase):
         self.assertEqual(song.singer_ids, ['s1', 's2'])
 
     def test_strid_can_be_saved_into_many_many_join_table(self):
-        pass
+        user1 = LinkedStrIdUser(id='u1')
+        user2 = LinkedStrIdUser(id='u2')
+        prod1 = LinkedStrIdProduct(id='p1')
+        prod2 = LinkedStrIdProduct(id='p2')
+        user1.products = [prod1, prod2]
+        user2.products = [prod1, prod2]
+        user1.save()
+        results = LinkedStrIdUser.find().include('products').exec()
+        for result in results:
+            for product in result.products:
+                self.assertIn(product.id, ['p1', 'p2'])

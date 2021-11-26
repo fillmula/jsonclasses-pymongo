@@ -76,7 +76,7 @@ class Encoder:
                       this_instance: PObject,
                       this_field: JField,
                       that_cls: type[PObject],
-                      that_id: ObjectId) -> UpsertOneCommand:
+                      that_id: str | ObjectId) -> UpsertOneCommand:
         this_cls = this_instance.__class__
         connection = Connection.from_class(this_instance.__class__)
         this_cls_name = this_cls.__name__
@@ -85,7 +85,7 @@ class Encoder:
         that_field_name = ref_db_field_key(that_cls_name, that_cls)
         jt_name = join_table_name(this_field)
         collection = connection.collection(jt_name, [this_field_name, that_field_name])
-        this_id = ObjectId(this_instance._id)
+        this_id = dbid(this_instance)
         matcher = {
             this_field_name: this_id,
             that_field_name: that_id
@@ -98,7 +98,7 @@ class Encoder:
                         this_instance: PObject,
                         this_field: JField,
                         that_cls: type[PObject],
-                        that_id: ObjectId) -> DeleteOneCommand:
+                        that_id: str | ObjectId) -> DeleteOneCommand:
         this_cls = this_instance.__class__
         connection = Connection.from_class(this_instance.__class__)
         this_cls_name = this_cls.__name__
@@ -107,7 +107,7 @@ class Encoder:
         that_field_name = ref_db_field_key(that_cls_name, that_cls)
         jt_name = join_table_name(this_field)
         collection = connection.collection(jt_name, [this_field_name, that_field_name])
-        this_id = ObjectId(this_instance._id)
+        this_id = dbid(this_instance)
         matcher = {
             this_field_name: this_id,
             that_field_name: that_id
