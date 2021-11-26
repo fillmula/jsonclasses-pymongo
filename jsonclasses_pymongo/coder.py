@@ -1,8 +1,9 @@
 from __future__ import annotations
 from typing import cast, TYPE_CHECKING
 from jsonclasses.jfield import JField
-from jsonclasses.fdef import FType, FStore
+from jsonclasses.fdef import FType, FStore, FSubtype
 from inflection import camelize
+from bson.objectid import ObjectId
 from .connection import Connection
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
@@ -10,8 +11,10 @@ if TYPE_CHECKING:
 
 class Coder():
 
-    def is_id_field(self, field: JField) -> bool:
-        return field.fdef.primary
+    def idval(self, field: JField, val: str) -> str | ObjectId:
+        if field.fdef.fsubtype == FSubtype.MONGOID:
+            return ObjectId(val)
+        return val
 
     def is_instance_field(self, field: JField) -> bool:
         return field.fdef.ftype == FType.INSTANCE

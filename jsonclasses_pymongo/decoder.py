@@ -87,7 +87,7 @@ class Decoder(Coder):
             exist = False
         for field in cls.cdef.fields:
             key = cls.pconf.to_db_key(field.name)
-            if self.is_id_field(field):
+            if field.is_primary:
                 if not exist:
                     setattr(dest, field.name, inst_id)
                     graph.put(dest)

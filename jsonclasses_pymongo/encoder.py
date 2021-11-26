@@ -156,12 +156,13 @@ class Encoder(Coder):
             fname = field.name
             fvalue = getattr(value, fname)
             ftypes = field.types
-            if self.is_id_field(field):
-                result_set['_id'] = ObjectId(fvalue)
+            if field.is_primary:
+                idval = self.idval(field, fvalue)
+                result_set['_id'] = idval
                 if use_insert_command:
                     pass
                 else:
-                    matcher['_id'] = ObjectId(fvalue)
+                    matcher['_id'] = idval
             elif self.is_foreign_key_reference_field(field):
                 if fvalue is None:
                     continue
