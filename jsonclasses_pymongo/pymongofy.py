@@ -9,7 +9,6 @@ from pymongo import ASCENDING
 from jsonclasses.fdef import FStore, FType
 from jsonclasses.excs import UniqueConstraintException
 from jsonclasses.excs import DeletionDeniedException
-from inflection import underscore, camelize
 from .pymongo_object import PymongoObject
 from .query import BaseQuery, ExistQuery, IDSQuery, IterateQuery, ListQuery, SingleQuery, IDQuery
 from .encoder import Encoder

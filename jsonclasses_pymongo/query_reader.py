@@ -4,7 +4,6 @@ from datetime import datetime, date, timedelta
 from re import compile, escape, IGNORECASE
 from bson.objectid import ObjectId
 from jsonclasses.fdef import FStore, FType, Fdef
-from inflection import camelize
 from .pymongo_object import PymongoObject
 from .readers import (
     readstr, readbool, readdate, readdatetime, readenum, readfloat, readint,

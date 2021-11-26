@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from inflection import camelize, singularize
+from inflection import singularize
 if TYPE_CHECKING:
     from .pymongo_object import PymongoObject
 

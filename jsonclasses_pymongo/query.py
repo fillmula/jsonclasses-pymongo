@@ -13,7 +13,6 @@ from jsonclasses.fdef import FStore, FType
 from jsonclasses.jfield import JField
 from jsonclasses.mgraph import MGraph
 from jsonclasses.excs import ObjectNotFoundException
-from inflection import camelize
 from .coder import Coder
 from .decoder import Decoder
 from .connection import Connection
