@@ -4,9 +4,7 @@ from datetime import date, timezone
 from jsonclasses.types import Types
 from jsonclasses.fdef import FStore, FType
 from jsonclasses.mgraph import MGraph
-from .utils import (
-    ref_field_key, ref_field_keys, ref_db_field_key, ref_db_field_keys
-)
+from .utils import (ref_db_field_key, ref_db_field_keys)
 if TYPE_CHECKING:
     from .query import BaseQuery
     from .pobject import PObject
@@ -118,7 +116,7 @@ class Decoder:
                         graph=graph, query=subquery)
                     setattr(dest, field.name, inst)
                 ref_id = value.get(ref_db_field_key(field.name, cls=cls))
-                rfk = ref_field_key(field.name)
+                rfk = field.ref_name
                 setattr(dest, rfk, str(ref_id))
                 if query and hasattr(query, '_final_pick'):
                     if rfk not in query._final_pick:
@@ -134,8 +132,7 @@ class Decoder:
                                 value[key], new_cls, field.types, graph, subquery))
                 saved_keys = value.get(ref_db_field_keys(field.name, cls))
                 if saved_keys:
-                    setattr(dest, ref_field_keys(field.name),
-                            [str(k) for k in saved_keys])
+                    setattr(dest, field.ref_name, [str(k) for k in saved_keys])
             elif field.is_inst_field:
                 new_cls = field.fdef.inst_cls
                 setattr(dest, field.name, self.decode_item(

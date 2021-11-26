@@ -10,11 +10,7 @@ if TYPE_CHECKING:
     from .pobject import PObject
 
 
-def ref_key(key: str, cls: type[PObject]) -> tuple[str, str]:
-    field_name = key + '_id'
-    db_field_name = cls.pconf.to_db_key(field_name)
-    return (field_name, db_field_name)
-
+# These 4 helpers are for join table
 
 def ref_field_key(key: str) -> str:
     return key + '_id'

@@ -8,7 +8,7 @@ from jsonclasses.keypath import concat_keypath
 from jsonclasses.mgraph import MGraph
 from jsonclasses.types import types
 from .utils import (
-    idval, dbid, ref_db_field_key, ref_db_field_keys, ref_field_key,
+    idval, dbid, ref_db_field_key, ref_db_field_keys,
     list_inst_type, join_table_name
 )
 from .context import EncodingContext
@@ -237,7 +237,7 @@ class Encoder:
                 if use_insert_command or fname in fields_need_update:
                     fname_ref = ref_db_field_key(fname, cls)
                     result_set[fname_ref] = item_result['_id']
-                    setattr(value, ref_field_key(fname),
+                    setattr(value, field.ref_name,
                                    str(item_result['_id']))
                 commands.extend(item_commands)
             elif field.is_local_many_ref:
