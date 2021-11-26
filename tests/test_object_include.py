@@ -1,6 +1,6 @@
 from __future__ import annotations
 from unittest import TestCase
-from jsonclasses_pymongo import Connection
+from jsonclasses_pymongo.connection import Connection
 from tests.classes.linked_account import LinkedAccount, LinkedBalance
 from tests.classes.linked_song import LinkedSinger, LinkedSong
 from tests.classes.linked_album import LinkedAlbum, LinkedArtist

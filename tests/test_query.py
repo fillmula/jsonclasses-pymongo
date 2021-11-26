@@ -3,7 +3,7 @@ from datetime import date, datetime, time, timezone
 from unittest import TestCase
 from math import ceil
 from statistics import mean
-from jsonclasses_pymongo import Connection
+from jsonclasses_pymongo.connection import Connection
 from tests.classes.simple_animal import SimpleAnimal
 from tests.classes.simple_datetime import SimpleDatetime
 from tests.classes.simple_score import SimpleScore

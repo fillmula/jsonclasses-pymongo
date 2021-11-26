@@ -1,6 +1,6 @@
 from __future__ import annotations
 from unittest import TestCase
-from jsonclasses_pymongo import Connection
+from jsonclasses_pymongo.connection import Connection
 from tests.classes.simple_record import SimpleRecord, SimpleORecord
 from tests.classes.linked_record import LinkedRecord, LinkedContent
 

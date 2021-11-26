@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from unittest import TestCase
 from bson.objectid import ObjectId
-from jsonclasses_pymongo import Connection
+from jsonclasses_pymongo.connection import Connection
 from tests.classes.simple_song import SimpleSong
 from tests.classes.simple_artist import SimpleArtist
 from tests.classes.linked_author import LinkedAuthor
