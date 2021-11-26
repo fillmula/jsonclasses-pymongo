@@ -1,7 +1,7 @@
 from __future__ import annotations
 from unittest import TestCase
 from typing import List, Dict
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from bson import ObjectId
 from jsonclasses import jsonclass, types
 from jsonclasses_pymongo import pymongo
@@ -123,8 +123,8 @@ class TestDecoder(TestCase):
         }
         instance = Decoder().decode_root(data, SimpleDecodeDatetime)
         self.assertEqual(instance.id, str(data['_id']))
-        self.assertEqual(instance.val1, datetime(2012, 9, 5, 6, 25, 0))
-        self.assertEqual(instance.val2, datetime(2020, 9, 5, 8, 25, 0))
+        self.assertEqual(instance.val1, datetime(2012, 9, 5, 6, 25, 0, tzinfo=timezone.utc))
+        self.assertEqual(instance.val2, datetime(2020, 9, 5, 8, 25, 0, tzinfo=timezone.utc))
 
     def test_decode_embedded_list(self):
         @pymongo

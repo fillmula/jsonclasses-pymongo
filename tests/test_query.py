@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import date, datetime
+from datetime import date, datetime, time, timezone
 from unittest import TestCase
 from math import ceil
 from statistics import mean
@@ -608,21 +608,21 @@ class TestQuery(TestCase):
         self.assertEqual(results[0].represents, d.represents)
 
     def test_query_object_with_datetime(self):
-        d = SimpleDatetime(represents=datetime(2021, 6, 6, 12, 30))
+        d = SimpleDatetime(represents=datetime(2021, 6, 6, 12, 30, tzinfo=timezone.utc))
         d.save()
-        results = SimpleDatetime.find(represents=datetime(2021, 6, 6, 12, 30)).exec()
+        results = SimpleDatetime.find(represents=datetime(2021, 6, 6, 12, 30, tzinfo=timezone.utc)).exec()
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].represents, d.represents)
 
     def test_query_object_with_datetime_string(self):
-        d = SimpleDatetime(represents=datetime(2021, 6, 6, 12, 30, 0))
+        d = SimpleDatetime(represents=datetime(2021, 6, 6, 12, 30, 0, tzinfo=timezone.utc))
         d.save()
         results = SimpleDatetime.find('represents=2021-06-06 12:30:00').exec()
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].represents, d.represents)
 
     def test_query_object_with_datetime_object(self):
-        d = SimpleDatetime(represents=datetime(2021, 6, 6, 12, 30, 0))
+        d = SimpleDatetime(represents=datetime(2021, 6, 6, 12, 30, 0, tzinfo=timezone.utc))
         d.save()
         results = SimpleDatetime.find(represents={'_eq': '2021-06-06 12:30:00'}).exec()
         self.assertEqual(len(results), 1)

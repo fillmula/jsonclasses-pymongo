@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any, Optional, TypeVar, cast, TYPE_CHECKING
-from datetime import date
+from datetime import date, timezone, tzinfo
 from jsonclasses.types import Types
 from jsonclasses.fdef import FStore, FType
 from jsonclasses.mgraph import MGraph
@@ -9,7 +9,6 @@ from .utils import (
     ref_field_key, ref_field_keys, ref_db_field_key, ref_db_field_keys
 )
 from .coder import Coder
-from .pconf import PConf
 if TYPE_CHECKING:
     from .query import BaseQuery
     from .pymongo_object import PymongoObject
@@ -54,6 +53,8 @@ class Decoder(Coder):
             return value
         if types.fdef.ftype == FType.DATE:
             return date.fromisoformat(value.isoformat()[:10])
+        elif types.fdef.ftype == FType.DATETIME:
+            return value.replace(tzinfo=timezone.utc)
         elif types.fdef.ftype == FType.ENUM:
             if isinstance(types.fdef.enum_class, str):
                 enum_cls = cast(type, types.fdef.enum_class)
