@@ -46,14 +46,3 @@ class TestStrId(TestCase):
         obj.save()
         result = SimpleStrId.id('myid').exec()
         self.assertEqual(result.id, 'myid')
-
-    def test_strid_can_be_updated(self):
-        obj = SimpleStrId(id='myid', val='myval')
-        obj.id = 'newid'
-        obj.save()
-        result = SimpleStrId.id('newid').exec()
-        self.assertEqual(result.id, 'newid')
-        result.id = '2id'
-        result.save()
-        results = SimpleStrId.find().exec()
-        print(results)

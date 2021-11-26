@@ -130,7 +130,8 @@ class Encoder(Coder):
             return EncodingResult(result=None, commands=[])
         value = cast(PymongoObject, context.value)
         cls = value.__class__
-        id = cast(Union[str, int], value._id)
+        id = cast(str | int, value._id)
+        previous_id = cast(str | int, value._previous_id)
         if context.mark_graph.getp(cls, id) is not None:
             return EncodingResult({'_id': self.dbid(value)}, commands=[])
         context.mark_graph.put(value)
@@ -156,12 +157,11 @@ class Encoder(Coder):
             fvalue = getattr(value, fname)
             ftypes = field.types
             if field.is_primary:
-                idval = self.idval(field, fvalue)
-                result_set['_id'] = idval
+                result_set['_id'] = self.idval(field, fvalue)
                 if use_insert_command:
                     pass
                 else:
-                    matcher['_id'] = idval
+                    matcher['_id'] = self.idval(field, previous_id)
             elif self.is_foreign_key_reference_field(field):
                 if fvalue is None:
                     continue
@@ -221,7 +221,6 @@ class Encoder(Coder):
                             self.list_instance_type(field),
                             ObjectId(k))
                         commands.append(unlink_command)
-
             elif self.is_local_key_reference_field(field):
                 if fvalue is None:
                     tsfm = value.__class__.cdef.jconf.ref_name_strategy
