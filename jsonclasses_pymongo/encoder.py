@@ -9,7 +9,7 @@ from jsonclasses.mgraph import MGraph
 from jsonclasses.types import types
 from .coder import Coder
 from .utils import (
-    ref_db_field_key, ref_db_field_keys, ref_field_key
+    idval, ref_db_field_key, ref_db_field_keys, ref_field_key
 )
 from .context import EncodingContext
 from .command import (Command, InsertOneCommand, UpdateOneCommand,
@@ -226,8 +226,8 @@ class Encoder(Coder):
                     tsfm = value.__class__.cdef.jconf.ref_name_strategy
                     if getattr(value, tsfm(field)) is not None:
                         if use_insert_command or fname in fields_need_update:
-                            result_set[ref_db_field_key(fname, cls)] = \
-                                ObjectId(getattr(value, tsfm(field)))
+                            foreignid = idval(field.foreign_cdef.primary_field, getattr(value, tsfm(field)))
+                            result_set[ref_db_field_key(fname, cls)] = foreignid
                     else:
                         if use_insert_command:
                             pass
@@ -264,7 +264,7 @@ class Encoder(Coder):
                 if use_insert_command or fname in fields_need_update:
                     tsfm = value.__class__.cdef.jconf.ref_name_strategy
                     field_id_name = tsfm(field)
-                    id_list = [ObjectId(v) for v in getattr(value, field_id_name)]
+                    id_list = [idval(field.foreign_cdef.primary_field, v) for v in getattr(value, field_id_name)]
                     fname_ref = ref_db_field_keys(fname, cls)
                     if use_insert_command:
                         result_set[fname_ref] = id_list
