@@ -87,10 +87,7 @@ class Decoder(Coder):
             dest = cls()
             exist = False
         for field in cls.cdef.fields:
-            if cls.pconf.camelize_db_keys:
-                key = camelize(field.name, False)
-            else:
-                key = field.name
+            key = cls.pconf.to_db_key(field.name)
             if self.is_id_field(field):
                 if not exist:
                     setattr(dest, field.name, inst_id)

@@ -48,9 +48,7 @@ class BaseQuery(Generic[T]):
         result: list[dict[str, Any]] = []
         for subquery in self.subqueries:
             fname = subquery.name
-            dbfname = fname
-            if cls.pconf.camelize_db_keys:
-                dbfname = camelize(dbfname, False)
+            dbfname = cls.pconf.to_db_key(fname)
             field = cls.cdef.field_named(fname)
             if field.fdef.ftype == FType.LIST:
                 it = field.fdef.item_types.fdef.inst_cls
@@ -341,8 +339,7 @@ class BaseListQuery(BaseQuery[T]):
             self._sort = []
         tcls = cast(type[PymongoObject], self._cls)
         decoded_name = tcls.cdef.jconf.input_key_strategy(field_name)
-        if tcls.pconf.camelize_db_keys:
-            decoded_name = camelize(decoded_name, False)
+        decoded_name = tcls.pconf.to_db_key(decoded_name)
         self._sort.append((decoded_name, sort or 1))
         return self
 
@@ -468,8 +465,7 @@ class BaseListQuery(BaseQuery[T]):
                 omit_primary = True
             else:
                 omit_primary = False
-            if self._cls.pconf.camelize_db_keys:
-                finalpick = [camelize(k, False) for k in finalpick]
+            finalpick = [self._cls.pconf.to_db_key(k) for k in finalpick]
             pdict = {k: 1 for k in finalpick}
             if omit_primary:
                 pdict['_id'] = 0

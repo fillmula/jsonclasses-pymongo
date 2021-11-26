@@ -7,10 +7,7 @@ if TYPE_CHECKING:
 
 def ref_key(key: str, cls: type[PymongoObject]) -> tuple[str, str]:
     field_name = key + '_id'
-    if cls.pconf.camelize_db_keys:
-        db_field_name = camelize(field_name, False)
-    else:
-        db_field_name = field_name
+    db_field_name = cls.pconf.to_db_key(field_name)
     return (field_name, db_field_name)
 
 
@@ -20,10 +17,7 @@ def ref_field_key(key: str) -> str:
 
 def ref_db_field_key(key: str, cls: type[PymongoObject]) -> str:
     field_name = ref_field_key(key)
-    if cls.pconf.camelize_db_keys:
-        db_field_name = camelize(field_name, False)
-    else:
-        db_field_name = field_name
+    db_field_name = cls.pconf.to_db_key(field_name)
     return db_field_name
 
 
@@ -33,8 +27,5 @@ def ref_field_keys(key: str) -> str:
 
 def ref_db_field_keys(key: str, cls: type[PymongoObject]) -> str:
     field_name = ref_field_keys(key)
-    if cls.pconf.camelize_db_keys:
-        db_field_name = camelize(field_name, False)
-    else:
-        db_field_name = field_name
+    db_field_name = cls.pconf.to_db_key(field_name)
     return db_field_name

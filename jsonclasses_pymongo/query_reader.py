@@ -66,8 +66,7 @@ class QueryReader:
         if isinstance(val, dict):
             for raw_key, value in val.items():
                 key = self.cls.cdef.jconf.input_key_strategy(raw_key)
-                if self.cls.pconf.camelize_db_keys:
-                    key = camelize(key, False)
+                key = self.cls.pconf.to_db_key(key)
                 result.append((key, readorder(value)))
             return result
         if isinstance(val, list):
@@ -81,8 +80,7 @@ class QueryReader:
             else:
                 o = 1
             key = self.cls.cdef.jconf.input_key_strategy(val)
-            if self.cls.pconf.camelize_db_keys:
-                key = camelize(key, False)
+            key = self.cls.pconf.to_db_key(key)
             result.append((key, o))
             return result
         raise ValueError('unaccepted order descriptor')
@@ -93,10 +91,7 @@ class QueryReader:
         result = {}
         for raw_key, value in query.items():
             key = self.cls.cdef.jconf.input_key_strategy(raw_key)
-            if self.cls.pconf.camelize_db_keys:
-                dbkey = camelize(key, False)
-            else:
-                dbkey = key
+            dbkey = self.cls.pconf.to_db_key(key)
             # handle local key query
             if key in self.cls.cdef.reference_names:
                 idval = readstr(value)

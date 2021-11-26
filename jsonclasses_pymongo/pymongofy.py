@@ -79,9 +79,7 @@ def _database_write(self: T) -> None:
             db_key = index_key
             single_key = False
         if single_key:
-            pt_key = db_key
-            if self.__class__.pconf.camelize_db_keys:
-                pt_key = underscore(db_key)
+            pt_key = self.__class__.pconf.to_py_key(db_key)
             raise UniqueConstraintException(pt_key) from None
         else:
             results = []
@@ -246,9 +244,7 @@ def pymongofy(class_: type) -> PymongoObject:
         compound_fields: dict[str, list[JField]] = {}
         compound_ufields: dict[str, list[JField]] = {}
         for field in class_.cdef.fields:
-            fname = field.name
-            if class_.pconf.camelize_db_keys:
-                fname = camelize(field.name, False)
+            fname = class_.pconf.to_db_key(field.name)
             index = field.fdef.index
             unique = field.fdef.unique
             required = field.fdef.required
@@ -294,8 +290,7 @@ def pymongofy(class_: type) -> PymongoObject:
                     key = res(field)
                 else:
                     key = field.name
-                if class_.pconf.camelize_db_keys:
-                    key = camelize(key, False)
+                key = class_.pconf.to_db_key(key)
                 if not field.fdef.required:
                     sparse = True
                 keys.append((key, ASCENDING))
@@ -310,9 +305,7 @@ def pymongofy(class_: type) -> PymongoObject:
                     res = field.fdef.cdef.jconf.ref_name_strategy
                     key = res(field)
                 else:
-                    key = field.name
-                if class_.pconf.camelize_db_keys:
-                    key = camelize(key, False)
+                    key = class_.pconf.to_db_key(field.name)
                 if not field.fdef.required:
                     sparse = True
                 keys.append((key, ASCENDING))

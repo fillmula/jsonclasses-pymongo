@@ -283,9 +283,7 @@ class Encoder(Coder):
                     keypath_parent=fname,
                     parent=value))
                 if use_insert_command or fname in fields_need_update:
-                    efname = fname
-                    if context.owner.__class__.pconf.camelize_db_keys:
-                        efname = camelize(field.name, False)
+                    efname = context.owner.__class__.pconf.to_db_key(fname)
                     if use_insert_command:
                         if item_result is not None:
                             result_set[efname] = item_result
