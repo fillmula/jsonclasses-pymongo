@@ -23,6 +23,6 @@ setup(name='jsonclasses-pymongo',
       python_requires='>=3.10',
       install_requires=[
             'pymongo>=3.12.0,<4.0.0',
-            'inflection>=0.5.1,<1.0.0',
+            'inflection-plus>=0.1.0,<2.0.0',
             'qsparser>=1.1.0,<2.0.0'
       ])
