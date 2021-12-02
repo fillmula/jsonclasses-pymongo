@@ -3,7 +3,7 @@ from typing import Any, cast
 from datetime import datetime, date, timedelta
 from re import compile, escape, IGNORECASE
 from bson.objectid import ObjectId
-from jsonclasses.fdef import FStore, FType, Fdef
+from jsonclasses.fdef import FStore, FType, FDef, FSubtype
 from .utils import dbid, idval
 from .pobject import PObject
 from .readers import (
@@ -94,8 +94,12 @@ class QueryReader:
             dbkey = self.cls.pconf.to_db_key(key)
             # handle local key query
             if key in self.cls.cdef.reference_names:
-                id_val = readstr(value)
-                result[dbkey] = ObjectId(id_val) if id_val is not None else None
+                field = self.cls.cdef.rname_to_jfield(key)
+                if field.foreign_class.cdef.primary_field.fdef.fsubtype == FSubtype.MONGOID:
+                    id_val = ObjectId(readstr(value))
+                else:
+                    id_val = readstr(value)
+                result[dbkey] = id_val if id_val is not None else None
                 continue
             # handle local keys
             if key in self.cls.cdef.list_reference_names:
@@ -129,7 +133,7 @@ class QueryReader:
                 result[dbkey] = self.readval(value, fdef)
         return result
 
-    def readval(self: QueryReader, val: Any, fdef: Fdef):
+    def readval(self: QueryReader, val: Any, fdef: FDef):
         if fdef.ftype == FType.STR:
             return self.str_descriptor(val)
         elif fdef.ftype == FType.INT:
@@ -317,7 +321,7 @@ class QueryReader:
                     raise ValueError(f'unrecognized str matcher key {key}')
             return result
 
-    def list_descriptor(self: QueryReader, val: Any, fdef: Fdef) -> Any:
+    def list_descriptor(self: QueryReader, val: Any, fdef: FDef) -> Any:
         if val is None:
             return val
         if isinstance(val, list):
@@ -343,7 +347,7 @@ class QueryReader:
                 # TODO: contains a matcher or matchers, object matcher, list matcher, primitive types matcher
             return result
 
-    def dict_descriptor(self: QueryReader, val: Any, fdef: Fdef) -> Any:
+    def dict_descriptor(self: QueryReader, val: Any, fdef: FDef) -> Any:
         if val is None:
             return val
         if isinstance(val, dict):

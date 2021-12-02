@@ -107,3 +107,10 @@ class TestStrId(TestCase):
         obj.save()
         results = SimpleStrId.find(id='myid').exec()
         self.assertEqual(results[0].id, 'myid')
+
+    def test_strid_local_id_can_be_queried(self):
+        author = LinkedStrIdAuthor(id='authorid', val='123')
+        article = LinkedStrIdArticle(id='articleid', val='123')
+        article.author = author
+        article.save()
+        results = LinkedStrIdArticle.find(author_id='authorid').exec()
