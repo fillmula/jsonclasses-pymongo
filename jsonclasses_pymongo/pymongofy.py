@@ -6,7 +6,7 @@ from jsonclasses.jfield import JField
 from pymongo.errors import DuplicateKeyError
 from pymongo.collection import Collection
 from pymongo import ASCENDING
-from jsonclasses.fdef import FStore, FType
+from jsonclasses.fdef import FStore, FType, FSubtype
 from jsonclasses.excs import UniqueConstraintException
 from jsonclasses.excs import DeletionDeniedException
 from .pobject import PObject
@@ -88,6 +88,9 @@ def _database_write(self: T) -> None:
             raise UniqueConstraintException([ek(r) for r in results], f'voilated unique compound index \'{index_key}\'')
 
 def _orm_delete(self: T, no_raise: bool = False) -> None:
+    self_id = self._id
+    if self.__class__.cdef.primary_field.fdef.fsubtype == FSubtype.MONGOID:
+        self_id = ObjectId(self_id)
     # deny test
     for field in self.__class__.cdef.deny_fields:
         if field.fdef.fstore == FStore.LOCAL_KEY:
@@ -107,7 +110,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                 jtname = join_table_name(field)
                 coll = Connection.from_class(self.__class__).collection(jtname)
                 key = ref_db_field_key(self.__class__.__name__, self.__class__)
-                e = coll.count_documents({key: ObjectId(self._id)}, limit=1)
+                e = coll.count_documents({key: self_id}, limit=1)
                 exist = e > 0
                 if exist:
                     if no_raise:
@@ -116,7 +119,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                         raise DeletionDeniedException()
             else:
                 key = oc.cdef.jconf.ref_name_strategy(f)
-                exist = oc.exist(**{key: ObjectId(self._id)}).exec()
+                exist = oc.exist(**{key: self_id}).exec()
                 if exist:
                     if no_raise:
                         return
@@ -124,7 +127,7 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                         raise DeletionDeniedException()
 
     collection = Connection.get_collection(self.__class__)
-    collection.delete_one({'_id': ObjectId(self._id)})
+    collection.delete_one({'_id': self_id})
 
     # delete chain - nullify
     for field in self.__class__.cdef.nullify_fields:
@@ -138,10 +141,10 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                 jtname = join_table_name(field)
                 coll = Connection.from_class(self.__class__).collection(jtname)
                 key = ref_db_field_key(self.__class__.__name__, self.__class__)
-                coll.delete_many({key: ObjectId(self._id)})
+                coll.delete_many({key: self_id})
             else:
                 key = oc.cdef.jconf.ref_name_strategy(f)
-                for o in oc.iterate(**{key: ObjectId(self._id)}).exec():
+                for o in oc.iterate(**{key: self_id}).exec():
                     setattr(o, f.name, None)
                     setattr(o, key, None)
                     o.save(skip_validation=True)
@@ -165,15 +168,15 @@ def _orm_delete(self: T, no_raise: bool = False) -> None:
                 coll = Connection.from_class(self.__class__).collection(jtname)
                 key = ref_db_field_key(self.__class__.__name__, self.__class__)
                 other_key = ref_db_field_key(oc.__name__, oc)
-                for rel in coll.find({key: ObjectId(self._id)}):
+                for rel in coll.find({key: self_id}):
                     other_id = rel[other_key]
                     item = oc.id(other_id).optional.exec()
                     if item is not None:
                         item._orm_delete(no_raise=True)
-                coll.delete_many({key: ObjectId(self._id)})
+                coll.delete_many({key: self_id})
             else:
                 key = oc.cdef.jconf.ref_name_strategy(f)
-                for o in oc.iterate(**{key: ObjectId(self._id)}).exec():
+                for o in oc.iterate(**{key: self_id}).exec():
                     o._orm_delete(no_raise=True)
 
     setattr(self, '_is_deleted', True)

@@ -102,6 +102,11 @@ class TestStrId(TestCase):
             for product in result.products:
                 self.assertIn(product.id, ['p1', 'p2'])
 
+    def test_strid_can_be_deleted(self):
+        obj = SimpleStrId(id='myid', val='myval')
+        obj.save()
+        obj.delete()
+
     def test_strid_primary_id_can_be_queried(self):
         obj = SimpleStrId(id='myid', val='myval')
         obj.save()
