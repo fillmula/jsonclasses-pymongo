@@ -104,6 +104,11 @@ class QueryReader:
             # handle local keys
             if key in self.cls.cdef.list_reference_names:
                 and_mode = False
+                field = self.cls.cdef.rname_to_jfield(key)
+                if field.foreign_class.cdef.primary_field.fdef.fsubtype == FSubtype.MONGOID:
+                    mongoid = True
+                else:
+                    mongoid = False
                 if isinstance(value, dict):
                     if value.get('_or'):
                         value = value['_or']
@@ -111,9 +116,9 @@ class QueryReader:
                         value = value['_and']
                         and_mode = True
                 if not and_mode:
-                    result[dbkey] = {'$in': [ObjectId(v) for v in value]}
+                    result[dbkey] = {'$in': [(ObjectId(v) if mongoid else v) for v in value]}
                 else:
-                    result[dbkey] = {'$all': [ObjectId(v) for v in value]}
+                    result[dbkey] = {'$all': [(ObjectId(v) if mongoid else v) for v in value]}
                 continue
             # handle virtual local keys
             if key in self.cls.cdef.virtual_reference_names:

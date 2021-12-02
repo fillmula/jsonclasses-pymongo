@@ -114,3 +114,13 @@ class TestStrId(TestCase):
         article.author = author
         article.save()
         results = LinkedStrIdArticle.find(author_id='authorid').exec()
+        self.assertEqual(results[0].author_id, 'authorid')
+
+    def test_strid_local_ids_can_be_queried(self):
+        song = LinkedStrIdSong(id='song')
+        singer1 = LinkedStrIdSinger(id='s1')
+        singer2 = LinkedStrIdSinger(id='s2')
+        song.singers = [singer1, singer2]
+        song.save()
+        results = LinkedStrIdSong.find(singer_ids=['s1']).exec()
+        self.assertEqual(results[0].singer_ids, ['s1', 's2'])
