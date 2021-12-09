@@ -232,6 +232,46 @@ class TestQuery(TestCase):
         result = SimpleSong.find('year[_eq]=2010').exec()
         self.assertEqual(len(result), 0)
 
+    def test_query_object_with_neq_int_object(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find(year={'_neq': 2020}).exec()
+        self.assertEqual(len(result),0)
+        result = SimpleSong.find(year={'_neq': 2010}).exec()
+        self.assertEqual(len(result),1)
+        self.assertEqual(result[0].year, 2020)
+
+    def test_query_object_with_neq_int_object_string(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find('year[_neq]=2020').exec()
+        self.assertEqual(len(result), 0)
+        result = SimpleSong.find('year[_neq]=2010').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+
+    def test_query_object_with_neq_null_int_object(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find(year={'_null':'false','_neq': 2020}).exec()
+        self.assertEqual(len(result),0)
+        result = SimpleSong.find(year={'_null':'true','_neq': 2021}).exec()
+        self.assertEqual(len(result),0)
+        result = SimpleSong.find(year={'_null':'false','_neq': 2021}).exec()
+        self.assertEqual(len(result),1)
+        self.assertEqual(result[0].year, 2020)
+    
+    def test_query_object_with_neq_null_int_object_string(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find('year[_neq]=2020&year[_null]=false').exec()
+        self.assertEqual(len(result), 0)
+        result = SimpleSong.find('year[_neq]=2021&year[_null]=true').exec()
+        self.assertEqual(len(result), 0)
+        result = SimpleSong.find('year[_neq]=2010&year[_null]=false').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 2020)
+
     def test_query_object_with_not_int_object(self):
         song = SimpleSong(name='Long', year=2020, artist='Thao')
         song.save()
@@ -263,6 +303,46 @@ class TestQuery(TestCase):
         song.save()
         result = SimpleSong.find('name=Long').exec()
         self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Long')
+
+    def test_query_object_with_neq_str_object(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find(name={'_neq':'Long'}).exec()
+        self.assertEqual(len(result), 0)
+        result = SimpleSong.find(name={'_neq':'ong'}).exec()
+        self.assertEqual(len(result),1)
+        self.assertEqual(result[0].name, 'Long')
+
+    def test_query_object_with_neq_str_object_string(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find('name[_neq]=Long').exec()
+        self.assertEqual(len(result), 0)
+        result = SimpleSong.find('name[_neq]=ong').exec()
+        self.assertEqual(len(result),1)
+        self.assertEqual(result[0].name, 'Long')
+
+    def test_query_object_with_neq_null_str_object(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find(name={'_neq':'Long','_null':'false'}).exec()
+        self.assertEqual(len(result), 0)
+        result = SimpleSong.find(name={'_neq':'ong','_null':'true'}).exec()
+        self.assertEqual(len(result), 0)
+        result = SimpleSong.find(name={'_neq':'ong','_null':'false'}).exec()
+        self.assertEqual(len(result),1)
+        self.assertEqual(result[0].name, 'Long')
+
+    def test_query_object_with_neq_null_str_object_string(self):
+        song = SimpleSong(name='Long', year=2020, artist='Thao')
+        song.save()
+        result = SimpleSong.find('name[_neq]=Long&name[_null]=false').exec()
+        self.assertEqual(len(result), 0)
+        result = SimpleSong.find('name[_neq]=ong&name[_null]=true').exec()
+        self.assertEqual(len(result), 0)
+        result = SimpleSong.find('name[_neq]=ong&name[_null]=false').exec()
+        self.assertEqual(len(result),1)
         self.assertEqual(result[0].name, 'Long')
 
     def test_query_object_with_prefix_str_object(self):
@@ -579,6 +659,46 @@ class TestQuery(TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'tiger')
 
+    def test_query_object_with_neq_bool_object(self):
+        animal = SimpleAnimal(name='tiger', can_fly=False)
+        animal.save()
+        animal2 = SimpleAnimal(name='bird', can_fly=True)
+        animal2.save()
+        result = SimpleAnimal.find(can_fly={'_neq': 'False'}).exec()
+        self.assertEqual(len(result),1)
+        self.assertEqual(result[0].name, 'bird')
+
+    def test_query_object_with_neq_bool_object_str(self):
+        animal = SimpleAnimal(name='tiger', can_fly=False)
+        animal.save()
+        animal2 = SimpleAnimal(name='bird', can_fly=True)
+        animal2.save()
+        result = SimpleAnimal.find('canFly[_neq]=false').exec()
+        self.assertEqual(len(result),1)
+        self.assertEqual(result[0].name, 'bird')
+
+    def test_query_object_with_neq_null_bool_object(self):
+        animal = SimpleAnimal(name='tiger', can_fly=False)
+        animal.save()
+        animal2 = SimpleAnimal(name='bird', can_fly=True)
+        animal2.save()
+        result = SimpleAnimal.find(can_fly={'_neq': 'False','_null': 'true'}).exec()
+        self.assertEqual(len(result),0)
+        result = SimpleAnimal.find(can_fly={'_neq': 'False','_null': 'False'}).exec()
+        self.assertEqual(len(result),1)
+        self.assertEqual(result[0].name, 'bird')
+
+    def test_query_object_with_neq_null_bool_object_str(self):
+        animal = SimpleAnimal(name='tiger', can_fly=False)
+        animal.save()
+        animal2 = SimpleAnimal(name='bird', can_fly=True)
+        animal2.save()
+        result = SimpleAnimal.find('canFly[_neq]=false&canFly[_null]=true').exec()
+        self.assertEqual(len(result),0)
+        result = SimpleAnimal.find('canFly[_neq]=false&canFly[_null]=false').exec()
+        self.assertEqual(len(result),1)
+        self.assertEqual(result[0].name, 'bird')
+
     def test_query_object_with_date(self):
         d = SimpleDate(represents=date(2010, 7, 7))
         d.save()
@@ -604,6 +724,46 @@ class TestQuery(TestCase):
         d = SimpleDate(represents=date(2010, 7, 7))
         d.save()
         results = SimpleDate.find('represents[_eq]=2010-07-07').exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].represents, d.represents)
+
+    def test_query_object_with_neq_data_object(self):
+        d = SimpleDate(represents=date(2010,7, 7))
+        d.save()
+        results = SimpleDate.find(represents={'_neq': '2010-07-07'}).exec()
+        self.assertEqual(len(results), 0)
+        results = SimpleDate.find(represents={'_neq': '2010-07-08'}).exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].represents, d.represents)
+
+    def test_query_object_with_neq_data_object_string(self):
+        d = SimpleDate(represents=date(2010,7, 7))
+        d.save()
+        results = SimpleDate.find('represents[_neq]=2010-07-07').exec()
+        self.assertEqual(len(results), 0)
+        results = SimpleDate.find('represents[_neq]=2010-07-08').exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].represents, d.represents)
+
+    def test_query_object_with_neq_null_data_object(self):
+        d = SimpleDate(represents=date(2010,7, 7))
+        d.save()
+        results = SimpleDate.find(represents={'_neq': '2010-07-07'}).exec()
+        self.assertEqual(len(results), 0)
+        results = SimpleDate.find(represents={'_neq': '2010-07-08','_null': 'true'}).exec()
+        self.assertEqual(len(results), 0)
+        results = SimpleDate.find(represents={'_neq': '2010-07-08','_null': 'false'}).exec()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].represents, d.represents)
+
+    def test_query_object_with_neq_null_data_object_string(self):
+        d = SimpleDate(represents=date(2010,7, 7))
+        d.save()
+        results = SimpleDate.find('represents[_neq]=2010-07-07').exec()
+        self.assertEqual(len(results), 0)
+        results = SimpleDate.find('represents[_neq]=2010-07-08&represents[_null]=ture').exec()
+        self.assertEqual(len(results), 0)
+        results = SimpleDate.find('represents[_neq]=2010-07-08&represents[_null]=false').exec()
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].represents, d.represents)
 
