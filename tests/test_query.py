@@ -417,75 +417,75 @@ class TestQuery(TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Ben')
 
-    def test_query_object_with_containsi_str_object(self):
+    def test_query_object_with_contains_insensitive_str_object(self):
         song = SimpleSong(name='Ben', year=2020, artist='Thao')
         song.save()
         song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
         song2.save()
-        result = SimpleSong.find(name={'_containsi': 'b'}).exec()
+        result = SimpleSong.find(name={'_contains': 'b', '_mode': 'insensitive'}).exec()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Ben')
 
-    def test_query_object_with_containsi_str_object_str(self):
+    def test_query_object_with_contains_insensitive_str_object_str(self):
         song = SimpleSong(name='Ben', year=2020, artist='Thao')
         song.save()
         song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
         song2.save()
-        result = SimpleSong.find('name[_containsi]=b').exec()
+        result = SimpleSong.find('name[_contains]=b&name[_mode]=insensitive').exec()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Ben')
 
-    def test_query_object_with_prefixi_str_object(self):
+    def test_query_object_with_prefix_insensitive_str_object(self):
         song = SimpleSong(name='Ben', year=2020, artist='Thao')
         song.save()
         song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
         song2.save()
-        result = SimpleSong.find(name={'_prefixi': 'b'}).exec()
+        result = SimpleSong.find(name={'_prefix': 'b', '_mode': 'insensitive'}).exec()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Ben')
 
-    def test_query_object_with_prefixi_str_object_str(self):
+    def test_query_object_with_prefix_insensitive_str_object_str(self):
         song = SimpleSong(name='Ben', year=2020, artist='Thao')
         song.save()
         song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
         song2.save()
-        result = SimpleSong.find('name[_prefixi]=b').exec()
+        result = SimpleSong.find('name[_prefix]=b&name[_mode]=insensitive').exec()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Ben')
 
-    def test_query_object_with_suffixi_str_object(self):
+    def test_query_object_with_suffix_insensitive_str_object(self):
         song = SimpleSong(name='BenS', year=2020, artist='Thao')
         song.save()
         song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
         song2.save()
-        result = SimpleSong.find(name={'_suffixi': 's'}).exec()
+        result = SimpleSong.find(name={'_suffix': 's', '_mode': 'insensitive'}).exec()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'BenS')
 
-    def test_query_object_with_suffixi_str_object_str(self):
+    def test_query_object_with_suffix_insensitive_str_object_str(self):
         song = SimpleSong(name='BenS', year=2020, artist='Thao')
         song.save()
         song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
         song2.save()
-        result = SimpleSong.find('name[_suffixi]=s').exec()
+        result = SimpleSong.find('name[_suffix]=s&name[_mode]=insensitive').exec()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'BenS')
 
-    def test_query_object_with_matchi_str_object(self):
+    def test_query_object_with_match_insensitive_str_object(self):
         song = SimpleSong(name='Lucy', year=2020, artist='Thao')
         song.save()
         song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
         song2.save()
-        result = SimpleSong.find(name={'_matchi': 'C'}).exec()
+        result = SimpleSong.find(name={'_match': 'C', '_mode': 'insensitive'}).exec()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Lucy')
 
-    def test_query_object_with_matchi_str_object_str(self):
+    def test_query_object_with_match_insensitive_str_object_str(self):
         song = SimpleSong(name='Lucy', year=2020, artist='Thao')
         song.save()
         song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
         song2.save()
-        result = SimpleSong.find('name[_matchi]=C').exec()
+        result = SimpleSong.find('name[_match]=C&name[_mode]=insensitive').exec()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Lucy')
 

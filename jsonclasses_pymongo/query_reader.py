@@ -186,14 +186,20 @@ class QueryReader:
                     result['$regex'] = compile(escape(value) + '$')
                 elif key == '_match':
                     result['$regex'] = compile(value)
-                elif key == '_containsi':
-                    result['$regex'] = compile(escape(value), IGNORECASE)
-                elif key == '_prefixi':
-                    result['$regex'] = compile('^' + escape(value), IGNORECASE)
-                elif key == '_suffixi':
-                    result['$regex'] = compile(escape(value) + '$', IGNORECASE)
-                elif key == '_matchi':
-                    result['$regex'] = compile(value, IGNORECASE)
+                elif key == '_mode':
+                    if value == 'insensitive':
+                        pattern = result.get('$regex')
+                        if pattern is None:
+                            raise ValueError('mode should have a regex before')
+                        result['$regex'] = compile(pattern.pattern, IGNORECASE)
+                # elif key == '_containsi':
+                #     result['$regex'] = compile(escape(value), IGNORECASE)
+                # elif key == '_prefixi':
+                #     result['$regex'] = compile('^' + escape(value), IGNORECASE)
+                # elif key == '_suffixi':
+                #     result['$regex'] = compile(escape(value) + '$', IGNORECASE)
+                # elif key == '_matchi':
+                #     result['$regex'] = compile(value, IGNORECASE)
                 elif key == '_gt':
                     result['$gt'] = value
                 elif key == '_gte':
