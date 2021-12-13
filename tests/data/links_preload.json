@@ -1,0 +1,40 @@
+[
+    {
+        "class": "LPLUser",
+        "graph": "preload",
+        "objects": [
+            {
+                "id": "chun",
+                "name": "Chun Peterson",
+                "articles": ["python1", "vim1"]
+            },
+            {
+                "id": "peter1",
+                "name": "Peter Benson",
+                "articles": []
+            },
+            {
+                "id": "ben1",
+                "name": "Benedict Chiam",
+                "articles": ["python1", "vim1"]
+            }
+        ]
+    },
+    {
+        "class": "LPLArticle",
+        "graph": "preload",
+        "objects": [
+            {
+                "id": "python1",
+                "name": "Python Programming Language1",
+                "authors": ["chun", "ben1"]
+            },
+            
+            {
+                "id": "vim1",
+                "name": "The Vim Editor1",
+                "authors": ["chun", "ben1"]
+            }
+        ]
+    }
+]
