@@ -63,6 +63,12 @@ def seedobject(cls: type[PObject], obj: dict[str, Any], oid: str | int, original
             frcls = field.foreign_class
             field_ref_name = cls.cdef.jconf.ref_name_strategy(field)
             result[field_ref_name] = getidref(frcls, getfieldvalue(obj, field))
+        elif field.fdef.fstore == FStore.FOREIGN_KEY and field.is_join_table_ref:
+            field.cdef
+            frcls = field.foreign_class
+            field_ref_name = cls.cdef.jconf.ref_name_strategy(field)
+            result[field_ref_name] = getfieldvalue(obj,field)
+            print( getfieldvalue(obj,field))
     if original:
         original.set(**result).save()
     else:

@@ -192,14 +192,6 @@ class QueryReader:
                         if pattern is None:
                             raise ValueError('mode should have a regex before')
                         result['$regex'] = compile(pattern.pattern, IGNORECASE)
-                # elif key == '_containsi':
-                #     result['$regex'] = compile(escape(value), IGNORECASE)
-                # elif key == '_prefixi':
-                #     result['$regex'] = compile('^' + escape(value), IGNORECASE)
-                # elif key == '_suffixi':
-                #     result['$regex'] = compile(escape(value) + '$', IGNORECASE)
-                # elif key == '_matchi':
-                #     result['$regex'] = compile(value, IGNORECASE)
                 elif key == '_gt':
                     result['$gt'] = value
                 elif key == '_gte':
