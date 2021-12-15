@@ -58,7 +58,7 @@ class TestPreload(TestCase):
         articles = PLArticle.find().exec()
         self.assertTrue(articles[3].name.endswith(' 2'))
 
-    def test_preload_load_data_from_file1(self):
+    def test_preload_support_many_to_many(self):
         preload('tests/data/links_preload.json')
         users = LPLUser.find().exec()
         articles = LPLArticle.find().exec()
@@ -66,4 +66,3 @@ class TestPreload(TestCase):
         self.assertEqual(len(users), 3)
         self.assertEqual(len(articles), 2)
         self.assertEqual(len(chun_articles.articles), 2)
-
