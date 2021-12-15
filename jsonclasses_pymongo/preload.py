@@ -68,7 +68,6 @@ def seedobject(cls: type[PObject], obj: dict[str, Any], oid: str | int, original
             frcls = field.foreign_class
             for id in getfieldvalue(obj, field):
                 ids.append(getidref(frcls, id))
-            field_ref_name = cls.cdef.jconf.ref_name_strategy(field)
             add_ids = []
             for id in ids:
                 add_ids.append({'_add': id})
