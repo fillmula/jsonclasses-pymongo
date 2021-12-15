@@ -761,7 +761,7 @@ class TestQuery(TestCase):
         d.save()
         results = SimpleDate.find('represents[_neq]=2010-07-07').exec()
         self.assertEqual(len(results), 0)
-        results = SimpleDate.find('represents[_neq]=2010-07-08&represents[_null]=ture').exec()
+        results = SimpleDate.find('represents[_neq]=2010-07-08&represents[_null]=true').exec()
         self.assertEqual(len(results), 0)
         results = SimpleDate.find('represents[_neq]=2010-07-08&represents[_null]=false').exec()
         self.assertEqual(len(results), 1)
