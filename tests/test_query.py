@@ -453,6 +453,15 @@ class TestQuery(TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'Ben')
 
+    def test_query_object_with_insensitive_prefix_str_object_str(self):
+        song = SimpleSong(name='Ben', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find('name[_mode]=insensitive&name[_prefix]=b').exec()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'Ben')
+
     def test_query_object_with_suffix_insensitive_str_object(self):
         song = SimpleSong(name='BenS', year=2020, artist='Thao')
         song.save()
@@ -461,6 +470,15 @@ class TestQuery(TestCase):
         result = SimpleSong.find(name={'_suffix': 's', '_mode': 'insensitive'}).exec()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, 'BenS')
+
+    def test_query_object_with_insensitive_suffix_str_object(self):
+        song = SimpleSong(name='BenS', year=2020, artist='Thao')
+        song.save()
+        song2 = SimpleSong(name='Lieng', year=2020, artist='Lieng')
+        song2.save()
+        result = SimpleSong.find(name={'_mode': 'insensitive','_suffix': 's'}).exec()
+        self.assertEqual(len(result), 1)
+    
 
     def test_query_object_with_suffix_insensitive_str_object_str(self):
         song = SimpleSong(name='BenS', year=2020, artist='Thao')

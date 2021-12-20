@@ -1,39 +1,39 @@
 [
     {
-        "class": "LJPLUser",
+        "class": "LLPLUser",
         "graph": "preload",
         "objects": [
             {
-                "id": "chun",
+                "id": "chun2",
                 "name": "Chun Peterson",
-                "articles": ["python1", "vim1"]
+                "articles": ["python2","vim2"]
             },
             {
-                "id": "peter1",
+                "id": "peter2",
                 "name": "Peter Benson",
                 "articles": []
             },
             {
-                "id": "ben1",
+                "id": "ben2",
                 "name": "Benedict Chiam",
-                "articles": ["python1", "vim1"]
+                "articles": []
             }
         ]
     },
     {
-        "class": "LJPLArticle",
+        "class": "LLPLArticle",
         "graph": "preload",
         "objects": [
             {
-                "id": "python1",
+                "id": "python2",
                 "name": "Python Programming Language1",
-                "authors": ["chun", "ben1"]
+                "authors": ["chun2"]
             },
             
             {
-                "id": "vim1",
+                "id": "vim2",
                 "name": "The Vim Editor1",
-                "authors": ["chun", "ben1"]
+                "authors": ["chun2"]
             }
         ]
     }

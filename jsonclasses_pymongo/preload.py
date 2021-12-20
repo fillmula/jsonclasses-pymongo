@@ -69,6 +69,12 @@ def seedobject(cls: type[PObject], obj: dict[str, Any], oid: str | int, original
             for id in getfieldvalue(obj, field):
                 add_ids.append({'_add': getidref(frcls, id)})
             result[field.name] = add_ids
+            # else:
+            #     add_ids = []
+            #     frcls = field.foreign_class
+            #     for id in getfieldvalue(obj, field):
+            #         add_ids.append(getidref(frcls, id))
+            #     result[field.name] = add_ids
 
     if original:
         original.set(**result).save()

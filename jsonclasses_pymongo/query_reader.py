@@ -167,6 +167,7 @@ class QueryReader:
             return val
         if isinstance(val, dict):
             result = {}
+            insensitive = False
             for raw_key, value in val.items():
                 if raw_key.startswith('$'):
                     result[raw_key] = value
@@ -187,11 +188,7 @@ class QueryReader:
                 elif key == '_match':
                     result['$regex'] = compile(value)
                 elif key == '_mode':
-                    if value == 'insensitive':
-                        pattern = result.get('$regex')
-                        if pattern is None:
-                            raise ValueError('mode should have a regex before')
-                        result['$regex'] = compile(pattern.pattern, IGNORECASE)
+                    insensitive = True
                 elif key == '_gt':
                     result['$gt'] = value
                 elif key == '_gte':
@@ -209,6 +206,10 @@ class QueryReader:
                         result['$not'] = self.str_descriptor(value)
                 else:
                     raise ValueError(f'unrecognized str matcher key {key}')
+            if insensitive and result['$regex']:
+                pattern = result.get('$regex')
+                result['$regex'] = compile(pattern.pattern, IGNORECASE)
+                
             return result
 
     def num_descriptor(self: QueryReader, val: Any, float: bool) -> Any:
