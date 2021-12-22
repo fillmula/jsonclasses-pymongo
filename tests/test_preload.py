@@ -3,7 +3,7 @@ from unittest import TestCase
 from tests.classes.preload import PLUser, PLArticle
 from jsonclasses_pymongo.connection import Connection
 from jsonclasses_pymongo.preload import preload
-from tests.classes.links_preload import LPLArticle, LPLUser
+from tests.classes.links_preload import LJPLArticle, LJPLUser
 
 
 class TestPreload(TestCase):
@@ -24,12 +24,17 @@ class TestPreload(TestCase):
         collection.delete_many({})
         collection = Connection.get_collection(PLArticle)
         collection.delete_many({})
-        collection = Connection.get_collection(LPLUser)
+        # collection = Connection.get_collection(LLPLUser)
+        # collection.delete_many({})
+        # collection = Connection.get_collection(LLPLArticle)
+        # collection.delete_many({})
+        collection = Connection.get_collection(LJPLUser)
         collection.delete_many({})
-        collection = Connection.get_collection(LPLArticle)
+        collection = Connection.get_collection(LJPLArticle)
         collection.delete_many({})
-        collection = Connection('preload').collection('lplarticlesauthorslplusersarticles')
+        collection = Connection('preload').collection('ljplarticlesauthorsljplusersarticles')
         collection.delete_many({})
+
 
     def test_preload_load_data_from_file(self):
         preload('tests/data/preload.json')
@@ -58,11 +63,32 @@ class TestPreload(TestCase):
         articles = PLArticle.find().exec()
         self.assertTrue(articles[3].name.endswith(' 2'))
 
-    def test_preload_support_many_to_many(self):
+    def test_preload_load_linked_data_from_file(self):
         preload('tests/data/links_preload.json')
-        users = LPLUser.find().exec()
-        articles = LPLArticle.find().exec()
-        chun_articles = LPLUser.one(name="Chun Peterson").include('articles').exec()
+        users = LJPLUser.find().exec()
+        articles = LJPLArticle.find().exec()
         self.assertEqual(len(users), 3)
         self.assertEqual(len(articles), 2)
+
+
+    def test_preload_load_empty_linked_data_from_file(self):
+        preload('tests/data/links_preload.json')
+        ben_user = LJPLUser.one(name="Peter Benson").include('articles').exec()
+        self.assertEqual(ben_user.name,"Peter Benson")
+        self.assertEqual(len(ben_user.articles),0)
+        
+    def test_preload_load_multi_linked_data_from_file(self):
+        preload('tests/data/links_preload.json')
+        articles = LJPLArticle.find().exec()
+        chun_articles = LJPLUser.one(name="Chun Peterson").include('articles').exec()
         self.assertEqual(len(chun_articles.articles), 2)
+        self.assertEqual(chun_articles.articles[0].id,articles[0].id)
+        self.assertEqual(chun_articles.articles[1].id,articles[1].id)
+
+    # def test_preload_load_local_linked_data_from_file(self):
+    #     preload('tests/data/local_links_preload.json')
+    #     users = LLPLUser.find().exec()
+    #     articles = LLPLArticle.find().exec()
+    #     self.assertEqual(len(users), 3)
+    #     self.assertEqual(len(articles), 2)
+    

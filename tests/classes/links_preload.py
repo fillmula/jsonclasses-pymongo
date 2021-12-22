@@ -8,19 +8,39 @@ from jsonclasses_pymongo import pymongo
 
 @pymongo
 @jsonclass(class_graph='preload')
-class LPLUser:
+class LJPLUser:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    articles: Annotated[list[LPLArticle], linkedthru('authors')]
+    articles: Annotated[list[LJPLArticle], linkedthru('authors')]
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required
 
 
 @pymongo
 @jsonclass(class_graph='preload')
-class LPLArticle:
+class LJPLArticle:
     id: str = types.readonly.str.primary.mongoid.required
     name: str
-    authors: Annotated[list[LPLUser], linkedthru('articles')]
+    authors: Annotated[list[LJPLUser], linkedthru('articles')]
     created_at: datetime = types.readonly.datetime.tscreated.required
     updated_at: datetime = types.readonly.datetime.tsupdated.required
+
+# @pymongo
+# @jsonclass(class_graph='preload')
+# class LLPLArticle:
+#     id: str = types.readonly.str.primary.mongoid.required
+#     name: str
+#     # lauthors: Annotated[LLPLUser, linkto]
+#     authors: Annotated[LLPLUser, linkto]
+#     created_at: datetime = types.readonly.datetime.tscreated.required
+#     updated_at: datetime = types.readonly.datetime.tsupdated.required
+
+# @pymongo
+# @jsonclass(class_graph='preload')
+# class LLPLUser:
+#     id: str = types.readonly.str.primary.mongoid.required
+#     name: str
+#     articles: Annotated[list[LLPLArticle], linkedby('authors')]
+#     # larticles: Annotated[LLPLArticle,linkto]
+#     created_at: datetime = types.readonly.datetime.tscreated.required
+#     updated_at: datetime = types.readonly.datetime.tsupdated.required
