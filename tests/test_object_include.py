@@ -62,7 +62,6 @@ class TestObjectInclude(TestCase):
         singer1 = LinkedSinger(name='michael').save()
         singer2 = LinkedSinger(name='victor').save()
         song = LinkedSong(name='song', singer_ids=[singer1.id, singer2.id])
-        song.singer_ids = [singer1.id, singer2.id] # TODO fix bug and remove this line
         song.save()
         result = song.include('singers')
         self.assertEqual(result, song)

@@ -361,6 +361,15 @@ class TestSave(TestCase):
         album = LinkedAlbum.one().include('artists').exec()
         self.assertEqual(album.artists, [])
 
+    def test_fl_many_many_set_with_ids_is_saved(self):
+        s1 = LinkedSinger(name='s1').save()
+        s2 = LinkedSinger(name='s2').save()
+        song = LinkedSong(name='song', singer_ids=[s1._id, s2._id])
+        song.save()
+        song = LinkedSong.one().include('singers').exec()
+        names = [s.name for s in song.singers]
+        self.assertEqual(names, ['s1', 's2'])
+
     def test_fl_many_many_set_with_atomic_operation_is_saved_on_l_side(self):
         s1 = LinkedSinger(name='s1').save()
         s2 = LinkedSinger(name='s2').save()
