@@ -8,7 +8,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 setup(name='jsonclasses-pymongo',
-      version='3.2.0',
+      version='3.2.2',
       description='jsonclasses integration with pymongo',
       long_description=README,
       long_description_content_type="text/markdown",
@@ -22,7 +22,7 @@ setup(name='jsonclasses-pymongo',
       include_package_data=True,
       python_requires='>=3.10',
       install_requires=[
-            'pymongo>=3.12.0,<4.0.0',
+            'pymongo>=4.0.1,<5.0.0',
             'inflection-plus>=0.1.0,<2.0.0',
             'qsparser>=1.1.0,<2.0.0'
       ])
