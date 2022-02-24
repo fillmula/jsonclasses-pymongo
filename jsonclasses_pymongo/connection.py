@@ -1,4 +1,5 @@
 from __future__ import annotations
+from types import NoneType
 from typing import Callable, ClassVar, Optional, TYPE_CHECKING, TypeVar
 from os import getcwd, path
 from inflection import parameterize, camelize
@@ -96,7 +97,7 @@ class Connection:
         return self._connected
 
     def collection(self: Connection, name: str, index_keys: list[str] | None = None) -> Collection:
-        if self._collections.get(name):
+        if self._collections.get(name) is not None:
             return self._collections[name]
         coll = self.database.get_collection(name)
         if index_keys is not None:
