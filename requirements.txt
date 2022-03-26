@@ -1,4 +1,4 @@
 pymongo~=3.12
-jsonclasses~=3.1.0
+jsonclasses~=3.4.0
 inflection-plus>=0.1.0,<2.0.0
 qsparser>=1.1.0,<2.0.0
